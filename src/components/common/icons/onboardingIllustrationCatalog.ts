@@ -24,6 +24,7 @@ export const ONBOARDING_ILLUSTRATION_CATALOG = {
   'todo-counter': TODO_ILLUSTRATIONS['todo-counter'],
   'todo-stovetop': TODO_ILLUSTRATIONS['todo-stovetop'],
   'todo-shower': TODO_ILLUSTRATIONS['todo-shower'],
+  'todo-washer': TODO_ILLUSTRATIONS['todo-washer'],
   'todo-storage': TODO_ILLUSTRATIONS['todo-storage'],
 } as const;
 

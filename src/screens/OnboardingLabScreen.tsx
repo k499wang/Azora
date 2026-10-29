@@ -1,6 +1,6 @@
 /** Preview single onboarding screens without walking the whole flow. */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingLabScreenProps } from '../app/navigation';
@@ -10,6 +10,7 @@ import OnboardingSurface from '../components/onboarding/OnboardingSurface';
 import type { StressSignalId } from '../components/onboarding/data/routineOptions';
 import AzoMessageScreen from '../components/onboarding/screens/AzoMessageScreen';
 import AzoChatScreen from '../components/onboarding/screens/AzoChatScreen';
+import { CLEANING_AZO_CONVERSATION } from '../components/onboarding/data/azoConversation';
 import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen';
 import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
@@ -50,6 +51,10 @@ interface PreviewEntry {
 
 const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'azoOpening', title: 'Azo message + Life Reset chat', render: (props) => <AzoOpeningPreview {...props} /> },
+  {
+    id: 'azoOpeningCleaning', title: 'Azo message + cleaning_mode chat',
+    render: (props) => <AzoOpeningPreview {...props} turns={CLEANING_AZO_CONVERSATION} />,
+  },
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
   {
     id: 'planApproach', title: 'Goal-focused plan approach',
@@ -111,12 +116,16 @@ function PlanBenefitsPreview({ phase, onSkip: _, ...props }: PreviewProps & { ph
   );
 }
 
-function AzoOpeningPreview({ onContinue }: PreviewProps) {
+function AzoOpeningPreview({
+  onContinue,
+  turns,
+}: PreviewProps & { turns?: ComponentProps<typeof AzoChatScreen>['turns'] }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
 
   return chatOpen ? (
     <AzoChatScreen
+      turns={turns}
       answers={answers}
       onAnswersChange={setAnswers}
       onContinue={onContinue}

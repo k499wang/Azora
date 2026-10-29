@@ -532,7 +532,7 @@ const CLEANING_MODE_AREAS: IntentFollowUpQuestion = {
     ['bathroom', 'Bathroom', 'your bathroom stresses you out most', 'todo-shower'],
     ['living_room', 'Living room', 'your living room stresses you out most', 'seat-outline'],
     ['workspace', 'Workspace', 'your workspace stresses you out most', 'laptop'],
-    ['laundry', 'Laundry', 'laundry stresses you out most', 'tshirt-crew-outline'],
+    ['laundry', 'Laundry', 'laundry stresses you out most', 'todo-washer'],
     ['dishes', 'Dishes', 'dishes stress you out most', 'silverware-fork-knife'],
     ['clutter', 'General clutter', 'general clutter stresses you out most', 'broom'],
     ['all', 'Honestly, all of it', 'all of it stresses you out', 'weather-pouring'],

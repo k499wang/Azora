@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import TaskCardBody, { TASK_TITLE_MAX_LINES, taskCard } from '../../components/home/journey/TaskCardBody';
+import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -23,10 +24,11 @@ interface Props {
 
 /** A to-do they already have, drawn as its Routine card with what Azo would change about it. */
 export default function TodoChangeRow({ change, selected, disabled = false, settled = false, onToggle }: Props) {
+  const todayLocalDate = useTodayLocalDate();
   const removing = change.kind === 'remove';
   const warn = removesRepeat(change);
   const title = todoChangeTitle(change);
-  const detail = todoChangeDetail(change);
+  const detail = todoChangeDetail(change, todayLocalDate);
   const inactive = disabled || settled;
   return (
     <Pressable

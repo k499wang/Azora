@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import TaskCardBody, { TASK_TITLE_MAX_LINES, taskCard } from '../../components/home/journey/TaskCardBody';
+import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -11,6 +12,7 @@ import {
   selfCareGoalDaypartLabel,
   selfCareGoalRecurrenceLabel,
 } from '../selfCare/domain/selfCareGoal';
+import { selfCareGoalStartDayLabel } from '../selfCare/domain/selfCareGoalStartDay';
 import RoutineTaskIcon from '../selfCare/RoutineTaskIcon';
 import { suggestedTodoMeta, type SuggestedTodo } from './domain/suggestedTodo';
 
@@ -32,12 +34,13 @@ interface Props {
 /** Drawn as the Routine page's to-do card, with a pencil to change it and its check circle marking whether to keep it. */
 export default function SuggestedTodoRow({ todo, selected, disabled = false, settled = false, onToggle, onEdit }: Props) {
   const { recurrence } = todo;
+  const todayLocalDate = useTodayLocalDate();
   const inactive = disabled || settled;
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked: selected, disabled: inactive }}
-      accessibilityLabel={`${todo.title}, ${suggestedTodoMeta(todo)}`}
+      accessibilityLabel={`${todo.title}, ${suggestedTodoMeta(todo, todayLocalDate)}`}
       disabled={inactive}
       onPress={() => {
         triggerTapHaptic();
@@ -49,7 +52,9 @@ export default function SuggestedTodoRow({ todo, selected, disabled = false, set
         <TaskCardBody icon={<RoutineTaskIcon name={todo.icon} />} coins={selfCareGoalCoins(recurrence)}>
           <Text numberOfLines={TASK_TITLE_MAX_LINES} style={taskCard.title}>{todo.title}</Text>
           <Text style={taskCard.detail}>
-            {`${selfCareGoalRecurrenceLabel(recurrence)} · ${selfCareGoalDaypartLabel(todo.scheduledTime)}`}
+            {`${todo.startsOn == null
+              ? selfCareGoalRecurrenceLabel(recurrence)
+              : selfCareGoalStartDayLabel(todo.startsOn, todayLocalDate)} · ${selfCareGoalDaypartLabel(todo.scheduledTime)}`}
           </Text>
         </TaskCardBody>
       </View>

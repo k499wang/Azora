@@ -29,6 +29,8 @@ export function reconcileScheduledNotifications(input: {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  isPro: boolean | null;
+  paywallSeenAt: string | null;
   dailyReminderDefinitions?: readonly DailyReminderDefinition[];
 }): Promise<void> {
   return reconcileQueue.run(() => performReconcile(input));
@@ -38,6 +40,8 @@ async function performReconcile(input: {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  isPro: boolean | null;
+  paywallSeenAt: string | null;
   dailyReminderDefinitions?: readonly DailyReminderDefinition[];
 }): Promise<void> {
   registerNotificationHandler();

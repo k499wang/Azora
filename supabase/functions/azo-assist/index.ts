@@ -4,8 +4,13 @@ import {
   DAYPARTS,
   MAX_CHANGES,
   changeSchema,
+  cleanPlanDay,
+  dayProperty,
+  mentionsDay,
   normalizeTodoChanges,
+  parsePlanDays,
   parseTodoRefs,
+  planInstruction,
   todoRefsLine,
   type Daypart,
   type TodoChange,
@@ -28,6 +33,8 @@ interface SuggestedTodo {
   icon: string;
   daypart: Daypart;
   minutes: number;
+  /** a later local day it is planned for; left out for today */
+  day?: string;
 }
 
 interface ChatTurn {
@@ -38,7 +45,8 @@ interface ChatTurn {
 type AzoAssistRequest =
   | { mode: 'transcribe'; audioBase64: string }
   /** `refs` is null from an older app, which can only add, so Azo is never asked to change its list. */
-  | { mode: 'chat'; messages: ChatTurn[]; todos: string[]; refs: TodoRef[] | null };
+  /** `days` likewise: null from an app that can't plan ahead, so every to-do stays on today. */
+  | { mode: 'chat'; messages: ChatTurn[]; todos: string[]; refs: TodoRef[] | null; days: string[] | null };
 
 const MAX_TEXT = 2000;
 const MAX_TODO_TITLE = 100;
@@ -88,6 +96,7 @@ function parseRequest(body: unknown): AzoAssistRequest | null {
       messages,
       todos: refs == null ? cleanTodoTitles(record.todos) : refs.map((todo) => todo.title),
       refs,
+      days: refs == null ? null : parsePlanDays(record.today),
     };
   }
 
@@ -153,9 +162,11 @@ function normalizeTodos(
   max: number,
   personText: string,
   taken: string[],
+  days: string[] | null,
 ): SuggestedTodo[] {
   if (!Array.isArray(value)) return [];
   const seen = [...taken];
+  const named = mentionsDay(personText);
   return value.flatMap((item): SuggestedTodo[] => {
     if (item == null || typeof item !== 'object') return [];
     const record = item as Record<string, unknown>;
@@ -171,7 +182,8 @@ function normalizeTodos(
     const minutes = typeof record.minutes === 'number' && Number.isFinite(record.minutes)
       ? Math.min(120, Math.max(1, Math.round(record.minutes)))
       : 10;
-    return [{ title, icon, daypart, minutes }];
+    const day = days == null ? null : cleanPlanDay(record.day, days, named, days[0]);
+    return [{ title, icon, daypart, minutes, ...(day == null ? {} : { day }) }];
   }).slice(0, max);
 }
 
@@ -214,7 +226,7 @@ function normalizeChat(
     ...earlierSuggestions(request.messages.filter((turn) => turn.role === 'azo').map((turn) => turn.text)),
   ];
   const proposed = Array.isArray(record.todos) ? record.todos : [];
-  const todos = record.kind === 'add' ? normalizeTodos(proposed, 8, chatPersonText(request), taken) : [];
+  const todos = record.kind === 'add' ? normalizeTodos(proposed, 8, chatPersonText(request), taken, request.days) : [];
   if (proposed.length !== todos.length) {
     console.log('azo chat dropped to-dos', { kind: record.kind, returned: proposed.length, kept: todos.length });
   }
@@ -222,7 +234,12 @@ function normalizeChat(
 
   const proposedChanges = Array.isArray(record.changes) ? record.changes : [];
   const changes = record.kind === 'add' || record.kind === 'change'
-    ? normalizeTodoChanges(proposedChanges, request.refs, (source) => isGrounded(source, lastPersonText(request)))
+    ? normalizeTodoChanges(
+      proposedChanges,
+      request.refs,
+      (source) => isGrounded(source, lastPersonText(request)),
+      request.days == null ? null : { days: request.days, named: mentionsDay(lastPersonText(request)) },
+    )
     : [];
   if (proposedChanges.length !== changes.length) {
     console.log('azo chat dropped changes', { kind: record.kind, returned: proposedChanges.length, kept: changes.length });
@@ -286,17 +303,32 @@ const CHAT_SCHEMA = {
   },
 };
 
+/** A day only for an app that can plan ahead; an older one keeps the schema it was built against. */
+function todoSchema(days: string[] | null) {
+  if (days == null) return TODO_SCHEMA;
+  return {
+    ...TODO_SCHEMA,
+    propertyOrdering: [...TODO_SCHEMA.propertyOrdering, 'day'],
+    properties: { ...TODO_SCHEMA.properties, day: dayProperty(days) },
+  };
+}
+
 /** Only a list with refs can be pointed at, so an empty or older one keeps the add-only schema. */
-function chatSchema(refs: TodoRef[] | null) {
-  if (refs == null || refs.length === 0) return CHAT_SCHEMA;
+function chatSchema(request: Extract<AzoAssistRequest, { mode: 'chat' }>) {
+  const { refs, days } = request;
+  const todos = { type: 'array', maxItems: 8, items: todoSchema(days) };
+  if (refs == null || refs.length === 0) {
+    return days == null ? CHAT_SCHEMA : { ...CHAT_SCHEMA, properties: { ...CHAT_SCHEMA.properties, todos } };
+  }
   return {
     type: 'object',
     required: ['feelingOnly', 'kind', 'reply', 'todos', 'changes'],
     propertyOrdering: ['feelingOnly', 'kind', 'changes', 'todos', 'reply'],
     properties: {
       ...CHAT_SCHEMA.properties,
+      todos,
       kind: { type: 'string', format: 'enum', enum: [...CHAT_KINDS, 'change'] },
-      changes: { type: 'array', maxItems: MAX_CHANGES, items: changeSchema(refs) },
+      changes: { type: 'array', maxItems: MAX_CHANGES, items: changeSchema(refs, days) },
     },
   };
 }
@@ -371,8 +403,8 @@ Never offer twice in a row, and never offer when they're upset and just want to 
 Your reply must match your to-dos: with add, introduce the to-dos you returned in one short line, never list them in the reply, since they show as cards under it. With talk or offer, never say "here are" or list steps as if they were added.
 
 ${TODO_RULES}
-${changeInstruction(request.refs)}
-Earlier Azo turns end with a note in [brackets] of the cards you suggested and what they did with them; never write that note yourself. Reply as Azo to the person's last message, using the whole conversation.`;
+${changeInstruction(request.refs)}${request.days == null ? '' : `\n${planInstruction(request.days)}\n`}
+Earlier Azo turns end with a note in [brackets] of the ${request.refs == null ? 'to-do cards' : 'cards'} you suggested and what they did with them; never write that note yourself. Reply as Azo to the person's last message, using the whole conversation.`;
 }
 
 function changeInstruction(refs: TodoRef[] | null): string {
@@ -479,7 +511,7 @@ function modelCall(request: AzoAssistRequest) {
       return {
         system: chatInstruction(request),
         contents: chatContents(request.messages),
-        schema: chatSchema(request.refs),
+        schema: chatSchema(request),
         normalize: (value: unknown) => normalizeChat(value, request),
       };
   }

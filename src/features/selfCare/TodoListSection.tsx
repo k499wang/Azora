@@ -68,6 +68,7 @@ import {
   type SelfCareGoal,
   type SelfCareGoalPlaces,
 } from './domain/selfCareGoal';
+import { selfCareGoalStartsOn } from './domain/selfCareGoalStartDay';
 import {
   todoListGoalOrder,
   todoListGoalSlots,
@@ -232,6 +233,8 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   selectedLocalDate?: string;
   /** Past days are records and must not change current tasks or history. */
   readOnly?: boolean;
+  /** A later day, read-only for ticking, where a planned to-do can still be edited or removed. */
+  upcoming?: boolean;
   /** Opens the add sheet. */
   onAddHabit: () => void;
   /** Opens the curated routine starting points. */
@@ -272,6 +275,8 @@ interface GoalCardProps {
   /** finished, and fading out ahead of leaving the list */
   filing?: boolean;
   readOnly?: boolean;
+  /** read-only, but tapping opens it to edit */
+  upcoming?: boolean;
   /** whether a to-do is being dragged, so a release on this one is not a tap */
   isArranging: () => boolean;
   onToggle: (goal: SelfCareGoal, from?: ScreenPoint) => boolean;
@@ -291,6 +296,7 @@ const GoalCard = memo(function GoalCard({
   goal,
   filing = false,
   readOnly = false,
+  upcoming = false,
   isArranging,
   onToggle,
   onOpen,
@@ -327,6 +333,29 @@ const GoalCard = memo(function GoalCard({
       </Text>
     </TaskCardBody>
   );
+
+  if (upcoming) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={goal.title}
+        accessibilityHint="Opens this to-do to edit or remove it"
+        onPress={() => {
+          triggerTapHaptic();
+          onOpen(goal.id);
+        }}
+        style={({ pressed }) => [
+          taskCard.surface,
+          styles.goalCard,
+          taskCard.face,
+          styles.goalButton,
+          pressed && pressable.surface,
+        ]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
 
   if (readOnly) {
     return (
@@ -620,6 +649,7 @@ function TodoListSection(props: TodoListSectionProps) {
     ? props.selectedLocalDate ?? todayLocalDate
     : todayLocalDate;
   const readOnly = tasksOnly && props.readOnly === true;
+  const upcoming = readOnly && props.mode === 'tasks' && props.upcoming === true;
   const firstWin = useFirstWinOfDay(tasksOnly ? userId : null);
   const planPosition = usePlanPosition(tasksOnly ? null : userId);
   const goalsQuery = useSelfCareGoalsQuery(tasksOnly ? userId : null, localDate);
@@ -1006,11 +1036,13 @@ function TodoListSection(props: TodoListSectionProps) {
       <SectionHeader
         icon={tasksOnly ? "todo-plan" : "calendar"}
         iconColor={tasksOnly ? colors.neutral[900] : undefined}
-        titleNumberOfLines={tasksOnly && !readOnly && remainingTaskCount === 0 ? 2 : 1}
+        titleNumberOfLines={allGoalsCompleted ? 2 : 1}
         title={tasksOnly
-          ? (readOnly ? "To-dos for this day" : remainingTaskCount === 0
+          ? (readOnly ? "To-dos for this day" : allGoalsCompleted
             ? "Congrats!"
-            : `${remainingTaskCount} ${remainingTaskCount === 1 ? 'task' : 'tasks'} left for today`)
+            : remainingTaskCount === 0
+              ? "My To-dos"
+              : `${remainingTaskCount} ${remainingTaskCount === 1 ? 'task' : 'tasks'} left for today`)
           : "My Plan"}
         subtitle={
           planPosition == null || planPosition.isFinished ? null : (
@@ -1096,8 +1128,9 @@ function TodoListSection(props: TodoListSectionProps) {
               goal={row.goal}
               filing={filingIds.has(row.id)}
               readOnly={readOnly}
+              upcoming={upcoming}
               onToggle={toggleGoalCompleted}
-              onOpen={setDetailGoalId}
+              onOpen={upcoming ? setEditGoalId : setDetailGoalId}
               onMove={moveBy}
             />
           ))}
@@ -1181,7 +1214,7 @@ function TodoListSection(props: TodoListSectionProps) {
         </View>
       ) : null}
 
-      {tasksOnly && !readOnly ? <>
+      {tasksOnly && !readOnly ? (
       <GoalDetailSheet
         goal={detailGoal}
         busy={archiveGoal.isPending}
@@ -1230,9 +1263,19 @@ function TodoListSection(props: TodoListSectionProps) {
           archiveGoal.mutate(goalId);
         }}
       />
+      ) : null}
 
+      {tasksOnly && (!readOnly || upcoming) ? <>
       <GoalEditSheet
-        goal={editGoal}
+        goal={editGoal == null ? null : { ...editGoal, startsOn: selfCareGoalStartsOn(editGoal, todayLocalDate) }}
+        // A one-off ticked today is finished, so moving it to a later day would only hide it.
+        todayLocalDate={editGoal?.completedToday === true ? undefined : todayLocalDate}
+        removing={archiveGoal.isPending}
+        onRemove={upcoming ? () => {
+          if (editGoal == null) return;
+          const goalId = editGoal.id;
+          archiveGoal.mutate(goalId, { onSuccess: () => setEditGoalId(null) });
+        } : undefined}
         pending={updateGoal.isPending}
         error={updateGoal.error}
         onClose={() => {

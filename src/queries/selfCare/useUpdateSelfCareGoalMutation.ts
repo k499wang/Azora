@@ -4,11 +4,10 @@ import {
   type SelfCareGoalDraft,
 } from '../../services/selfCare/selfCareService';
 import {
-  isSelfCareGoalDueOn,
   sortSelfCareGoals,
   type SelfCareGoal,
 } from '../../features/selfCare/domain/selfCareGoal';
-import { invalidateOtherSelfCareGoalDates } from './createdSelfCareGoalsCache';
+import { invalidateOtherSelfCareGoalDates, isSelfCareGoalListedOn } from './createdSelfCareGoalsCache';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 
 interface UpdateInput extends SelfCareGoalDraft {
@@ -46,7 +45,7 @@ export function useUpdateSelfCareGoalMutation(
         queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
           sortSelfCareGoals([
             ...current.filter((entry) => entry.id !== goal.id),
-            ...(isSelfCareGoalDueOn(goal, localDate, false) ? [goal] : []),
+            ...(isSelfCareGoalListedOn(goal, localDate) ? [goal] : []),
           ]),
         );
       } else {

@@ -22,6 +22,7 @@ import {
   GoalLengthOptions,
   GoalRepeatOptions,
   GoalTimeOptions,
+  GoalDayOptions,
   selfCareGoalDurationLabel,
 } from './GoalScheduleOptions';
 import Icon from '../../components/common/icons/Icon';
@@ -46,6 +47,7 @@ import {
   type GoalSuggestion,
 } from './goalSuggestions';
 import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
+import { selfCareGoalStartDayLabel } from './domain/selfCareGoalStartDay';
 import type { IconName } from '../../components/common/icons/paths';
 
 const CLOSE_SIZE = 44;
@@ -70,11 +72,12 @@ const FIRST_CATEGORY = GOAL_SUGGESTION_CATEGORIES[0];
 type ShelfMode = 'suggestions' | 'icon';
 
 /** Which field the options sheet is open on, if any. */
-type ScheduleField = 'time' | 'repeat' | 'length';
+type ScheduleField = 'time' | 'repeat' | 'day' | 'length';
 
 const SCHEDULE_TITLE: Record<ScheduleField, string> = {
   time: 'Time of day',
   repeat: 'Repeat',
+  day: 'Day',
   length: 'Timer',
 };
 
@@ -137,6 +140,9 @@ interface AddGoalSheetProps {
   error: unknown;
   /** A browse suggestion starts editable, with its own title and icon. */
   initialSuggestion?: GoalSuggestion | null;
+  todayLocalDate: string;
+  /** opened from a later day, so it starts as a one-off planned for that day */
+  initialStartsOn?: string | null;
 }
 
 function errorMessage(error: unknown): string {
@@ -156,6 +162,8 @@ export default function AddGoalSheet({
   pending,
   error,
   initialSuggestion = null,
+  todayLocalDate,
+  initialStartsOn = null,
 }: AddGoalSheetProps) {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<RNTextInput>(null);
@@ -166,6 +174,7 @@ export default function AddGoalSheet({
   );
   const [scheduledTime, setScheduledTime] = useState<string | null>(null);
   const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  const [startsOn, setStartsOn] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState(FIRST_CATEGORY.id);
   // Every picker takes over the shelf rather than opening a layer above it: the
   // thing being chosen sits on the card right there, so the choice has to stay
@@ -184,13 +193,16 @@ export default function AddGoalSheet({
 
     setTitle(initialSuggestion?.title ?? '');
     setIcon(initialSuggestion?.icon ?? DEFAULT_SELF_CARE_GOAL_ICON);
-    setRecurrence(DEFAULT_RECURRENCE);
+    setRecurrence(initialStartsOn == null ? DEFAULT_RECURRENCE : 'once');
     setScheduledTime(null);
     setDurationMinutes(null);
+    setStartsOn(initialStartsOn);
     setCategoryId(FIRST_CATEGORY.id);
     setShelf('suggestions');
     setEditingField(null);
-  }, [initialSuggestion, visible]);
+  }, [initialSuggestion, initialStartsOn, visible]);
+  // Only a one-off can wait for a later day; a repeat starts now.
+  const plannedFor = recurrence === 'once' ? startsOn : null;
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
   const category =
@@ -200,7 +212,14 @@ export default function AddGoalSheet({
   const save = () => {
     if (normalizedTitle == null || pending) return;
     triggerTapHaptic();
-    onSubmit({ title: normalizedTitle, icon, recurrence, scheduledTime, durationMinutes });
+    onSubmit({
+      title: normalizedTitle,
+      icon,
+      recurrence,
+      scheduledTime,
+      durationMinutes,
+      ...(plannedFor == null ? {} : { startsOn: plannedFor }),
+    });
   };
 
   const openShelf = (mode: ShelfMode) => {
@@ -308,6 +327,17 @@ export default function AddGoalSheet({
               trailing={<CoinWorth coins={selfCareGoalCoins(recurrence)} />}
               onPress={() => openField('repeat')}
             />
+            {recurrence === 'once' ? (
+              <CardRow
+                icon="calendar"
+                badgeTint={colors.surface.amber}
+                badgeColor={colors.playful.amber.ink}
+                label="Day"
+                value={selfCareGoalStartDayLabel(plannedFor, todayLocalDate)}
+                open={editingField === 'day'}
+                onPress={() => openField('day')}
+              />
+            ) : null}
             <CardRow
               icon="timer"
               badgeTint={colors.surface.violet}
@@ -322,7 +352,7 @@ export default function AddGoalSheet({
           {normalizedTitle == null ? null : (
             <ChunkyButton
               shape="card"
-              label="Add to my day"
+              label={plannedFor == null ? 'Add to my day' : `Add for ${selfCareGoalStartDayLabel(plannedFor, todayLocalDate)}`}
               disabled={pending}
               loading={pending}
               haptic="tap"
@@ -435,6 +465,12 @@ export default function AddGoalSheet({
             <GoalRepeatOptions
               recurrence={recurrence}
               onSelect={setRecurrence}
+            />
+          ) : shownField === 'day' ? (
+            <GoalDayOptions
+              todayLocalDate={todayLocalDate}
+              startsOn={startsOn}
+              onSelect={setStartsOn}
             />
           ) : shownField === 'length' ? (
             <GoalLengthOptions

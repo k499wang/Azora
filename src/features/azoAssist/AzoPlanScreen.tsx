@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
@@ -41,10 +42,10 @@ const sameTitle = (a: SuggestedTodo, b: SuggestedTodo) =>
   a.title.trim().toLowerCase() === b.title.trim().toLowerCase();
 
 /** Azo only sees its suggestions in its own turns, so it doesn't offer them twice. */
-function azoTurn(reply: string, todos: SuggestedTodo[], changes: TodoChange[]): AzoChatTurn {
+function azoTurn(reply: string, todos: SuggestedTodo[], changes: TodoChange[], todayLocalDate: string): AzoChatTurn {
   const notes = [
     ...(todos.length === 0 ? [] : [`[Suggested to-dos: ${todos.map((todo) => `"${todo.title}"`).join(', ')}.]`]),
-    ...(changes.length === 0 ? [] : [`[Suggested changes: ${changes.map(todoChangeNote).join('; ')}.]`]),
+    ...(changes.length === 0 ? [] : [`[Suggested changes: ${changes.map((change) => todoChangeNote(change, todayLocalDate)).join('; ')}.]`]),
   ];
   return { role: 'azo', text: [reply, ...notes].join('\n') };
 }
@@ -55,6 +56,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   const reducedMotion = useReducedMotion();
   const assist = useAzoAssist('voice_plan');
   const copy = useAzoAssistCopy();
+  const todayLocalDate = useTodayLocalDate();
   const scroll = useRef<ScrollView>(null);
   const [turns, setTurns] = useState<AzoChatTurn[]>([{ role: 'azo', text: copy.planOpener }]);
   const [todos, setTodos] = useState<SuggestedTodo[]>([]);
@@ -80,7 +82,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
     try {
       const answer = await assist.ask(conversation);
       if (answer == null) return;
-      setTurns([...conversation, azoTurn(answer.reply, answer.todos, answer.changes)]);
+      setTurns([...conversation, azoTurn(answer.reply, answer.todos, answer.changes, todayLocalDate)]);
       const fresh = answer.todos.filter((todo) => !todos.some((shown) => sameTitle(shown, todo)));
       if (fresh.length === 0 && answer.changes.length === 0) {
         setPrompt(answer.reply);
@@ -129,7 +131,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   /** An edited suggestion takes its card's place and is kept, since changing it means wanting it. */
   const saveEdit = (todo: SuggestedTodo) => {
     if (editing == null) return;
-    setTodos((current) => current.map((shown, index) => index === editing ? todo : shown));
+    setTodos((current) => current.map((shown, index) => index === editing ? { ...shown, ...todo } : shown));
     setKept((current) => new Set(current).add(editing));
     setEditing(null);
   };
@@ -283,6 +285,7 @@ export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
           : { ...todos[editing], id: String(editing), durationMinutes: todos[editing].durationMinutes ?? null }}
         pending={false}
         error={null}
+        todayLocalDate={todayLocalDate}
         onClose={() => setEditing(null)}
         onSave={saveEdit}
       />

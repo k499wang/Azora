@@ -26,6 +26,7 @@ import Collapsible, {
 } from '../../components/common/Collapsible';
 import GoalIconPicker from './GoalIconPicker';
 import {
+  GoalDayOptions,
   GoalLengthOptions,
   GoalRepeatOptions,
   GoalTimeOptions,
@@ -46,6 +47,7 @@ import {
   type SelfCareGoal,
   type SelfCareGoalRecurrence,
 } from './domain/selfCareGoal';
+import { selfCareGoalStartDayLabel } from './domain/selfCareGoalStartDay';
 
 const BADGE_SIZE = 72;
 const BADGE_ICON_SIZE = 38;
@@ -58,13 +60,16 @@ const REMOVE_ICON_SIZE = 22;
 const SAVE_MIN_WIDTH = 156;
 
 /** which card is open; only one at a time, so the form never grows twice over */
-type OpenSection = 'icon' | 'time' | 'repeat' | 'length' | null;
+type OpenSection = 'icon' | 'time' | 'repeat' | 'day' | 'length' | null;
 
 /** What the form reads; a saved to-do, or an unsaved one (like Azo's) given an id of its own. */
 export type EditableGoal = Pick<
   SelfCareGoal,
   'id' | 'title' | 'icon' | 'recurrence' | 'scheduledTime' | 'durationMinutes'
->;
+> & {
+  /** the later day it is planned for; null or left out when it is already on the list */
+  startsOn?: string | null;
+};
 
 interface GoalEditSheetProps {
   /** the to-do being edited; `null` closes the sheet */
@@ -78,7 +83,11 @@ interface GoalEditSheetProps {
     recurrence: SelfCareGoalRecurrence;
     scheduledTime: string | null;
     durationMinutes: number | null;
+    /** only when the day moved; null brings it onto today's list */
+    startsOn?: string | null;
   }) => void;
+  /** offers the Day field for a one-off; left out where to-dos are only ever for today */
+  todayLocalDate?: string;
   /** offers a Remove beside Save; left out where another sheet already has one */
   onRemove?: () => void;
   removing?: boolean;
@@ -185,6 +194,7 @@ export default function GoalEditSheet({
   onSave,
   onRemove,
   removing = false,
+  todayLocalDate,
 }: GoalEditSheetProps) {
   const lastGoal = useRef<EditableGoal | null>(null);
   if (goal != null) lastGoal.current = goal;
@@ -195,6 +205,7 @@ export default function GoalEditSheet({
   const [recurrence, setRecurrence] = useState<SelfCareGoalRecurrence>('daily');
   const [scheduledTime, setScheduledTime] = useState<string | null>(null);
   const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+  const [startsOn, setStartsOn] = useState<string | null>(null);
   const [open, setOpen] = useState<OpenSection>(null);
 
   // Loaded from the to-do each time the sheet opens, so it always starts from
@@ -212,6 +223,7 @@ export default function GoalEditSheet({
     setRecurrence(seed.recurrence);
     setScheduledTime(seed.scheduledTime);
     setDurationMinutes(seed.durationMinutes);
+    setStartsOn(seed.startsOn ?? null);
   }, [goalId]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
@@ -237,7 +249,17 @@ export default function GoalEditSheet({
 
   const save = () => {
     if (normalizedTitle == null || busy) return;
-    onSave({ title: normalizedTitle, icon, recurrence, scheduledTime, durationMinutes });
+    // A repeat can't wait for a later day, so one made from a planned one-off starts now.
+    const plannedFor = recurrence === 'once' ? startsOn : null;
+    const savedStartsOn = shown?.startsOn ?? null;
+    onSave({
+      title: normalizedTitle,
+      icon,
+      recurrence,
+      scheduledTime,
+      durationMinutes,
+      ...(todayLocalDate == null || plannedFor === savedStartsOn ? {} : { startsOn: plannedFor }),
+    });
   };
 
   return (
@@ -350,6 +372,23 @@ export default function GoalEditSheet({
                 onSelect={setRecurrence}
               />
             </ExpandingRow>
+
+            {todayLocalDate != null && recurrence === 'once' ? (
+              <ExpandingRow
+                icon="calendar"
+                label="Day"
+                value={selfCareGoalStartDayLabel(startsOn, todayLocalDate)}
+                open={open === 'day'}
+                onToggle={() => toggle('day')}
+                onOpened={reveal}
+              >
+                <GoalDayOptions
+                  todayLocalDate={todayLocalDate}
+                  startsOn={startsOn}
+                  onSelect={setStartsOn}
+                />
+              </ExpandingRow>
+            ) : null}
 
             <ExpandingRow
               icon="timer"

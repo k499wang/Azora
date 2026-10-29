@@ -12,6 +12,7 @@ import {
 } from '../../features/selfCare/domain/selfCareGoal';
 import type { IconName } from '../../components/common/icons/paths';
 import { selfCareGoalExistedOnLocalDate } from './selfCareGoalDate';
+import { selfCareGoalStartIso } from '../../features/selfCare/domain/selfCareGoalStartDay';
 
 const GOAL_COLUMNS =
   'id, title, icon, recurrence, recurrence_anchor_date, scheduled_time, duration_minutes, featured_on, archived_at, created_at, updated_at';
@@ -88,6 +89,24 @@ export async function getActiveSelfCareGoals(
   return sortSelfCareGoals(
     goals.filter((goal) => !spentOnceGoalIds.has(goal.id)),
   );
+}
+
+/** One-offs planned for a later day: not on today's list, but still theirs to change. */
+export async function getPlannedSelfCareGoals(
+  userId: string,
+  localDate: string,
+): Promise<SelfCareGoal[]> {
+  const { data, error } = await requireSupabaseClient()
+    .from('self_care_goals')
+    .select(GOAL_COLUMNS)
+    .eq('user_id', userId)
+    .eq('recurrence', 'once')
+    .is('archived_at', null)
+    .gt('created_at', new Date(`${localDate}T23:59:59.999`).toISOString())
+    .order('created_at', { ascending: true })
+    .limit(30);
+  if (error != null) throw error;
+  return (data ?? []).map((row) => mapGoal(row, new Set(), localDate));
 }
 
 async function readSelfCareGoalsForDate(
@@ -187,6 +206,11 @@ export interface SelfCareGoalDraft {
   scheduledTime: string | null;
   /** minutes the to-do takes; null clears it, left out keeps what the row has */
   durationMinutes?: number | null;
+  /**
+   * A later local day a one-off first shows on. Null puts it on the list now;
+   * left out keeps what the row has.
+   */
+  startsOn?: string | null;
 }
 
 export async function createSelfCareGoal(
@@ -205,9 +229,10 @@ export async function createSelfCareGoal(
       title: normalizedTitle,
       icon: draft.icon,
       recurrence: draft.recurrence,
-      recurrence_anchor_date: localDate,
+      recurrence_anchor_date: draft.startsOn ?? localDate,
       scheduled_time: draft.scheduledTime,
       duration_minutes: resolveSelfCareGoalDuration(draft.durationMinutes),
+      ...(draft.startsOn == null ? {} : { created_at: selfCareGoalStartIso(draft.startsOn) }),
     })
     .select(GOAL_COLUMNS)
     .single();
@@ -325,6 +350,9 @@ export async function updateSelfCareGoal(
       ...(edit.durationMinutes !== undefined
         ? { duration_minutes: resolveSelfCareGoalDuration(edit.durationMinutes) }
         : {}),
+      ...(edit.startsOn === undefined
+        ? {}
+        : { created_at: edit.startsOn == null ? new Date().toISOString() : selfCareGoalStartIso(edit.startsOn) }),
     })
     .eq('id', goalId)
     .eq('user_id', userId)

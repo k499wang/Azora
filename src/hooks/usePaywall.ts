@@ -23,6 +23,7 @@ import {
 import type { FeatureKeyValue } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
+import { usePaywallSeenStore } from '../stores/paywallSeenStore';
 import {
   getUserEntitlementQueryKey,
   publishRevenueCatEntitlement,
@@ -263,6 +264,7 @@ export function usePaywall({
 
         const nextPaywallViewId = createPaywallViewId();
         setPaywallViewId(nextPaywallViewId);
+        usePaywallSeenStore.getState().markSeen();
 
         posthog.capture(
           AnalyticsEvent.PaywallViewed,

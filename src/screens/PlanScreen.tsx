@@ -93,7 +93,8 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     [todayLocalDate],
   );
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
-  const viewingPastDay = selectedLocalDate !== todayLocalDate;
+  const viewingPastDay = selectedLocalDate < todayLocalDate;
+  const viewingLaterDay = selectedLocalDate > todayLocalDate;
   const addGoal = useAddGoalSheet(userId, selectedLocalDate);
   const addButtonBottom = (isRegularWidth ? insets.bottom : tabBarHeight) + spacing.lg;
 
@@ -152,7 +153,8 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
               mode="tasks"
               userId={userId}
               selectedLocalDate={selectedLocalDate}
-              readOnly={viewingPastDay}
+              readOnly={viewingPastDay || viewingLaterDay}
+              upcoming={viewingLaterDay}
               tourOverviewTarget
               scrollRef={routineScroll}
               onAddHabit={addGoal.open}

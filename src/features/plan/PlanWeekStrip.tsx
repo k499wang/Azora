@@ -97,15 +97,14 @@ export default function PlanWeekStrip({
           <Pressable
             key={day.key}
             accessibilityRole="button"
-            accessibilityState={{ disabled: day.isFuture, selected }}
+            accessibilityState={{ selected }}
             accessibilityLabel={`${day.dayShortLabel} ${day.dateNum}, ${
               day.isCompleted ? 'kept' : day.isFuture ? 'to come' : 'not kept'
             }`}
-            disabled={day.isFuture}
             onPress={() => onSelectDay(day.localDate)}
             style={({ pressed }) => [
               styles.cell,
-              day.isFuture && styles.cellFuture,
+              day.isFuture && !selected && styles.cellFuture,
               pressed && styles.cellPressed,
             ]}
           >

@@ -16,6 +16,7 @@ import {
   type SelfCareGoalRecurrence,
 } from './domain/selfCareGoal';
 import type { IconName } from '../../components/common/icons/paths';
+import { selfCareGoalStartDayLabel, selfCareGoalStartDays } from './domain/selfCareGoalStartDay';
 
 const TILE_ICON_SIZE = 28;
 
@@ -120,6 +121,34 @@ export function GoalRepeatOptions({
           selected={option.id === recurrence}
           wide={index === SELF_CARE_GOAL_RECURRENCES.length - 1}
           onPress={() => onSelect(option.id)}
+        />
+      ))}
+    </View>
+  );
+}
+
+/** Which day a one-off first shows up on, so chores can be planned ahead. */
+export function GoalDayOptions({
+  todayLocalDate,
+  startsOn,
+  onSelect,
+}: {
+  todayLocalDate: string;
+  /** null for today */
+  startsOn: string | null;
+  onSelect: (startsOn: string | null) => void;
+}) {
+  const days = selfCareGoalStartDays(todayLocalDate);
+  return (
+    <View style={styles.tiles}>
+      {days.map((day, index) => (
+        <OptionTile
+          key={day}
+          icon={index === 0 ? 'sun' : 'calendar'}
+          label={selfCareGoalStartDayLabel(day, todayLocalDate)}
+          selected={(startsOn ?? todayLocalDate) === day}
+          wide={index === days.length - 1}
+          onPress={() => onSelect(index === 0 ? null : day)}
         />
       ))}
     </View>

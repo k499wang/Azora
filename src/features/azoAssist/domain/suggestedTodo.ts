@@ -9,6 +9,7 @@ import {
   selfCareGoalDaypartLabel,
   selfCareGoalDaypartTime,
 } from '../../selfCare/domain/selfCareGoal';
+import { selfCareGoalStartDayLabel, selfCareGoalStartDays } from '../../selfCare/domain/selfCareGoalStartDay';
 
 /**
  * A to-do Azo proposed, already in the shape it is saved in, so the add sheet
@@ -16,9 +17,13 @@ import {
  */
 export type SuggestedTodo = SelfCareGoalDraft;
 
-/** Azo's suggestions are for today, so they land as one-off to-dos at their daypart's hour. */
-export function parseSuggestedTodos(value: unknown): SuggestedTodo[] {
+/**
+ * Azo's suggestions land as one-off to-dos at their daypart's hour: on today,
+ * or on a later day of the coming week when it was told one.
+ */
+export function parseSuggestedTodos(value: unknown, todayLocalDate?: string): SuggestedTodo[] {
   if (!Array.isArray(value)) return [];
+  const planDays = todayLocalDate == null ? [] : selfCareGoalStartDays(todayLocalDate).slice(1);
   return value.flatMap((item): SuggestedTodo[] => {
     if (item == null || typeof item !== 'object') return [];
     const record = item as Record<string, unknown>;
@@ -32,11 +37,22 @@ export function parseSuggestedTodos(value: unknown): SuggestedTodo[] {
     const durationMinutes = resolveSelfCareGoalDuration(
       typeof record.minutes === 'number' ? record.minutes : null,
     );
-    return [{ title, icon, recurrence: 'once', scheduledTime: selfCareGoalDaypartTime(daypart), durationMinutes }];
+    const startsOn = planDays.find((day) => day === record.day);
+    return [{
+      title,
+      icon,
+      recurrence: 'once',
+      scheduledTime: selfCareGoalDaypartTime(daypart),
+      durationMinutes,
+      ...(startsOn == null ? {} : { startsOn }),
+    }];
   });
 }
 
-export function suggestedTodoMeta(todo: SuggestedTodo): string {
+export function suggestedTodoMeta(todo: SuggestedTodo, todayLocalDate?: string): string {
   const part = selfCareGoalDaypartLabel(todo.scheduledTime);
-  return todo.durationMinutes == null ? part : `${part} · ${todo.durationMinutes} min`;
+  const when = todo.startsOn == null || todayLocalDate == null
+    ? part
+    : `${selfCareGoalStartDayLabel(todo.startsOn, todayLocalDate)} · ${part}`;
+  return todo.durationMinutes == null ? when : `${when} · ${todo.durationMinutes} min`;
 }

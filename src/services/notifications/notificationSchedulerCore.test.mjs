@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildDesiredNotificationSchedule,
   getTrialEndingReminderDate,
+  withinWakingHours,
 } from './notificationSchedulerCore.ts';
 import {
   buildDailyPlanReminderContent,
@@ -271,4 +272,47 @@ test('chosen reminder uses local calendar days at 9am across daylight saving', (
     if (originalTZ === undefined) delete process.env.TZ;
     else process.env.TZ = originalTZ;
   }
+});
+
+const seenAt = new Date(2026, 4, 16, 12);
+const nudgeInput = {
+  preferences: { ...basePreferences, trialEndingReminder: { enabled: false } },
+  dailyPlanSchedule,
+  trialEndsAt: null,
+  isPro: false,
+  paywallSeenAt: seenAt.toISOString(),
+  now: seenAt,
+};
+const nudgesFor = (input) =>
+  buildDesiredNotificationSchedule(input).filter((item) => item.kind === 'paywall_nudge');
+
+test('a non-Pro user who saw the paywall gets nudges 1h, 24h and 72h after it appeared', () => {
+  const nudges = nudgesFor({ ...nudgeInput, now: new Date(2026, 4, 16, 12, 30) });
+  assert.deepEqual(
+    nudges.map((item) => (item.trigger.date.getTime() - seenAt.getTime()) / 3_600_000),
+    [1, 24, 72],
+  );
+  assert.deepEqual(nudges.map((item) => item.data.variant_index), ['0', '1', '2']);
+});
+
+test('paywall nudges that already fired are not rebooked', () => {
+  const nudges = nudgesFor({ ...nudgeInput, now: new Date(2026, 4, 17, 13) });
+  assert.deepEqual(nudges.map((item) => item.data.variant_index), ['2']);
+});
+
+test('paywall nudges need a seen paywall, confirmed non-Pro, and no trial on record', () => {
+  for (const input of [
+    { ...nudgeInput, paywallSeenAt: null },
+    { ...nudgeInput, isPro: true },
+    { ...nudgeInput, isPro: null },
+    { ...nudgeInput, trialEndsAt: '2026-05-10T00:00:00.000Z' },
+  ]) {
+    assert.deepEqual(nudgesFor(input), []);
+  }
+});
+
+test('paywall nudges move out of the night to 9am', () => {
+  assert.deepEqual(withinWakingHours(new Date(2026, 4, 16, 23, 30)), new Date(2026, 4, 17, 9));
+  assert.deepEqual(withinWakingHours(new Date(2026, 4, 17, 2, 10)), new Date(2026, 4, 17, 9));
+  assert.deepEqual(withinWakingHours(new Date(2026, 4, 17, 14, 5)), new Date(2026, 4, 17, 14, 5));
 });

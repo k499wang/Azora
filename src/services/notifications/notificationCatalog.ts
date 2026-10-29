@@ -101,7 +101,8 @@ export type DailyScheduledNotificationKind =
   DailyReminderRegistryEntry['kind'];
 export type ScheduledNotificationKind =
   | DailyScheduledNotificationKind
-  | 'trial_ending';
+  | 'trial_ending'
+  | 'paywall_nudge';
 
 const INTENT_REMINDER_BODIES: Partial<Record<OnboardingIntent, string>> = {
   scrolling: 'Take a pause before the next scroll and choose a small step for yourself.',
@@ -176,6 +177,24 @@ export function buildTrialEndingContent(trialEndsAt: Date): NotificationContentD
     channelId: NOTIFICATION_CHANNELS.billing,
   };
 }
+
+export const PAYWALL_NUDGES = [
+  {
+    delayHours: 1,
+    title: 'Your Personalized Plan is ready',
+    body: 'Day 1 takes a few minutes. Start whenever you are ready.',
+  },
+  {
+    delayHours: 24,
+    title: 'Day 1 is still waiting',
+    body: 'A few small steps, built around what you told us.',
+  },
+  {
+    delayHours: 72,
+    title: 'Your plan is still saved',
+    body: 'Pick up right where you left off.',
+  },
+] as const;
 
 /** Session-owned alarms are canceled with their timer, rather than persisted as reminders. */
 export function buildTaskTimerContent(input: {

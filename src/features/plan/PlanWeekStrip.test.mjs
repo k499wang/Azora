@@ -88,7 +88,8 @@ test('first render shows only the seven dates in the current week', () => {
   pressAll(days);
   assert.deepEqual(harness.selected, THIS_WEEK);
   assert.equal(days.filter((day) => day.props.accessibilityState.selected).length, 1);
-  assert.equal(days.at(-1).props.disabled, true);
+  // A later day opens too, to see what is planned for it.
+  assert.notEqual(days.at(-1).props.disabled, true);
 });
 
 test('once measured, the pager opens on the current week with nothing hidden', () => {

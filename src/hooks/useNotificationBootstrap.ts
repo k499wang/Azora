@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useTodayLocalDate } from './useTodayLocalDate';
 import { useAuthStore } from '../stores/authStore';
+import { usePaywallSeenStore } from '../stores/paywallSeenStore';
 import { useNotificationPreferencesQuery } from '../queries/notifications/useNotificationPreferencesQuery';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
@@ -22,6 +23,7 @@ export function useNotificationBootstrap() {
   const todayLocalDate = useTodayLocalDate();
   const authStatus = useAuthStore((state) => state.status);
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const paywallSeenAt = usePaywallSeenStore((state) => state.lastSeenAt);
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const entitlementQuery = useUserEntitlementQuery(userId);
@@ -32,6 +34,9 @@ export function useNotificationBootstrap() {
   );
 
   const enrollment = enrollmentQuery.data ?? null;
+  // A loaded empty entitlement is a user who never paid; a pending or failed
+  // lookup stays unknown so nudges are never booked for someone already Pro.
+  const isPro = entitlementQuery.isSuccess ? entitlementQuery.data?.isPro === true : null;
 
   // Metadata only personalizes copy; the main reminder can use generic wording
   // while enrollment or profile is unavailable.
@@ -68,6 +73,8 @@ export function useNotificationBootstrap() {
           preferences: preferencesQuery.data,
           dailyPlanSchedule: dailyPlanScheduleQuery.data,
           trialEndsAt: entitlementQuery.data?.trialEndsAt ?? null,
+          isPro,
+          paywallSeenAt,
           dailyReminderDefinitions,
         });
       } catch (error) {
@@ -95,7 +102,9 @@ export function useNotificationBootstrap() {
     authStatus,
     dailyPlanScheduleQuery.data,
     dailyReminderDefinitions,
+    isPro,
     entitlementQuery.data?.trialEndsAt,
+    paywallSeenAt,
     preferencesQuery.data,
     todayLocalDate,
     userId,

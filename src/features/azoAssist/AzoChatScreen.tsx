@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
+import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import Animated, {
   LinearTransition,
   useReducedMotion,
@@ -76,6 +77,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
   const planning = route.params?.opener === 'plan';
   const assist = useAzoAssist(planning ? 'sparkle' : 'chat');
   const copy = useAzoAssistCopy();
+  const todayLocalDate = useTodayLocalDate();
   const scroll = useRef<ScrollView>(null);
   const nextId = useRef(planning ? 1 : 0);
   const [messages, setMessages] = useState<Message[]>(
@@ -109,7 +111,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
       setDraft(trimmed);
     };
     try {
-      const answer = await assist.ask(conversation.map(turnForAzo));
+      const answer = await assist.ask(conversation.map((message) => turnForAzo(message, todayLocalDate)));
       if (answer == null) {
         rollBack();
         return;
@@ -156,7 +158,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
     if (editing == null) return;
     updateMessage(editing.messageId, (message) => ({
       ...message,
-      todos: message.todos?.map((current, index) => index === editing.index ? todo : current),
+      todos: message.todos?.map((current, index) => index === editing.index ? { ...current, ...todo } : current),
       kept: new Set(message.kept).add(editing.index),
     }));
     setEditing(null);
@@ -177,7 +179,9 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
       updateMessage(message.id, (current) => ({ ...current, added: true }));
       confirm(changes.length > 0
         ? 'Done, your list is updated. One less thing to hold in your head.'
-        : todos.length === 1
+        : todos.some((todo) => todo.startsOn != null)
+          ? 'Added to your plan. One less thing to hold in your head.'
+          : todos.length === 1
           ? 'Added it to today. One less thing to hold in your head.'
           : `Added ${todos.length} to today. One less thing to hold in your head.`);
     });
@@ -380,6 +384,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
           : { ...editingTodo, id: `${editing.messageId}:${editing.index}`, durationMinutes: editingTodo.durationMinutes ?? null }}
         pending={false}
         error={null}
+        todayLocalDate={todayLocalDate}
         onClose={() => setEditing(null)}
         onSave={saveEdit}
       />
@@ -425,7 +430,7 @@ function DecisionPill({ message, saving, onPress }: { message: Message; saving: 
 }
 
 /** Azo's cards are only on screen, so what it suggested and what they did with it travels with its reply. */
-function turnForAzo(message: Message): AzoChatTurn {
+function turnForAzo(message: Message, todayLocalDate: string): AzoChatTurn {
   if (!hasCards(message)) return { role: message.role, text: message.text };
   const quote = (todos: SuggestedTodo[]) => todos.map((todo) => `"${todo.title}"`).join(', ');
   const kept = keptCards(message);
@@ -438,9 +443,9 @@ function turnForAzo(message: Message): AzoChatTurn {
   }
   if ((message.changes?.length ?? 0) > 0) {
     const outcome = message.added === true
-      ? `They applied ${kept.changes.map(todoChangeNote).join('; ') || 'none'}`
+      ? `They applied ${kept.changes.map((change) => todoChangeNote(change, todayLocalDate)).join('; ') || 'none'}`
       : message.dismissed === true ? 'They chose not now' : 'They haven’t decided yet';
-    notes.push(`[Suggested changes: ${(message.changes ?? []).map(todoChangeNote).join('; ')}. ${outcome}.]`);
+    notes.push(`[Suggested changes: ${(message.changes ?? []).map((change) => todoChangeNote(change, todayLocalDate)).join('; ')}. ${outcome}.]`);
   }
   return { role: message.role, text: `${message.text}\n${notes.join('\n')}` };
 }

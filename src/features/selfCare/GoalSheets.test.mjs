@@ -78,7 +78,8 @@ function mount(filename, initialProps) {
         if (name.endsWith('/paths')) return { ICON_PATHS: {} };
         if (name === './domain/selfCareGoal') return load('./domain/selfCareGoal.ts');
         if (name === './goalSuggestions') return load('./goalSuggestions.ts');
-        if (name === './GoalScheduleOptions') return { GoalTimeOptions: 'GoalTimeOptions', GoalRepeatOptions: 'GoalRepeatOptions', GoalLengthOptions: 'GoalLengthOptions', selfCareGoalDurationLabel: (minutes) => (minutes == null ? 'No set length' : `${minutes} min`) };
+        if (name === './domain/selfCareGoalStartDay') return { selfCareGoalStartDayLabel: () => 'Today' };
+        if (name === './GoalScheduleOptions') return { GoalDayOptions: 'GoalDayOptions', GoalTimeOptions: 'GoalTimeOptions', GoalRepeatOptions: 'GoalRepeatOptions', GoalLengthOptions: 'GoalLengthOptions', selfCareGoalDurationLabel: (minutes) => (minutes == null ? 'No set length' : `${minutes} min`) };
         const component = name.split('/').at(-1);
         if (['GlassIconButton', 'ChunkyButton', 'BottomSheet', 'SlideUpSheet', 'GoalIconPicker', 'CoinWorth', 'Icon', 'TaskIllustration', 'Collapsible', 'CloseButton'].includes(component)) return { default: component };
         throw new Error(`Unexpected dependency: ${name}`);

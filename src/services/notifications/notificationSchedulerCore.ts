@@ -2,6 +2,8 @@ import type { DailyPlanSchedule } from '../dailyPlan/types';
 import {
   AZORA_NOTIFICATION_ID_PREFIX,
   DAILY_REMINDER_DEFINITIONS,
+  NOTIFICATION_CHANNELS,
+  PAYWALL_NUDGES,
   buildTrialEndingContent,
   type DailyReminderDefinition,
   type ScheduledNotificationKind,
@@ -28,6 +30,9 @@ export interface BuildNotificationScheduleInput {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  // Only a confirmed non-Pro answer books nudges; unknown means wait.
+  isPro?: boolean | null;
+  paywallSeenAt?: string | null;
   now?: Date;
 }
 
@@ -35,12 +40,16 @@ const TRIAL_REMINDER_HOUR = 9;
 const TRIAL_REMINDER_MINUTE = 0;
 const MISSED_TRIAL_REMINDER_DELAY_MS = 5 * 60 * 1000;
 const DAILY_REMINDER_HORIZON_DAYS = 14;
+const NUDGE_EARLIEST_HOUR = 9;
+const NUDGE_LATEST_HOUR = 21;
 
 export function buildDesiredNotificationSchedule(
   {
     preferences,
     dailyPlanSchedule,
     trialEndsAt,
+    isPro,
+    paywallSeenAt = null,
     now = new Date(),
   }: BuildNotificationScheduleInput,
   dailyReminderDefinitions: readonly DailyReminderDefinition[] =
@@ -73,7 +82,42 @@ export function buildDesiredNotificationSchedule(
     }
   }
 
+  // A trial on record means they converted once; these are for never-started.
+  if (isPro === false && trialEndsAt == null && paywallSeenAt != null) {
+    desired.push(...buildPaywallNudges(new Date(paywallSeenAt), now));
+  }
+
   return desired;
+}
+
+function buildPaywallNudges(seenAt: Date, now: Date): DesiredScheduledNotification[] {
+  if (Number.isNaN(seenAt.getTime())) return [];
+
+  return PAYWALL_NUDGES.flatMap((nudge, index) => {
+    const fireDate = withinWakingHours(
+      new Date(seenAt.getTime() + nudge.delayHours * 60 * 60 * 1000),
+    );
+    if (fireDate <= now) return [];
+
+    return [{
+      stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:paywall_nudge:${index}`,
+      kind: 'paywall_nudge' as const,
+      title: nudge.title,
+      body: nudge.body,
+      data: { notification_kind: 'paywall_nudge', variant_index: String(index) },
+      channelId: NOTIFICATION_CHANNELS.dailyReminders,
+      trigger: { type: 'date' as const, date: fireDate },
+    }];
+  });
+}
+
+export function withinWakingHours(date: Date): Date {
+  const shifted = new Date(date);
+  if (shifted.getHours() >= NUDGE_LATEST_HOUR) shifted.setDate(shifted.getDate() + 1);
+  if (shifted.getHours() < NUDGE_EARLIEST_HOUR || shifted.getHours() >= NUDGE_LATEST_HOUR) {
+    shifted.setHours(NUDGE_EARLIEST_HOUR, 0, 0, 0);
+  }
+  return shifted;
 }
 
 function buildDailyEntries(

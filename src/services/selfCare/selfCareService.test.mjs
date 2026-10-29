@@ -65,6 +65,7 @@ function harness(initial = [], completions = [], loseInsertResponse = false) {
       if (name === '../supabase') return { requireSupabaseClient: () => client };
       if (name.endsWith('/selfCareGoal')) return domain;
       if (name === './selfCareGoalDate') return goalDate;
+      if (name.endsWith('/selfCareGoalStartDay')) return { selfCareGoalStartIso: (day) => `${day}T00:00:00.000Z` };
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });

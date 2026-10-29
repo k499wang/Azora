@@ -67,6 +67,7 @@ function mount({ answer = { reply: 'Done', todos: [], changes: [] } } = {}) {
     if (name === 'react-native-reanimated') return { useReducedMotion: () => true, default: { View: 'AnimatedView' } };
     if (name === './useAzoAssist') return { useAzoAssist: () => assist };
     if (name === './useVoiceNote') return { useVoiceNote(options) { onText = options.onText; return voice; } };
+    if (name.endsWith('/useTodayLocalDate')) return { useTodayLocalDate: () => '2026-10-29' };
     if (name === './domain/todoChange') return {
       removesRepeat: (change) => change.kind === 'remove' && change.goal.recurrence !== 'once',
       todoChangeNote: (change) => `${change.kind} "${change.goal.title}"`,

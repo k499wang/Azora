@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiveSelfCareGoalMutation';
+import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
 import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
+import { usePlannedSelfCareGoalsQuery } from '../../queries/selfCare/usePlannedSelfCareGoalsQuery';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import { getAzoAssistMessagesUsedQueryKey } from '../../queries/subscriptions/useAzoAssistMessagesUsedQuery';
@@ -35,11 +37,19 @@ export function useAzoAssist(surface: AzoAssistSurface) {
   const access = useFeatureAccess(FeatureKey.AzoAssist);
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const localDate = useTodayLocalDate();
-  const goals = useSelfCareGoalsQuery(userId, localDate).data;
+  const todayGoals = useSelfCareGoalsQuery(userId, localDate).data;
+  const plannedGoals = usePlannedSelfCareGoalsQuery(userId, localDate).data;
+  const goals = useMemo(
+    () => [...(todayGoals ?? []), ...(plannedGoals ?? [])],
+    [todayGoals, plannedGoals],
+  );
   const createGoals = useCreateSelfCareGoalsMutation(userId, localDate);
+  const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const [saving, setSaving] = useState(false);
+  /** planned to-dos already written, so a retry after a later step failed doesn't write them twice */
+  const plannedSaved = useRef(new Set<string>());
   const [saveError, setSaveError] = useState<unknown>(null);
   const freeMessagesLeft = access.isLoading || access.isPro || access.limit == null
     ? null
@@ -79,7 +89,7 @@ export function useAzoAssist(surface: AzoAssistSurface) {
    */
   const ask = async (messages: AzoChatTurn[]) => {
     try {
-      const answer = await askAzo({ messages, goals: goals ?? [] });
+      const answer = await askAzo({ messages, goals, todayLocalDate: localDate });
       trackAzoAssistRequested({ surface, outcome: 'answered' });
       recordFreeMessagesLeft(answer.freeMessagesLeft);
       return answer;
@@ -102,13 +112,22 @@ export function useAzoAssist(surface: AzoAssistSurface) {
     setSaving(true);
     setSaveError(null);
     try {
-      const open = new Set((goals ?? []).filter((goal) => !goal.completedToday).map((goal) => goal.id));
+      const open = new Set(goals.filter((goal) => !goal.completedToday).map((goal) => goal.id));
       const live = changes.filter((change) => open.has(change.goal.id));
       for (const change of live) {
         if (change.kind === 'remove') await archiveGoal.mutateAsync(change.goal.id);
         else await updateGoal.mutateAsync({ goalId: change.goal.id, previousRecurrence: change.goal.recurrence, ...change.draft });
       }
-      if (todos.length > 0) await createGoals.mutateAsync(todos);
+      // Today's go in together; one planned for a later day goes in on its own,
+      // since the batch reuses a matching to-do already on today's list.
+      const forToday = todos.filter((todo) => todo.startsOn == null);
+      if (forToday.length > 0) await createGoals.mutateAsync(forToday);
+      for (const todo of todos) {
+        const key = `${todo.startsOn}|${todo.title}`;
+        if (todo.startsOn == null || plannedSaved.current.has(key)) continue;
+        await createGoal.mutateAsync(todo);
+        plannedSaved.current.add(key);
+      }
       if (live.length > 0) {
         trackAzoAssistTodosChanged({
           surface,

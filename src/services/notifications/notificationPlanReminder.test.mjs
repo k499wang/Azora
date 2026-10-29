@@ -160,6 +160,7 @@ test('bootstrap schedules one generic reminder while metadata loads or fails and
     useEffect: (effect) => effect(), useMemo: (fn) => fn(),
     useTodayLocalDate: () => '2026-05-16',
     useAuthStore: (selector) => selector({ status: 'signed_in', user: { id: 'user' } }),
+    usePaywallSeenStore: (selector) => selector({ lastSeenAt: null }),
     useNotificationPreferencesQuery: () => preferencesQuery,
     useDailyPlanScheduleQuery: () => scheduleQuery,
     useUserEntitlementQuery: () => ({ data: null }),
@@ -313,4 +314,39 @@ test('failed reminder, time and permission updates resolve with a retry alert an
   assert.equal(preferencesWrites, 1, 'permission failure never reaches the preference mutation');
   assert.equal(scheduleWrites, 1);
   assert.equal(permissionRequests, 1);
+});
+
+test('bootstrap books paywall nudges only for a loaded non-Pro entitlement and drops them once Pro', () => {
+  let entitlementQuery = { isSuccess: false, data: undefined };
+  const calls = [];
+  const { useNotificationBootstrap } = compile(new URL('../../hooks/useNotificationBootstrap.ts', import.meta.url), {
+    useEffect: (effect) => effect(), useMemo: (fn) => fn(),
+    useTodayLocalDate: () => '2026-05-16',
+    useAuthStore: (selector) => selector({ status: 'signed_in', user: { id: 'user' } }),
+    usePaywallSeenStore: (selector) => selector({ lastSeenAt: now.toISOString() }),
+    useNotificationPreferencesQuery: () => ({ data: preferences }),
+    useDailyPlanScheduleQuery: () => ({ data: schedule }),
+    useUserEntitlementQuery: () => entitlementQuery,
+    useProgramEnrollmentQuery: () => ({ data: null }),
+    useSavedOnboardingProfileQuery: () => ({ data: undefined }),
+    buildIntentTitleLookup: () => ({}), resolvePlanIntent: () => 'other',
+    dailyReminderDefinitionsFor,
+    reconcileScheduledNotifications: async (input) => { calls.push(input); },
+    AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
+  });
+  const nudgeCount = (input) =>
+    buildDesiredNotificationSchedule({ ...input, now }, input.dailyReminderDefinitions)
+      .filter((entry) => entry.kind === 'paywall_nudge').length;
+
+  useNotificationBootstrap();
+  assert.equal(nudgeCount(calls.at(-1)), 0, 'pending entitlement is unknown');
+  entitlementQuery = { isSuccess: true, data: null };
+  useNotificationBootstrap();
+  assert.equal(nudgeCount(calls.at(-1)), 3, 'never paid: no entitlement row');
+  entitlementQuery = { isSuccess: true, data: { isPro: true, trialEndsAt: '2026-05-23T09:00:00.000Z' } };
+  useNotificationBootstrap();
+  assert.equal(nudgeCount(calls.at(-1)), 0, 'trial started');
+  entitlementQuery = { isSuccess: false, isError: true, data: undefined };
+  useNotificationBootstrap();
+  assert.equal(nudgeCount(calls.at(-1)), 0, 'failed lookup is unknown');
 });

@@ -31,3 +31,16 @@ test('meta reads the daypart and the length when there is one', () => {
     'Start the day',
   );
 });
+
+test('a suggestion keeps a later day of the coming week, and only that', () => {
+  const [planned, tooFar, today] = parseSuggestedTodos([
+    { title: 'Clean bathroom', daypart: 'start', minutes: 20, day: '2026-11-01' },
+    { title: 'Defrost freezer', daypart: 'start', day: '2026-11-20' },
+    { title: 'Call mom', daypart: 'evening', day: '2026-10-29' },
+  ], '2026-10-29');
+  assert.equal(planned.startsOn, '2026-11-01');
+  assert.equal(suggestedTodoMeta(planned, '2026-10-29'), 'Sun, Nov 1 · Start the day · 20 min');
+  assert.equal(tooFar.startsOn, undefined);
+  assert.equal(today.startsOn, undefined);
+  assert.equal(parseSuggestedTodos([{ title: 'X', day: '2026-11-01' }])[0].startsOn, undefined);
+});

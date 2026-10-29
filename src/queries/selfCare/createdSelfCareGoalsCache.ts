@@ -4,6 +4,13 @@ import {
   sortSelfCareGoals,
   type SelfCareGoal,
 } from '../../features/selfCare/domain/selfCareGoal';
+import { selfCareGoalExistedOnLocalDate } from '../../services/selfCare/selfCareGoalDate';
+
+/** On a day's list: due that day, and not planned for a later one. */
+export function isSelfCareGoalListedOn(goal: SelfCareGoal, localDate: string): boolean {
+  return selfCareGoalExistedOnLocalDate({ created_at: goal.createdAt, archived_at: null }, localDate)
+    && isSelfCareGoalDueOn(goal, localDate, false);
+}
 
 export function invalidateOtherSelfCareGoalDates(
   queryClient: QueryClient,
@@ -34,7 +41,7 @@ export async function cacheCreatedSelfCareGoals(
     if (current == null) return goalsForDate;
     const byId = new Map(current.map((goal) => [goal.id, goal]));
     for (const goal of goalsForDate ?? goals) {
-      if (!byId.has(goal.id) && isSelfCareGoalDueOn(goal, localDate, false)) {
+      if (!byId.has(goal.id) && isSelfCareGoalListedOn(goal, localDate)) {
         byId.set(goal.id, goal);
       }
     }

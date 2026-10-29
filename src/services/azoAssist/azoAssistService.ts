@@ -38,27 +38,31 @@ function freeMessagesLeft(data: Record<string, unknown>): number | null {
 }
 
 /**
- * `todos` stays the plain titles an older server reads; `todoRefs` is what lets
- * a newer one propose changes, and an older one ignores it.
+ * `todos` stays the plain titles an older server reads; `todoRefs` and `today`
+ * are what let a newer one propose changes and plan days, and an older one
+ * ignores them.
  */
 export async function askAzo(input: {
   messages: AzoChatTurn[];
+  /** today's list, then the one-offs planned for later days */
   goals: readonly SelfCareGoal[];
+  todayLocalDate: string;
 }): Promise<{ reply: string; todos: SuggestedTodo[]; changes: TodoChange[]; freeMessagesLeft: number | null }> {
-  const { refs, goalsByRef } = todoRefsFor(input.goals);
+  const { refs, goalsByRef } = todoRefsFor(input.goals, input.todayLocalDate);
   const data = await invokeAzoAssist({
     mode: 'chat',
     messages: input.messages,
     todos: refs.map((todo) => todo.title),
     todoRefs: refs,
+    today: input.todayLocalDate,
   });
   if (typeof data.reply !== 'string' || data.reply.trim().length === 0) {
     throw new Error('Azo couldn’t answer right now. Try again.');
   }
   return {
     reply: data.reply.trim(),
-    todos: parseSuggestedTodos(data.todos),
-    changes: parseTodoChanges(data.changes, goalsByRef),
+    todos: parseSuggestedTodos(data.todos, input.todayLocalDate),
+    changes: parseTodoChanges(data.changes, goalsByRef, input.todayLocalDate),
     freeMessagesLeft: freeMessagesLeft(data),
   };
 }

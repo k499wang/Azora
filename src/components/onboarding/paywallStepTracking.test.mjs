@@ -501,6 +501,7 @@ function paywallHarness({ loadedOffering = offering, cachedOffering = offering }
     '../services/subscriptions/revenueCatIdentitySync': { syncRevenueCatAttributionForCurrentUser: () => Promise.resolve(true) },
     '../stores/authStore': { useAuthStore: auth },
     '../stores/revenueCatIdentityStore': { useRevenueCatIdentityStore: selector => selector({ status: 'ready', appUserId: 'user', lastErrorMessage: null, lastUnavailableReason: null }) },
+    '../stores/paywallSeenStore': { usePaywallSeenStore: { getState: () => ({ markSeen() {} }) } },
     '../queries/subscriptions/entitlementCache': {},
     '../services/subscriptions/revenueCatClient': {},
     '../services/reviews/reviewPromptState': {},

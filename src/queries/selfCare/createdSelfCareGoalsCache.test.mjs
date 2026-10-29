@@ -120,3 +120,20 @@ test('recurrence filters only the inserted rows and invalidates other dates for 
   assert.equal(client.getQueryState(otherUser).isInvalidated, false);
   client.clear();
 });
+
+test('a to-do planned for a later day stays off the day it was added on', async () => {
+  const client = new QueryClient();
+  client.setQueryData(key, [goal('old')]);
+  const planned = goal('planned', { recurrence: 'once', createdAt: new Date(2026, 8, 23).toISOString() });
+  await cacheCreatedSelfCareGoals(client, key, [planned]);
+  assert.deepEqual(ids(client), ['old']);
+});
+
+test('a planned to-do joins the list of its own day', async () => {
+  const client = new QueryClient();
+  const plannedKey = ['self-care-goals', 'user', '2026-09-23'];
+  client.setQueryData(plannedKey, []);
+  const planned = goal('planned', { recurrence: 'once', createdAt: new Date(2026, 8, 23).toISOString() });
+  await cacheCreatedSelfCareGoals(client, plannedKey, [planned]);
+  assert.deepEqual(client.getQueryData(plannedKey).map((row) => row.id), ['planned']);
+});
