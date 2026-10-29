@@ -7,6 +7,7 @@ export const CLEANING_STATEMENTS = {
   statementGaveUp: 'There’s a room or closet I’ve basically given up on. I just leave it alone.',
   statementAvoidGuests: 'I avoid having people over because of how my place looks, even close friends.',
   statementAvoidCleaning: 'I tend to avoid cleaning until it’s truly necessary.',
+  statementSelfBlame: 'When my place is a mess, I call myself lazy or a slob.',
 } satisfies Partial<Record<OnboardingStep, string>>;
 
 export type CleaningStatementStep = keyof typeof CLEANING_STATEMENTS;

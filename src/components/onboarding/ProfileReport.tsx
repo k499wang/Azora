@@ -43,7 +43,9 @@ const SUMMARY_ICON_SIZE = 42;
 const WEEK_DOT_SIZE = 36;
 
 const SUMMARY_ICONS: Record<ReportAnswerSummaryItem['id'], OnboardingIllustrationName> = {
+  messStress: 'chores-full',
   goal: 'target',
+  difficulty: 'alert-circle-outline',
   routine: 'file-document-outline',
   rest: 'bed-outline',
   focus: 'mood-focus',

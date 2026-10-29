@@ -43,7 +43,7 @@ const planAndCompletion = [
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
-  'supportSystem', 'putOthersFirst', 'wishUnderstood', 'doingItFor', 'sacrificeForOthers', 'expertReview',
+  'supportSystem', 'putOthersFirst', 'wishUnderstood', 'doingItFor', 'sacrificeForOthers', 'scienceCredibility',
   'adhdStatus', 'mentalHealth', 'struggles', 'homeAtmosphere',
 ];
 // Other goals retain this assessment after habits.
@@ -167,12 +167,10 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
   for (const removed of [
     'analyzeIntent', 'analyzeSleep', 'analyzeLoad',
     'childhoodStress', 'lifeEvents',
-    'scienceCredibility',
     'brainFog',
   ]) {
     assert.equal(steps.includes(removed), false, removed);
-    // Cleaning mode still shows the science screen.
-    if (removed !== 'scienceCredibility') assert.equal(flow.includes(`if (step === '${removed}'`), false);
+    assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
   assert.equal(steps.indexOf('recommendedExercise'), 71);
@@ -901,8 +899,8 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'stressAwareness', 'forward'), 'piecesTogether');
     assert.equal(adjacentOnboardingStep(steps, 'piecesTogether', 'forward'), 'supportSystem');
     assert.equal(adjacentOnboardingStep(steps, 'supportSystem', 'forward'), 'putOthersFirst');
-    assert.equal(adjacentOnboardingStep(steps, 'sacrificeForOthers', 'forward'), 'expertReview');
-    assert.equal(adjacentOnboardingStep(steps, 'expertReview', 'forward'), 'adhdStatus');
+    assert.equal(adjacentOnboardingStep(steps, 'sacrificeForOthers', 'forward'), 'scienceCredibility');
+    assert.equal(adjacentOnboardingStep(steps, 'scienceCredibility', 'forward'), 'adhdStatus');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');
     assert.equal(adjacentOnboardingStep(steps, 'struggles', 'forward'), 'homeAtmosphere');
     assert.equal(adjacentOnboardingStep(steps, 'homeFeeling', 'forward'), 'beforeAfter');
@@ -967,14 +965,15 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(stepBlock('mentalHealth'), /options=\{MENTAL_HEALTH_OPTIONS\}/);
   assert.match(stepBlock('mentalHealth'), /toggleExclusiveNone/);
   assert.match(stepBlock('mentalHealth'), /\n        multiSelect\n/);
-  assert.match(stepBlock('homeFeeling'), /question="How do you envision yourself living a better life\?"/);
-  assert.match(stepBlock('homeFeeling'), /options=\{HOME_FEELING_OPTIONS\}/);
+  assert.match(stepBlock('homeFeeling'), /: 'How do you envision yourself living a better life\?'\}/);
+  assert.match(stepBlock('homeFeeling'), /: HOME_FEELING_OPTIONS\}/);
   assert.match(stepBlock('homeFeeling'), /\n        multiSelect\n/);
   assert.match(stepBlock('homeAtmosphere'), /question="How do you want to feel after you finish using Azora\?"/);
   assert.doesNotMatch(stepBlock('homeAtmosphere'), /note=/);
-  // No question carries a "choose all that apply" hint: multi-select questions
-  // all take the same shape.
-  assert.doesNotMatch(flow, /Choose all that apply/);
+  // Only cleaning mode's opening help question carries a "choose all that apply"
+  // hint; every other multi-select question takes the same shape.
+  assert.equal(flow.match(/Choose all that apply/g)?.length, 1);
+  assert.match(stepBlock('cleaningHelp'), /Choose all that apply/);
   assert.match(stepBlock('homeAtmosphere'), /options=\{HOME_ATMOSPHERE_OPTIONS\}/);
   assert.match(stepBlock('homeAtmosphere'), /\n        multiSelect\n/);
   assert.match(stepBlock('habitsToBreak'), /question="What habits would you like to break\?"/);
@@ -1000,7 +999,7 @@ test('the restored question screens keep their copy and selection modes', () => 
   assert.match(dailyTime, /question="How much time can you give every day\?"/);
   assert.match(dailyTime, /options=\{DAILY_TIME_BANDS\}/);
   assert.match(stepBlock('planBoost'), /question="What would make your plan more fun and helpful\?"/);
-  assert.match(stepBlock('planBoost'), /options=\{PLAN_BOOST_OPTIONS\}/);
+  assert.match(stepBlock('planBoost'), /: PLAN_BOOST_OPTIONS\}/);
   assert.match(stepBlock('planBoost'), /\n        multiSelect\n/);
 });
 

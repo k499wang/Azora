@@ -12,7 +12,7 @@ test('diagnosed and suspected ADHD get support before diagnoses; no or skipped a
     const positive = status === 'diagnosed' || status === 'suspected';
     assert.equal(shouldShowAdhdSupport(status), positive);
     assert.equal(steps.includes('adhdSupport'), positive);
-    assert.equal(adjacentOnboardingStep(steps, 'expertReview', 'forward'), 'adhdStatus');
+    assert.equal(adjacentOnboardingStep(steps, 'scienceCredibility', 'forward'), 'adhdStatus');
     assert.equal(adjacentOnboardingStep(steps, 'adhdStatus', 'forward'), positive ? 'adhdSupport' : 'mentalHealth');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'back'), positive ? 'adhdSupport' : 'adhdStatus');
     assert.equal(adjacentOnboardingStep(steps, 'mentalHealth', 'forward'), 'struggles');

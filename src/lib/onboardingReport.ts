@@ -23,10 +23,13 @@ export interface OnboardingReportAnswers {
   energyEcho: string | null;
   focusEcho: string | null;
   stressEcho: string | null;
+  /** Cleaning mode only: how heavy the mess feels, and the toughest part of keeping tidy. */
+  messStressEcho?: string | null;
+  difficultyEcho?: string | null;
 }
 
 export interface ReportAnswerSummaryItem {
-  id: 'goal' | 'routine' | 'rest' | 'focus' | 'starting';
+  id: 'messStress' | 'goal' | 'difficulty' | 'routine' | 'rest' | 'focus' | 'starting';
   label: string;
   value: string;
 }
@@ -91,7 +94,9 @@ export function buildOnboardingReport(
   const categorizedEchoes = new Set([
     answers.sleepEcho, answers.energyEcho, answers.focusEcho, answers.stressEcho,
   ]);
+  addSummary('messStress', 'Mess stress', [answers.messStressEcho ?? null]);
   addSummary('goal', 'Your priority', [answers.goalPhrase]);
+  addSummary('difficulty', 'Main difficulty', [answers.difficultyEcho ?? null]);
   addSummary('routine', 'Daily life', [answers.contextEcho, answers.routineEcho]
     .filter((clause) => !categorizedEchoes.has(clause)));
   addSummary('rest', 'Rest & energy', [answers.sleepEcho, answers.energyEcho]);

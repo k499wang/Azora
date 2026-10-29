@@ -24,7 +24,7 @@ import OnboardingOptionIcon from '../OnboardingOptionIcon';
 import type { OnboardingIllustrationName } from '../../common/icons/onboardingIllustrationCatalog';
 import OnboardingScreenLayout, { onboardingTitleStyle } from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { ARCHETYPE_FOR_PLAN } from '../../../lib/onboardingArchetype';
+import { ARCHETYPE_FOR_PLAN, type OnboardingArchetype } from '../../../lib/onboardingArchetype';
 import { buildOnboardingReport, type OnboardingReportAnswers } from '../../../lib/onboardingReport';
 import type { PresetId } from '../../../lib/onboardingPreset';
 import type { MindMapScore } from '../../../lib/onboardingScores';
@@ -38,6 +38,8 @@ interface PlanRevealScreenProps {
   /** The personality profile appears before the plan report. */
   phase: PlanRevealPhase;
   planId: PresetId;
+  /** Overrides the plan's own archetype when the answers name a sharper one. */
+  archetype?: OnboardingArchetype;
   presetRevision?: number;
   intent?: OnboardingIntent;
   reportAnswers: OnboardingReportAnswers;
@@ -79,6 +81,7 @@ function proBenefits(weeks: number): readonly { icon: OnboardingIllustrationName
 export default function PlanRevealScreen({
   phase,
   planId,
+  archetype = ARCHETYPE_FOR_PLAN[planId],
   presetRevision,
   intent,
   reportAnswers,
@@ -91,7 +94,6 @@ export default function PlanRevealScreen({
   onBack,
 }: PlanRevealScreenProps) {
   const { width } = useWindowDimensions();
-  const archetype = ARCHETYPE_FOR_PLAN[planId];
   const hue = PLAN_HUE[planId];
   const report = buildOnboardingReport(planId, reportAnswers, presetRevision, intent);
 

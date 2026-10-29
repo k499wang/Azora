@@ -13,6 +13,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface AdhdSupportScreenProps {
+  cleaning?: boolean;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -25,6 +26,12 @@ const BENEFITS: readonly { text: string; icon: OnboardingOptionIconName; color: 
   { text: 'Finish what you start, one small step at a time', icon: 'streak', color: colors.playful.amber.base },
 ];
 
+const CLEANING_BENEFITS: typeof BENEFITS = [
+  { text: 'Focus on one spot at a time', icon: 'target', color: colors.playful.sky.base },
+  { text: 'Turn chores into a simple routine', icon: 'calendar-check-outline', color: colors.playful.teal.base },
+  { text: 'Finish each chore, one small step at a time', icon: 'streak', color: colors.playful.amber.base },
+];
+
 const BRAIN_WIDTH = scaleVisual(112);
 /** the extracted scans are close to 7:8 */
 const BRAIN_HEIGHT = BRAIN_WIDTH * (8 / 7);
@@ -32,6 +39,7 @@ const BRAIN_HEIGHT = BRAIN_WIDTH * (8 / 7);
 const BENEFIT_ICON_SIZE = 36;
 
 export default function AdhdSupportScreen({
+  cleaning = false,
   stepIndex,
   stepCount,
   onContinue,
@@ -39,7 +47,11 @@ export default function AdhdSupportScreen({
 }: AdhdSupportScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Azora uses science to help people with ADHD"
+      title={
+        cleaning
+          ? 'Azora uses science to help people with ADHD keep life in order'
+          : 'Azora uses science to help people with ADHD'
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
@@ -70,7 +82,7 @@ export default function AdhdSupportScreen({
         </View>
         <View style={styles.benefits}>
           <Text style={styles.benefitsTitle}>Azora can help ADHD</Text>
-          {BENEFITS.map(({ text, icon, color }) => (
+          {(cleaning ? CLEANING_BENEFITS : BENEFITS).map(({ text, icon, color }) => (
             <View key={text} style={styles.row}>
               <OnboardingOptionIcon name={icon} size={BENEFIT_ICON_SIZE} color={color} />
               <Text style={styles.benefit}>{text}</Text>

@@ -100,7 +100,11 @@ export default function BeforeAfterScreen({
   return (
     <OnboardingScreenLayout
       title="Become the best version of yourself with Azora."
-      subtitle="We turn your biggest goals into simple daily actions with a CBT-based plan."
+      subtitle={
+        cleaning
+          ? 'We turn cleaning into simple daily steps with a CBT-based plan.'
+          : 'We turn your biggest goals into simple daily actions with a CBT-based plan.'
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

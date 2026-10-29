@@ -4,6 +4,7 @@ import type { OnboardingOptionIconName } from '../OnboardingOptionIcon';
 import type { AzoExpression } from '../../../features/mascot/azoFace';
 import type { OnboardingIntent } from '../types';
 import { echoOption } from '../../../lib/onboardingEcho';
+import type { OnboardingMode } from '../../../lib/onboardingMode';
 
 /**
  * Goal-specific follow-ups, with four extra context questions for cleaning.
@@ -524,6 +525,21 @@ const TRIADS: Record<
   },
 };
 
+const CLEANING_MODE_AREAS: IntentFollowUpQuestion = {
+  ...where('cleaning_stress_areas', 'Which areas stress you out most?', [
+    ['bedroom', 'Bedroom', 'your bedroom stresses you out most', 'bed-outline'],
+    ['kitchen', 'Kitchen', 'your kitchen stresses you out most', 'todo-stovetop'],
+    ['bathroom', 'Bathroom', 'your bathroom stresses you out most', 'todo-shower'],
+    ['living_room', 'Living room', 'your living room stresses you out most', 'seat-outline'],
+    ['workspace', 'Workspace', 'your workspace stresses you out most', 'laptop'],
+    ['laundry', 'Laundry', 'laundry stresses you out most', 'tshirt-crew-outline'],
+    ['dishes', 'Dishes', 'dishes stress you out most', 'silverware-fork-knife'],
+    ['clutter', 'General clutter', 'general clutter stresses you out most', 'broom'],
+    ['all', 'Honestly, all of it', 'all of it stresses you out', 'weather-pouring'],
+  ]),
+  multiSelect: true,
+};
+
 const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
   where('cleaning_living_situation', 'What is your current living situation?', [
     ['alone', 'I live on my own', 'you live on your own', 'account-outline'],
@@ -554,6 +570,20 @@ const CLEANING_EXTRA_QUESTIONS: IntentFollowUpQuestion[] = [
     ['not_bad', '"It\'s not that bad."', 'you tell yourself it\'s not that bad', 'emoticon-neutral-outline'],
   ]),
 ];
+
+/** Cleaning mode hears the fuller range of what people tell themselves about the mess. */
+const CLEANING_MODE_MESS_THOUGHT = where('cleaning_mess_thought', 'What goes through your head when you see the mess?', [
+  ['where_start', '"Where do I even start?"', 'you wonder where to start', 'help-circle-outline'],
+  ['tomorrow', '"I\'ll do it tomorrow."', 'you tell yourself you\'ll do it tomorrow', 'alarm-snooze'],
+  ['too_tired', '"I\'m too tired for this right now."', 'you feel too tired to start', 'battery-low'],
+  ['why_bother', '"Why bother? It\'ll get messy again."', 'you wonder why you\'d bother', 'swap-horizontal'],
+  ['someone_sees', '"I hope no one sees this."', 'you hope no one sees it', 'eye-off-outline'],
+  ['not_bad', '"It\'s not that bad."', 'you tell yourself it\'s not that bad', 'emoticon-neutral-outline'],
+]);
+
+const CLEANING_MODE_EXTRA_QUESTIONS = CLEANING_EXTRA_QUESTIONS.map((question) =>
+  question.id === CLEANING_MODE_MESS_THOUGHT.id ? CLEANING_MODE_MESS_THOUGHT : question,
+);
 
 /**
  * Their second-beat answer, ready for "You've tried {echo}." Null where that
@@ -590,13 +620,18 @@ export function stakesBenefitFor(
 /** The stakes beat stays at index 2 for analysis; cleaning adds home context. */
 export function intentFollowUpsFor(
   intent: OnboardingIntent | null,
+  mode: OnboardingMode = 'standard',
 ): IntentFollowUpQuestion[] {
   const triad =
     intent == null || intent === 'other'
       ? DEFAULT_TRIAD
       : TRIADS[intent];
-  const questions = [triad.where, triad.tried, triad.stakes];
+  const questions = [
+    intent === 'cleaning' && mode === 'cleaning_mode' ? CLEANING_MODE_AREAS : triad.where,
+    triad.tried,
+    triad.stakes,
+  ];
   return intent === 'cleaning'
-    ? [...questions, ...CLEANING_EXTRA_QUESTIONS]
+    ? [...questions, ...(mode === 'cleaning_mode' ? CLEANING_MODE_EXTRA_QUESTIONS : CLEANING_EXTRA_QUESTIONS)]
     : questions;
 }

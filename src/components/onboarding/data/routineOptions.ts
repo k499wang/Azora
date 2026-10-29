@@ -9,8 +9,7 @@ export type UsageStyleId =
   | 'routineFit'
   | 'companion'
   | 'proudProgress'
-  | 'understandFeelings'
-  | 'cleaningGuidance';
+  | 'understandFeelings';
 export type DayEnergyId = 'steady' | 'afternoonDip' | 'upAndDown' | 'drained';
 export type SleepCauseId =
   | 'racingMind'
@@ -43,7 +42,6 @@ export type SacrificeId = 'sleep' | 'time' | 'health' | 'hobbies' | 'nothing';
 export type WishUnderstoodId = 'tired' | 'trying' | 'space' | 'care' | 'notOkay';
 export type PutOffGuiltId = 'no' | 'sometimes' | 'yes';
 export type AgreementId = 'no' | 'neutral' | 'yes';
-export type SelfBlameId = 'always' | 'often' | 'sometimes' | 'rarely';
 export type OverwhelmResponseId = 'bed' | 'scroll' | 'avoid' | 'easier' | 'shutdown';
 export type SupportSystemId = 'strong' | 'some' | 'thin' | 'selfReliant';
 export type ChildhoodStressId = 'yes' | 'somewhat' | 'no' | 'unsure';
@@ -55,7 +53,14 @@ export type ChoresOverwhelmId =
   | 'often'
   | 'almostDaily';
 export type DistractionId = 'never' | 'rarely' | 'sometimes' | 'often' | 'constant';
-export type CleaningHelpId = 'procrastinating' | 'clutter' | 'consistent' | 'faster' | 'motivated';
+export type CleaningHelpId =
+  | 'procrastinating'
+  | 'clutter'
+  | 'consistent'
+  | 'faster'
+  | 'motivated'
+  | 'guests'
+  | 'calm';
 export type SocialMediaOveruseId = 'totally' | 'sometimes' | 'notOften' | 'never';
 export type SocialMediaId =
   | 'under30'
@@ -99,12 +104,6 @@ export const USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
   { id: 'companion', title: 'I want a companion to keep me on track', echo: 'want a companion to keep you on track', icon: 'heart-outline', accent: colors.playful.blush.base },
   { id: 'proudProgress', title: 'Feel proud of my progress', echo: 'want to feel proud of your progress', icon: 'sparkle', accent: colors.playful.violet.base },
   { id: 'understandFeelings', title: 'Understand why I feel this way', echo: 'want to understand why you feel this way', icon: 'waves', accent: colors.playful.sky.base },
-];
-
-/** Cleaning mode leads with the hands-on cleaning help. */
-export const CLEANING_USAGE_STYLE_OPTIONS: OnboardingOption<UsageStyleId>[] = [
-  { id: 'cleaningGuidance', title: 'I want to use Azo’s AI tools to help me clean better', echo: 'want to use Azo’s AI tools to help you clean better', icon: 'broom', accent: colors.playful.teal.base },
-  ...USAGE_STYLE_OPTIONS,
 ];
 
 export const DAY_ENERGY_OPTIONS: OnboardingOption<DayEnergyId>[] = [
@@ -291,6 +290,13 @@ export const HABIT_ATTEMPTS_OPTIONS: OnboardingOption<HabitAttemptsId>[] = [
   { id: 'neverTried', title: 'I haven’t tried building a habit yet', icon: 'habit-attempt-seed-packet', accent: colors.playful.violet.base },
 ];
 
+export const CLEANING_ROUTINE_ATTEMPTS_OPTIONS: OnboardingOption<HabitAttemptsId>[] = [
+  { id: 'struggled', title: 'No, they never last', icon: 'habit-attempt-tangled-thread', accent: colors.playful.amber.base },
+  { id: 'sometimesStick', title: 'For a while, then they slip', icon: 'habit-attempt-mixed-seedlings', accent: colors.playful.sky.base },
+  { id: 'canStick', title: 'Yes, they usually stick', icon: 'habit-attempt-rooted-plant', accent: colors.playful.teal.base },
+  { id: 'neverTried', title: 'I haven’t really tried one', icon: 'habit-attempt-seed-packet', accent: colors.playful.violet.base },
+];
+
 export const SELF_DISCIPLINE_OPTIONS: OnboardingOption<SelfDisciplineId>[] = [
   { id: 'steady', title: 'I find it easy to keep going', icon: 'discipline-steady-steps', accent: colors.playful.teal.base },
   { id: 'loseMomentum', title: 'I start strong, then lose momentum', icon: 'discipline-fading-rocket', accent: colors.playful.amber.base },
@@ -319,13 +325,6 @@ export const WISH_UNDERSTOOD_OPTIONS: OnboardingOption<WishUnderstoodId>[] = [
   { id: 'space', title: 'I need time to myself', icon: 'bed-outline', accent: colors.playful.sky.base, echo: 'you need time to yourself' },
   { id: 'care', title: 'I care more than I show', icon: 'account-heart', accent: colors.playful.amber.base, echo: 'you care more than you show' },
   { id: 'notOkay', title: "I'm not always as okay as I seem", icon: 'mood-low-mood', accent: colors.playful.teal.base, echo: "you're not always as okay as you seem" },
-];
-
-export const SELF_BLAME_OPTIONS: OnboardingOption<SelfBlameId>[] = [
-  { id: 'always', title: 'Almost always', icon: 'emoticon-sad-outline', accent: colors.playful.coral.base, echo: 'you almost always blame yourself for your space' },
-  { id: 'often', title: 'Often', icon: 'emoticon-confused-outline', accent: colors.playful.amber.base, echo: 'you often blame yourself for your space' },
-  { id: 'sometimes', title: 'Sometimes', icon: 'emoticon-neutral-outline', accent: colors.playful.sky.base, echo: 'you sometimes blame yourself for your space' },
-  { id: 'rarely', title: 'Rarely or never', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you rarely blame yourself for your space' },
 ];
 
 export const AGREEMENT_OPTIONS: OnboardingOption<AgreementId>[] = [
@@ -363,11 +362,13 @@ export const CLEANING_DISTRACTION_OPTIONS: OnboardingOption<DistractionId>[] = [
 ];
 
 export const CLEANING_HELP_OPTIONS: OnboardingOption<CleaningHelpId>[] = [
-  { id: 'procrastinating', title: 'Stop procrastinating', icon: 'alarm-snooze', accent: colors.playful.coral.base, echo: 'stop putting cleaning off' },
-  { id: 'clutter', title: 'Reduce clutter', icon: 'broom', accent: colors.playful.teal.base, echo: 'reduce clutter' },
-  { id: 'consistent', title: 'Stay consistent', icon: 'streak', accent: colors.playful.amber.base, echo: 'stay consistent' },
+  { id: 'procrastinating', title: 'Stop procrastinating on cleaning', icon: 'alarm-snooze', accent: colors.playful.coral.base, echo: 'stop procrastinating on cleaning' },
+  { id: 'clutter', title: 'Reduce clutter at home', icon: 'broom', accent: colors.playful.teal.base, echo: 'reduce clutter at home' },
+  { id: 'consistent', title: 'Stay consistent with cleaning', icon: 'streak', accent: colors.playful.amber.base, echo: 'stay consistent with cleaning' },
   { id: 'faster', title: 'Clean faster', icon: 'clock-fast', accent: colors.playful.sky.base, echo: 'clean faster' },
-  { id: 'motivated', title: 'Get motivated', icon: 'rocket-launch', accent: colors.playful.violet.base, echo: 'get motivated' },
+  { id: 'motivated', title: 'Get motivated to clean', icon: 'rocket-launch', accent: colors.playful.violet.base, echo: 'get motivated to clean' },
+  { id: 'guests', title: 'Feel ready to invite people over', icon: 'account-group-outline', accent: colors.playful.coral.base, echo: 'feel ready to invite people over' },
+  { id: 'calm', title: 'Feel calm and relaxed at home', icon: 'home', accent: colors.playful.teal.base, echo: 'feel calm and relaxed at home' },
 ];
 
 export const SOCIAL_MEDIA_OVERUSE_OPTIONS: OnboardingOption<SocialMediaOveruseId>[] = [
@@ -481,7 +482,22 @@ export type HomeFeelingId =
   | 'disciplined'
   | 'productive'
   | 'lessScrolling'
-  | 'lessGuilty';
+  | 'lessGuilty'
+  | 'mornings'
+  | 'guests'
+  | 'findThings'
+  | 'evenings'
+  | 'notBehind'
+  | 'focus';
+
+export const CLEANING_HOME_CHANGE_OPTIONS: OnboardingOption<HomeFeelingId>[] = [
+  { id: 'mornings', title: 'Calmer mornings', icon: 'weather-sunset-up', accent: colors.playful.amber.base, echo: 'you want calmer mornings' },
+  { id: 'guests', title: 'Inviting people over', icon: 'account-group-outline', accent: colors.playful.coral.base, echo: 'you want to invite people over' },
+  { id: 'findThings', title: 'Finding things fast', icon: 'todo-storage', accent: colors.playful.teal.base, echo: 'you want to find things fast' },
+  { id: 'evenings', title: 'Evenings to relax', icon: 'weather-night', accent: colors.playful.violet.base, echo: 'you want evenings to relax' },
+  { id: 'notBehind', title: 'No more feeling behind', icon: 'check-circle-outline', accent: colors.playful.sky.base, echo: 'you want to stop feeling behind' },
+  { id: 'focus', title: 'A clearer head', icon: 'target', accent: colors.playful.blush.base, echo: 'you want a clearer head' },
+];
 
 export const HOME_FEELING_OPTIONS: OnboardingOption<HomeFeelingId>[] = [
   { id: 'calm', title: 'I want to feel calm', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm' },
@@ -514,17 +530,25 @@ export const HOME_ATMOSPHERE_OPTIONS: OnboardingOption<HomeAtmosphereId>[] = [
   { id: 'motivated', title: 'Motivated', icon: 'sun', accent: colors.playful.amber.base },
 ];
 
-export type FeelAtHomeId = 'relaxed' | 'proud' | 'organized' | 'guiltFree' | 'comfortable';
+export type FeelAtHomeId = 'relaxed' | 'proud' | 'organized' | 'comfortable' | 'motivated';
 
 export const FEEL_AT_HOME_OPTIONS: OnboardingOption<FeelAtHomeId>[] = [
-  { id: 'relaxed', title: 'Relaxed when I walk in', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to relax when you walk in' },
-  { id: 'proud', title: 'Proud to have people over', icon: 'account-group-outline', accent: colors.playful.coral.base, echo: 'you want to be proud to have people over' },
-  { id: 'organized', title: 'Organized and in control', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel organized and in control' },
-  { id: 'guiltFree', title: 'Free of guilt about the mess', icon: 'heart-outline', accent: colors.playful.amber.base, echo: 'you want to stop feeling guilty about the mess' },
-  { id: 'comfortable', title: 'Comfortable in my own space', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel comfortable in your own space' },
+  { id: 'relaxed', title: 'Calm when I walk in', icon: 'lotus', accent: colors.playful.sky.base, echo: 'you want to feel calm when you walk in' },
+  { id: 'proud', title: 'Proud to have people over', icon: 'trophy', accent: colors.playful.coral.base, echo: 'you want to be proud to have people over' },
+  { id: 'organized', title: 'In control of my space', icon: 'target', accent: colors.playful.teal.base, echo: 'you want to feel in control of your space' },
+  { id: 'comfortable', title: 'Comfortable in my own home', icon: 'seat-outline', accent: colors.playful.violet.base, echo: 'you want to feel comfortable in your own home' },
+  { id: 'motivated', title: 'Motivated to keep it up', icon: 'rocket-launch', accent: colors.playful.amber.base, echo: 'you want to feel motivated to keep it up' },
 ];
 
-export type PlanBoostId = 'quickWins' | 'streaks' | 'decorating' | 'reminders' | 'progress';
+export type PlanBoostId =
+  | 'quickWins'
+  | 'streaks'
+  | 'decorating'
+  | 'reminders'
+  | 'progress'
+  | 'points'
+  | 'learning'
+  | 'encouragement';
 
 export const PLAN_BOOST_OPTIONS: OnboardingOption<PlanBoostId>[] = [
   { id: 'quickWins', title: 'Quick wins', icon: 'clock-fast', accent: colors.playful.amber.base, echo: 'quick wins' },
@@ -532,4 +556,12 @@ export const PLAN_BOOST_OPTIONS: OnboardingOption<PlanBoostId>[] = [
   { id: 'decorating', title: 'Decorating Azo’s room', icon: 'sparkle', accent: colors.playful.teal.base, echo: 'decorating Azo’s room' },
   { id: 'reminders', title: 'Gentle reminders', icon: 'alarm-snooze', accent: colors.playful.sky.base, echo: 'gentle reminders' },
   { id: 'progress', title: 'Seeing my progress', icon: 'arrow-up', accent: colors.playful.violet.base, echo: 'seeing your progress' },
+];
+
+export const CLEANING_PLAN_BOOST_OPTIONS: OnboardingOption<PlanBoostId>[] = [
+  { id: 'points', title: 'Get points for tasks', icon: 'coin', accent: colors.playful.amber.base, echo: 'getting points for tasks' },
+  { id: 'progress', title: 'Track my progress', icon: 'arrow-up', accent: colors.playful.violet.base, echo: 'tracking your progress' },
+  { id: 'learning', title: 'Learn something new', icon: 'book', accent: colors.playful.sky.base, echo: 'learning something new' },
+  { id: 'encouragement', title: 'Get encouragement', icon: 'heart-outline', accent: colors.playful.coral.base, echo: 'getting encouragement' },
+  ...PLAN_BOOST_OPTIONS.filter((option) => option.id !== 'progress' && option.id !== 'quickWins'),
 ];

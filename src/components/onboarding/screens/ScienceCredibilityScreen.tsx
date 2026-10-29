@@ -13,6 +13,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import HarvardLogo from '../../../../assets/logos/harvard.svg';
 
 interface ScienceCredibilityScreenProps {
+  subtitle?: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -51,6 +52,7 @@ const LOGOS: LogoEntry[] = [
 ];
 
 export default function ScienceCredibilityScreen({
+  subtitle = "All of our content is backed by science from the world's most respected research institutions.",
   stepIndex,
   stepCount,
   onContinue,
@@ -79,7 +81,7 @@ export default function ScienceCredibilityScreen({
   return (
     <OnboardingScreenLayout
       title="Azora is built on what science says works."
-      subtitle="All of our content is backed by science from the world's most respected research institutions."
+      subtitle={subtitle}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

@@ -36,6 +36,8 @@ export type ChalkboardLesson = keyof typeof LESSONS;
 
 interface ChalkboardScreenProps {
   lesson: ChalkboardLesson;
+  title?: string;
+  explainer?: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -44,12 +46,14 @@ interface ChalkboardScreenProps {
 
 export default function ChalkboardScreen({
   lesson,
+  title,
+  explainer,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: ChalkboardScreenProps) {
-  const { title, explainer, Board } = LESSONS[lesson];
+  const { Board } = LESSONS[lesson];
   const { width: windowWidth } = useWindowDimensions();
   const boardWidth = Math.min(windowWidth - spacing.lg * 2, ONBOARDING_VISUAL_MAX_WIDTH);
 
@@ -63,7 +67,7 @@ export default function ChalkboardScreen({
             style={onboardingTitleStyle}
             numberOfLines={TITLE_LINES}
           >
-            {title}
+            {title ?? LESSONS[lesson].title}
           </Text>
         </View>
       }
@@ -73,7 +77,7 @@ export default function ChalkboardScreen({
     >
       <View style={styles.body}>
         <Board width={boardWidth} />
-        <Text style={styles.explainer}>{explainer}</Text>
+        <Text style={styles.explainer}>{explainer ?? LESSONS[lesson].explainer}</Text>
       </View>
     </OnboardingScreenLayout>
   );

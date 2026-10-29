@@ -8,6 +8,7 @@ const TOO_MANY_NOTICE =
   "Two is plenty to start. A new habit takes about 66 days to become automatic, and people who plan several at once follow through on fewer of them. Add more once these stick.";
 
 interface HabitPicksScreenProps {
+  question?: string;
   items: StarterPlanItem[];
   selectedIds: string[];
   stepIndex: number;
@@ -19,6 +20,7 @@ interface HabitPicksScreenProps {
 }
 
 export default function HabitPicksScreen({
+  question = 'Which habits do you want to build?',
   items,
   selectedIds,
   stepIndex,
@@ -33,7 +35,7 @@ export default function HabitPicksScreen({
 
   return (
     <OnboardingChoiceScreen
-      question="Which habits do you want to build?"
+      question={question}
       expression="happy"
       options={items}
       selectedIds={selectedIds}

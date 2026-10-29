@@ -9,7 +9,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Reanimated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Reanimated, { FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../common/Text';
 import type {
@@ -48,6 +48,7 @@ import { paywallStepStyles } from '../paywall/paywallStepStyles';
 const HEADER_BUTTON_SIZE = scaleControl(36);
 const NO_PAYMENT_ICON_SIZE = scaleControl(18);
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
+const DECLINE_DELAY_MS = 5000;
 
 // ── Deck constants ────────────────────────────────────────────────────
 // Trial introductions lead into the same compact plan screen.
@@ -399,6 +400,12 @@ function TrialDeck({
     if (isFinal) onOfferReached?.();
   }, [isFinal, onOfferReached]);
 
+  const [declineVisible, setDeclineVisible] = useState(false);
+  useEffect(() => {
+    if (!isFinal || paywallMode === 'hard') return;
+    return startUiTimer(DECLINE_DELAY_MS, () => setDeclineVisible(true));
+  }, [isFinal, paywallMode]);
+
   const handleNext = useCallback(() => {
     if (step < stepCount - 1) animateToStep(step + 1, 1);
   }, [animateToStep, step, stepCount]);
@@ -491,23 +498,25 @@ function TrialDeck({
             ) : (
               <View style={styles.headerButton} />
             )}
-            {isFinal && paywallMode !== 'hard' && onContinueWithoutPro != null ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Continue with limits"
-                hitSlop={12}
-                disabled={isBusy}
-                onPress={handleContinueWithoutPro}
-                style={({ pressed }) => [
-                  styles.headerDeclineButton,
-                  pressed && styles.subtlePressed,
-                  isBusy && styles.disabled,
-                ]}
-              >
-                <Text style={styles.headerDeclineText}>
-                  Continue with limits
-                </Text>
-              </Pressable>
+            {isFinal && declineVisible && paywallMode !== 'hard' && onContinueWithoutPro != null ? (
+              <Reanimated.View entering={FadeIn.duration(400)}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Continue with limits"
+                  hitSlop={12}
+                  disabled={isBusy}
+                  onPress={handleContinueWithoutPro}
+                  style={({ pressed }) => [
+                    styles.headerDeclineButton,
+                    pressed && styles.subtlePressed,
+                    isBusy && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.headerDeclineText}>
+                    Continue with limits
+                  </Text>
+                </Pressable>
+              </Reanimated.View>
             ) : preview && paywallMode !== 'hard' && onContinueWithoutPro != null ? (
               <Pressable
                 accessibilityRole="button"

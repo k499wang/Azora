@@ -27,6 +27,7 @@ import {
   DOING_IT_FOR_OPTIONS,
   LOSE_MOTIVATION_OPTIONS,
   HABIT_ATTEMPTS_OPTIONS,
+  CLEANING_ROUTINE_ATTEMPTS_OPTIONS,
   SELF_DISCIPLINE_OPTIONS,
   PUT_OTHERS_FIRST_OPTIONS,
   SACRIFICE_OPTIONS,
@@ -45,15 +46,14 @@ import {
   ADHD_STATUS_OPTIONS,
   MENTAL_HEALTH_OPTIONS,
   HOME_FEELING_OPTIONS,
+  CLEANING_HOME_CHANGE_OPTIONS,
   HOME_ATMOSPHERE_OPTIONS,
   PLAN_BOOST_OPTIONS,
+  CLEANING_PLAN_BOOST_OPTIONS,
   CBT_FAMILIARITY_OPTIONS,
   AGREEMENT_OPTIONS,
-  SELF_BLAME_OPTIONS,
-  type SelfBlameId,
   type AgreementId,
   USAGE_STYLE_OPTIONS,
-  CLEANING_USAGE_STYLE_OPTIONS,
   FEEL_AT_HOME_OPTIONS,
   type FeelAtHomeId,
   type FamiliarityId,
@@ -117,7 +117,6 @@ import GenderScreen from './screens/GenderScreen';
 import DoctorReferralScreen, {
   type DoctorReferral,
 } from './screens/DoctorReferralScreen';
-import ExpertReviewScreen from './screens/ExpertReviewScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
@@ -144,6 +143,8 @@ import PlanLoadingScreen, {
 import HabitCurveScreen from './screens/HabitCurveScreen';
 import PlanDaysScreen from './screens/PlanDaysScreen';
 import { buildOnboardingTodayPreview } from '../../lib/onboardingTodayPreview';
+import { cleaningArchetype } from '../../lib/onboardingArchetype';
+import { messStressEcho } from '../../lib/onboardingMessStress';
 import PlanRevealScreen from './screens/PlanRevealScreen';
 import {
   recommendedStarterHabit,
@@ -416,7 +417,6 @@ function OnboardingFlowSteps({
     useState<SocialMediaOveruseId | null>(null);
   const [cleaningHelp, setCleaningHelp] = useState<CleaningHelpId[]>([]);
   const [feelAtHome, setFeelAtHome] = useState<FeelAtHomeId[]>([]);
-  const [selfBlame, setSelfBlame] = useState<SelfBlameId | null>(null);
   const [cleaningStatements, setCleaningStatements] =
     useState<Partial<Record<CleaningStatementStep, AgreementId>>>({});
   const [fallingBehind, setFallingBehind] = useState<FallingBehindId | null>(null);
@@ -546,8 +546,8 @@ function OnboardingFlowSteps({
   );
 
   const intentFollowUps = useMemo(
-    () => intentFollowUpsFor(primaryIntent),
-    [primaryIntent],
+    () => intentFollowUpsFor(primaryIntent, mode),
+    [primaryIntent, mode],
   );
   const activeIntentDepthSteps = INTENT_DEPTH_STEPS.slice(0, intentFollowUps.length);
 
@@ -728,7 +728,6 @@ function OnboardingFlowSteps({
         cleaningHelp,
         feelAtHome,
         ...cleaningStatements,
-        selfBlame,
         fallingBehind,
         lifestyleHappiness,
         habitMotivations,
@@ -1371,20 +1370,10 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'expertReview') {
-    return (
-      <ExpertReviewScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goNext('continue')}
-        onBack={goBack}
-      />
-    );
-  }
-
   if (step === 'scienceCredibility') {
     return (
       <ScienceCredibilityScreen
+        subtitle={mode === 'cleaning_mode' ? 'Backed by research from the world’s most respected institutions, applied to your home.' : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1396,7 +1385,7 @@ function OnboardingFlowSteps({
   if (step === 'communityProof') {
     return (
       <CommunityProofScreen
-        title={mode === 'cleaning_mode' ? `Join ${COMMUNITY_SIZE}+ satisfied people using Azora` : undefined}
+        title={mode === 'cleaning_mode' ? `Join ${COMMUNITY_SIZE}+ people creating a home they love` : undefined}
         reviews={mode === 'cleaning_mode' ? CLEANING_COMMUNITY_REVIEWS : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -1553,7 +1542,7 @@ function OnboardingFlowSteps({
         question="How do you want to use Azora?"
         note="This won’t limit any features you get access to."
         expression="curious"
-        options={mode === 'cleaning_mode' ? CLEANING_USAGE_STYLE_OPTIONS : USAGE_STYLE_OPTIONS}
+        options={USAGE_STYLE_OPTIONS}
         selectedIds={usageStyles}
         multiSelect
         stepIndex={visualStepIndex}
@@ -1649,6 +1638,7 @@ function OnboardingFlowSteps({
   if (step === 'adhdSupport') {
     return (
       <AdhdSupportScreen
+        cleaning={mode === 'cleaning_mode'}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1734,6 +1724,7 @@ function OnboardingFlowSteps({
     return (
       <ChalkboardScreen
         lesson="cbtIntro"
+        title={mode === 'cleaning_mode' ? 'Azora uses a CBT-based plan to help you start cleaning' : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -1912,6 +1903,7 @@ function OnboardingFlowSteps({
   if (step === 'greatDaysChart') {
     return (
       <GreatDaysScreen
+        title={mode === 'cleaning_mode' ? 'Azora builds cleaning routines that stick' : undefined}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -2077,9 +2069,13 @@ function OnboardingFlowSteps({
   if (step === 'habitAttempts') {
     return (
       <OnboardingChoiceScreen
-        question="Have you ever tried building habits but couldn’t stick with them?"
+        question={
+          mode === 'cleaning_mode'
+            ? 'Do cleaning routines stick for you?'
+            : 'Have you ever tried building habits but couldn’t stick with them?'
+        }
         expression="listening"
-        options={HABIT_ATTEMPTS_OPTIONS}
+        options={mode === 'cleaning_mode' ? CLEANING_ROUTINE_ATTEMPTS_OPTIONS : HABIT_ATTEMPTS_OPTIONS}
         selectedIds={habitAttempts ? [habitAttempts] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -2239,6 +2235,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="How can I help you to improve house cleaning?"
+        note="Choose all that apply. This won’t limit any features you get access to."
         expression="curious"
         options={CLEANING_HELP_OPTIONS}
         selectedIds={cleaningHelp}
@@ -2339,6 +2336,12 @@ function OnboardingFlowSteps({
     return (
       <ChalkboardScreen
         lesson="routineBrain"
+        title={mode === 'cleaning_mode' ? 'Alongside CBT, we use GST to make your cleaning routine stick' : undefined}
+        explainer={
+          mode === 'cleaning_mode'
+            ? 'GST shows clear, specific goals beat vague ones (Locke & Latham, 2002). So instead of “clean the kitchen”, you get “clear one counter”.'
+            : undefined
+        }
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -2491,9 +2494,9 @@ function OnboardingFlowSteps({
   if (step === 'homeFeeling') {
     return (
       <OnboardingChoiceScreen
-        question="How do you envision yourself living a better life?"
+        question={mode === 'cleaning_mode' ? 'What would a tidy home change for you?' : 'How do you envision yourself living a better life?'}
         expression="listening"
-        options={HOME_FEELING_OPTIONS}
+        options={mode === 'cleaning_mode' ? CLEANING_HOME_CHANGE_OPTIONS : HOME_FEELING_OPTIONS}
         selectedIds={homeFeelings}
         multiSelect
         stepIndex={visualStepIndex}
@@ -2510,24 +2513,6 @@ function OnboardingFlowSteps({
             home_feeling_count: homeFeelings.length,
           })
         }
-        onBack={goBack}
-        onSkip={() => goNext('skip')}
-      />
-    );
-  }
-
-  if (step === 'selfBlame') {
-    return (
-      <OnboardingChoiceScreen
-        question="How often do you blame yourself for the state of your space?"
-        note="Like calling yourself lazy, a slob, or a mess."
-        expression="listening"
-        options={SELF_BLAME_OPTIONS}
-        selectedIds={selfBlame ? [selfBlame] : []}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setSelfBlame}
-        onContinue={(id) => goNext('continue', { self_blame: id ?? selfBlame })}
         onBack={goBack}
         onSkip={() => goNext('skip')}
       />
@@ -2703,7 +2688,7 @@ function OnboardingFlowSteps({
       <OnboardingChoiceScreen
         question="What would make your plan more fun and helpful?"
         expression="curious"
-        options={PLAN_BOOST_OPTIONS}
+        options={mode === 'cleaning_mode' ? CLEANING_PLAN_BOOST_OPTIONS : PLAN_BOOST_OPTIONS}
         selectedIds={planBoosts}
         multiSelect
         stepIndex={visualStepIndex}
@@ -2847,6 +2832,9 @@ function OnboardingFlowSteps({
   };
   const planRevealProps = () => ({
     planId: onboardingPreset.id,
+    archetype: mode === 'cleaning_mode' && onboardingPreset.id === 'home'
+      ? cleaningArchetype(intentFollowUpAnswers.cleaning_mess_thought)
+      : undefined,
     intent: primaryIntent ?? plan.intent,
     presetRevision: onboardingPreset.revision,
     scores: planMindMap.scores,
@@ -2864,7 +2852,9 @@ function OnboardingFlowSteps({
       startingEcho: primaryIntent === 'cleaning' ? planWhenEcho : null,
       goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
       sleepEcho: echoSingle(SLEEP_CAUSE_OPTIONS, activeContext.sleepCause),
-      energyEcho: echoSingle(DAY_ENERGY_OPTIONS, activeContext.dayEnergy),
+      energyEcho: mode === 'cleaning_mode'
+        ? echoSingle(DRAINED_FREQUENCY_OPTIONS, drainedFrequency)
+        : echoSingle(DAY_ENERGY_OPTIONS, activeContext.dayEnergy),
       focusEcho: echoSingle(
         mode === 'cleaning_mode' ? CLEANING_DISTRACTION_OPTIONS : DISTRACTION_OPTIONS,
         activeContext.distraction,
@@ -2879,6 +2869,10 @@ function OnboardingFlowSteps({
       obstacleEcho: primaryIntent === 'cleaning'
         ? cleaningAnswerEcho('cleaning_barriers')
         : echoOption(PROCRASTINATION_REASON_OPTIONS, activeContext.procrastinationReasons),
+      messStressEcho: mode === 'cleaning_mode'
+        ? messStressEcho(intentFollowUpAnswers.cleaning_space_state, cleaningStatements)
+        : null,
+      difficultyEcho: mode === 'cleaning_mode' ? cleaningAnswerEcho('tidying_challenge') : null,
     },
     stepIndex: visualStepIndex,
     stepCount: visualStepCount,
@@ -2979,6 +2973,7 @@ function OnboardingFlowSteps({
   if (step === 'habitPicks') {
     return (
       <HabitPicksScreen
+        question={mode === 'cleaning_mode' ? 'Are there any habits you’d like to start doing regularly?' : undefined}
         items={habitPicks}
         selectedIds={pickedHabitIds}
         stepIndex={visualStepIndex}

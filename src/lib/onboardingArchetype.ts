@@ -178,3 +178,50 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
     ],
   },
 };
+
+type CleaningArchetypeVoice = Pick<OnboardingArchetype, 'name' | 'tagline' | 'futureName' | 'planPromise'>;
+
+/** Cleaning mode names the profile after what goes through their head at the mess. */
+const CLEANING_ARCHETYPE_FOR_THOUGHT: Record<string, CleaningArchetypeVoice> = {
+  where_start: {
+    name: 'The Deer in Headlights',
+    tagline: 'You walk in, see all of it, and freeze.',
+    futureName: 'The Clear Thinker',
+    planPromise: 'You see one next step, not the whole mess.',
+  },
+  tomorrow: {
+    name: 'The Last-Minute Scrambler',
+    tagline: 'It waits until guests or panic force your hand.',
+    futureName: 'The Ahead-of-It Keeper',
+    planPromise: 'Small steps now, so there’s never a scramble.',
+  },
+  too_tired: {
+    name: 'The Low-Battery Tidier',
+    tagline: 'By the time you’re free, the energy is gone.',
+    futureName: 'The Recharged Keeper',
+    planPromise: 'Tidying that fits the energy you actually have.',
+  },
+  why_bother: {
+    name: 'The Uphill Pusher',
+    tagline: 'Every clean-up feels undone by the next day.',
+    futureName: 'The Easy Maintainer',
+    planPromise: 'A few minutes a day keeps it from coming back.',
+  },
+  someone_sees: {
+    name: 'The Last-Minute Stuffer',
+    tagline: 'When someone’s coming, the mess goes in a closet.',
+    futureName: 'The Anytime Host',
+    planPromise: 'Ready for people to drop by, any day.',
+  },
+  not_bad: {
+    name: 'The Laid-Back Keeper',
+    tagline: 'It’s mostly fine, just never quite done.',
+    futureName: 'The Effortless Keeper',
+    planPromise: 'Staying on top of it without thinking about it.',
+  },
+};
+
+export function cleaningArchetype(messThought: readonly string[] | undefined): OnboardingArchetype {
+  const voice = messThought?.length === 1 ? CLEANING_ARCHETYPE_FOR_THOUGHT[messThought[0]] : undefined;
+  return voice == null ? ARCHETYPE_FOR_PLAN.home : { ...ARCHETYPE_FOR_PLAN.home, ...voice };
+}

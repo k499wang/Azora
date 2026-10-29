@@ -15,6 +15,7 @@ import { plotBox, smoothPath } from '../chartPaths';
 import { popStyle, useChartPop, useChartReveal } from '../useChartReveal';
 
 interface GreatDaysScreenProps {
+  title?: string;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -48,6 +49,7 @@ function withoutHabitsAt(unit: number): number {
 }
 
 export default function GreatDaysScreen({
+  title = 'Azora builds long-term habits that stick',
   stepIndex,
   stepCount,
   onContinue,
@@ -96,7 +98,7 @@ export default function GreatDaysScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Azora builds long-term habits that stick"
+      title={title}
       subtitle="Good habits help you reach your goals, one small step a day."
       progress={stepIndex / stepCount}
       onBack={onBack}
