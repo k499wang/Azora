@@ -1,5 +1,6 @@
 /**
- * This week, as seven dated cells — and the weeks behind it, a swipe away.
+ * This week, as seven dated cells — the weeks behind it a swipe away, and next
+ * week a swipe the other way, so to-dos planned ahead can be looked at.
  *
  * The score below it says how much of the week was kept; this says which days
  * those were. That split is the only reason both are on the screen: a second
@@ -40,6 +41,8 @@ const FUTURE_OPACITY = 0.45;
 export const PLAN_WEEK_STRIP_WEEKS = 8;
 /** Every day those weeks cover, which is what the activity query must load. */
 export const PLAN_WEEK_STRIP_DAYS = PLAN_WEEK_STRIP_WEEKS * DAYS_IN_WEEK;
+/** Next week, after the current one: far enough to see a to-do planned up to six days out. */
+const WEEKS_AHEAD = 1;
 
 interface PlanWeekStripProps {
   todayLocalDate: string;
@@ -50,7 +53,7 @@ interface PlanWeekStripProps {
   hue: PlayfulHue;
 }
 
-/** Whole Sunday-to-Saturday weeks, the week in play first. */
+/** Whole Sunday-to-Saturday weeks, latest first: next week, then the week in play, then earlier ones. */
 function buildWeeks(
   todayLocalDate: string,
   activity: PlanWeekStripProps['activity'],
@@ -64,7 +67,7 @@ function buildWeeks(
   const days = buildWeekCalendarDays(
     todayLocalDate,
     completedDaysAgo,
-    PLAN_WEEK_STRIP_DAYS,
+    PLAN_WEEK_STRIP_DAYS + WEEKS_AHEAD * DAYS_IN_WEEK,
     PLAN_WEEK_STRIP_DAYS - DAYS_IN_WEEK + today.getDay(),
   );
   const weeks: WeekCalendarDay[][] = [];
@@ -129,20 +132,21 @@ export default function PlanWeekStrip({
   return (
     <View onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}>
       {pageWidth > 0 ? (
-        // Mirrored, with each page mirrored back, so the week in play sits at
-        // offset 0 and earlier weeks lie to its left. The pager opens where it
-        // mounts; there is no scroll to the end to wait on before it is shown.
+        // Mirrored, with each page mirrored back, so earlier weeks lie to the
+        // left and next week to the right. It opens one page in, on the week in
+        // play, through its initial offset rather than a scroll to wait on.
         <ScrollView
           key={todayLocalDate}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          contentOffset={{ x: pageWidth * WEEKS_AHEAD, y: 0 }}
           style={styles.mirrored}
         >
           {weeks.map((week) => renderWeek(week, [styles.mirrored, { width: pageWidth }]))}
         </ScrollView>
       ) : (
-        renderWeek(weeks[0])
+        renderWeek(weeks[WEEKS_AHEAD])
       )}
     </View>
   );

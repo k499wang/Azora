@@ -103,28 +103,43 @@ test('once measured, the pager opens on the current week with nothing hidden', (
   assert.equal(scroll.props.style.opacity, undefined);
   assert.equal(scroll.props.pointerEvents, undefined);
   assert.equal(scroll.props.style.transform[0].scaleX, -1);
-  assert.equal(find(tree, 'Pressable').length, 56);
+  assert.equal(find(tree, 'Pressable').length, 63);
+  assert.equal(scroll.props.contentOffset.x, 320);
+  assert.equal(scroll.props.contentOffset.y, 0);
 
   const pages = scroll.props.children;
-  assert.equal(pages.length, 8);
+  assert.equal(pages.length, 9);
   pages.forEach((page) => {
     assert.ok(page.props.style.flat().some((style) => style?.width === 320));
     assert.ok(page.props.style.flat().some((style) => style?.transform?.[0]?.scaleX === -1));
   });
-  pressAll(find(pages[0], 'Pressable'));
+  pressAll(find(pages[1], 'Pressable'));
   assert.deepEqual(harness.selected, THIS_WEEK);
+});
+
+test('next week is a page of its own, every day of it open', () => {
+  const harness = setup();
+  measure(harness.render(), 320);
+  const pages = find(harness.render(), 'ScrollView')[0].props.children;
+  const days = find(pages[0], 'Pressable');
+  assert.ok(days.every((day) => day.props.disabled !== true));
+  pressAll(days);
+  assert.deepEqual(harness.selected, [
+    '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07',
+    '2026-10-08', '2026-10-09', '2026-10-10',
+  ]);
 });
 
 test('earlier pages walk back one whole week at a time', () => {
   const harness = setup();
   measure(harness.render(), 320);
   const pages = find(harness.render(), 'ScrollView')[0].props.children;
-  pressAll(find(pages[1], 'Pressable'));
+  pressAll(find(pages[2], 'Pressable'));
   assert.deepEqual(harness.selected, [
     '2026-09-20', '2026-09-21', '2026-09-22', '2026-09-23',
     '2026-09-24', '2026-09-25', '2026-09-26',
   ]);
-  const oldest = find(pages[7], 'Pressable');
+  const oldest = find(pages[8], 'Pressable');
   oldest[0].props.onPress();
   assert.equal(harness.selected.at(-1), '2026-08-09');
 });
