@@ -7,7 +7,7 @@ import {
 type SectionId = SelfCareGoalDaypartGroup['id'];
 
 export type TodoListRow =
-  | { kind: 'header'; id: string; section: SectionId; label: string; leaving: boolean }
+  | { kind: 'header'; id: string; section: SectionId; label: string; icon: SelfCareGoalDaypartGroup['icon']; leaving: boolean }
   | { kind: 'goal'; id: string; section: SectionId; goal: SelfCareGoal };
 
 export function todoListHeaderId(section: SectionId): string {
@@ -36,6 +36,7 @@ export function todoListRows(
         id: todoListHeaderId(group.id),
         section: group.id,
         label: group.label,
+        icon: group.icon,
         leaving: group.goals.every((goal) => leaving.has(goal.id)),
       },
       ...goals,

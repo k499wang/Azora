@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import type { IconName } from '../../components/common/icons/paths';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
 import { ARCHETYPE_FOR_PLAN } from '../../lib/onboardingArchetype';
@@ -150,6 +151,7 @@ const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
 }));
 const EMPTY_DAY_ICON_SIZE = 40;
 const DAYPART_START_ICON_SIZE = 12;
+const DAYPART_CHEVRON_SIZE = 16;
 const FEATURED_STAR_SIZE = 12;
 const CHECK_MARK_SIZE = 15;
 const GOAL_CHECK_SIZE = 24;
@@ -250,6 +252,7 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
 
 const EMPTY_GOALS: SelfCareGoal[] = [];
 const EMPTY_IDS: ReadonlySet<string> = new Set();
+const NO_FLIPPED_SECTIONS: ReadonlySet<string> = new Set();
 const EMPTY_UNTIMED_ROWS: Partial<Record<TodayJourneyId, DailyRowContent>> = {};
 
 interface ScreenPoint {
@@ -437,6 +440,8 @@ interface GoalRowProps extends Omit<GoalCardProps, 'isArranging'> {
   firstSlot: number;
   lastSlot: number;
   scrollRef?: JourneyScrollRef;
+  /** tucked under its part of the day's header, which the person closed */
+  folded: boolean;
 }
 
 /**
@@ -453,8 +458,21 @@ const GoalRow = memo(function GoalRow({
   firstSlot,
   lastSlot,
   scrollRef,
+  folded,
   ...card
 }: GoalRowProps) {
+  const reducedMotion = useReducedMotion();
+  const shown = useSharedValue(folded ? 0 : 1);
+  const settledFolded = useRef(folded);
+  useEffect(() => {
+    if (settledFolded.current === folded) return;
+    settledFolded.current = folded;
+    const target = folded ? 0 : 1;
+    shown.value = reducedMotion
+      ? target
+      : withTiming(target, { duration: duration.fast, easing: easing.enter });
+  }, [folded, reducedMotion, shown]);
+  const foldStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
   return (
     <JourneyDragRow
       controller={controller}
@@ -464,8 +482,16 @@ const GoalRow = memo(function GoalRow({
       lastSlot={lastSlot}
       scrollRef={scrollRef}
       style={GOAL_ROW_STYLE}
+      dragDisabled={folded}
     >
-      <GoalCard {...card} isArranging={controller.isArranging} />
+      <Animated.View
+        pointerEvents={folded ? 'none' : 'box-none'}
+        accessibilityElementsHidden={folded}
+        importantForAccessibility={folded ? 'no-hide-descendants' : 'auto'}
+        style={[styles.goalFold, foldStyle]}
+      >
+        <GoalCard {...card} isArranging={controller.isArranging} />
+      </Animated.View>
     </JourneyDragRow>
   );
 });
@@ -568,13 +594,22 @@ function AllDoneState({
 
 function DaypartHeader({
   label,
+  icon,
   now,
   leaving,
+  folded,
+  openCount,
+  onToggleFold,
   onStart,
 }: {
   label: string;
+  icon: IconName;
   now: boolean;
   leaving: boolean;
+  folded: boolean;
+  /** to-dos still to do under this header, shown while it is folded so they stay in mind */
+  openCount: number;
+  onToggleFold: () => void;
   /** plays the part of the day's open to-dos one at a time; left out when there is nothing to play */
   onStart?: () => void;
 }) {
@@ -584,12 +619,40 @@ function DaypartHeader({
       ? withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
       : leaving ? 0 : 1,
   }));
+  const turn = useSharedValue(folded ? -90 : 0);
+  const settledFolded = useRef(folded);
+  useEffect(() => {
+    if (settledFolded.current === folded) return;
+    settledFolded.current = folded;
+    const target = folded ? -90 : 0;
+    turn.value = reducedMotion
+      ? target
+      : withTiming(target, { duration: duration.fast, easing: easing.enter });
+  }, [folded, reducedMotion, turn]);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${turn.value}deg` }],
+  }));
   return (
     <Animated.View style={[styles.daypartHeaderRow, fadeStyle]}>
-      <View accessibilityRole="header" accessible style={styles.daypartHeader}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={folded && openCount > 0 ? `${label}, ${openCount} to do` : label}
+        accessibilityState={{ expanded: !folded }}
+        hitSlop={spacing.sm}
+        onPress={() => {
+          triggerTapHaptic();
+          onToggleFold();
+        }}
+        style={({ pressed }) => [styles.daypartHeader, pressed && pressable.control]}
+      >
+        <Icon name={icon} size={DAYPART_CHEVRON_SIZE} color={colors.text.tertiary} />
         <Text style={styles.daypartLabel} numberOfLines={1}>{label}</Text>
+        <Animated.View style={chevronStyle}>
+          <Icon bold name="chevron-down" size={DAYPART_CHEVRON_SIZE} color={colors.text.tertiary} />
+        </Animated.View>
+        {folded && openCount > 0 ? <Text style={styles.daypartLabel}>{openCount}</Text> : null}
         {now ? <Text style={styles.daypartNow}>Now</Text> : null}
-      </View>
+      </Pressable>
       {onStart == null ? null : (
         <Pressable
           accessibilityRole="button"
@@ -770,12 +833,38 @@ function TodoListSection(props: TodoListSectionProps) {
     const goalIds = playableSections.get(section);
     if (goalIds != null) navigation.navigate('RoutinePlayer', { goalIds });
   };
+  const nowSection =
+    readOnly || localDate !== todayLocalDate ? null : currentSelfCareGoalDaypart(new Date());
+  // Today opens on the part of the day it is, with untimed to-dos alongside;
+  // a tap flips a header away from that until the screen is next mounted.
+  const [flippedSections, setFlippedSections] = useState<ReadonlySet<string>>(NO_FLIPPED_SECTIONS);
+  const isFolded = useCallback(
+    (section: TodoListRow['section']) =>
+      (nowSection != null && section !== nowSection && section !== 'anytime') !==
+      flippedSections.has(section),
+    [nowSection, flippedSections],
+  );
+  const toggleFold = (section: TodoListRow['section']) => {
+    const next = new Set(flippedSections);
+    if (!next.delete(section)) next.add(section);
+    setFlippedSections(next);
+  };
+  const openCounts = useMemo(() => {
+    const counts = new Map<TodoListRow['section'], number>();
+    for (const row of listRows) {
+      if (row.kind === 'goal' && !row.goal.completedToday) {
+        counts.set(row.section, (counts.get(row.section) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [listRows]);
   const collapsedIds = useMemo(() => {
     if (!tasksOnly || clearingForAllDone) return EMPTY_IDS;
-    const leavingHeaders = listRows.filter((row) => row.kind === 'header' && row.leaving);
-    if (leavingHeaders.length === 0) return filingIds;
-    return new Set([...filingIds, ...leavingHeaders.map((row) => row.id)]);
-  }, [tasksOnly, clearingForAllDone, listRows, filingIds]);
+    const hiddenRows = listRows.filter((row) =>
+      row.kind === 'header' ? row.leaving : isFolded(row.section));
+    if (hiddenRows.length === 0) return filingIds;
+    return new Set([...filingIds, ...hiddenRows.map((row) => row.id)]);
+  }, [tasksOnly, clearingForAllDone, listRows, filingIds, isFolded]);
   // The header that will stand first once the leaving rows are gone takes the
   // first header's spacing now, so it closes up once instead of settling twice.
   const firstHeaderIndex = Math.max(
@@ -786,8 +875,6 @@ function TodoListSection(props: TodoListSectionProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rowIds = useMemo(() => listRows.map((row) => row.id), [rowKey]);
   const taskCount = shownGoals.length;
-  const nowSection =
-    readOnly || localDate !== todayLocalDate ? null : currentSelfCareGoalDaypart(new Date());
   const previousGoalCount = useRef(goals.length);
   useEffect(() => {
     if (!__DEV__ || !tasksOnly) return;
@@ -1113,8 +1200,12 @@ function TodoListSection(props: TodoListSectionProps) {
             >
               <DaypartHeader
                 label={row.label}
+                icon={row.icon}
                 now={row.section === nowSection}
                 leaving={row.leaving}
+                folded={isFolded(row.section)}
+                openCount={openCounts.get(row.section) ?? 0}
+                onToggleFold={() => toggleFold(row.section)}
                 onStart={playableSections.has(row.section) ? () => startSection(row.section) : undefined}
               />
             </JourneyDragRow>
@@ -1127,6 +1218,7 @@ function TodoListSection(props: TodoListSectionProps) {
               scrollRef={props.scrollRef}
               goal={row.goal}
               filing={filingIds.has(row.id)}
+              folded={isFolded(row.section)}
               readOnly={readOnly}
               upcoming={upcoming}
               onToggle={toggleGoalCompleted}
@@ -1360,6 +1452,9 @@ const styles = StyleSheet.create({
   // here, so the long press that picks a row up to drag it cannot start either.
   goalRow: {
     pointerEvents: 'box-none',
+  },
+  goalFold: {
+    flex: 1,
   },
   addRow: {
     minHeight: ADD_ROW_HEIGHT,

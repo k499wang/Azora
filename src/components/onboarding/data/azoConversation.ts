@@ -180,7 +180,6 @@ export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
       'Your plan isn’t guesswork.',
       'It’s built on **CBT**, a method tested in **hundreds of clinical trials**.',
       'CBT has been shown to help people **stop procrastinating** and **get more organized**.',
-      'Including people with **ADHD**.',
       'In **14 days**, cleaning will feel less overwhelming.',
     ],
     replies: [{ id: 'tasksHelp', label: 'How can you help me actually start cleaning?' }],

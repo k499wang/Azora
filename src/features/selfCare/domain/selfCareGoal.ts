@@ -433,6 +433,7 @@ export function selfCareGoalTargetOpacity(leaving: boolean): 0 | 1 {
 export interface SelfCareGoalDaypartGroup {
   id: SelfCareGoalDaypart | 'anytime';
   label: string;
+  icon: IconName;
   goals: SelfCareGoal[];
 }
 
@@ -456,11 +457,13 @@ export function groupOrderedSelfCareGoalsByDaypart(
     ...SELF_CARE_GOAL_DAYPARTS.map((spec) => ({
       id: spec.id,
       label: spec.label,
+      icon: spec.icon,
       goals: ordered.filter((goal) => selfCareGoalDaypart(goal.scheduledTime) === spec.id),
     })),
     {
       id: 'anytime' as const,
       label: selfCareGoalDaypartLabel(null),
+      icon: 'clock' as const,
       goals: ordered.filter((goal) => goal.scheduledTime == null),
     },
   ];
