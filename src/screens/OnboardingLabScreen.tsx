@@ -24,6 +24,7 @@ import HabitPicksScreen from '../components/onboarding/screens/HabitPicksScreen'
 import StressBodyMapScreen from '../components/onboarding/screens/StressBodyMapScreen';
 import HabitsFocusInsightScreen from '../components/onboarding/screens/HabitsFocusInsightScreen';
 import AdhdSupportScreen from '../components/onboarding/screens/AdhdSupportScreen';
+import { OnboardingPaywallPreview } from './OnboardingPaywallPreviewScreen';
 import { brainTraitsFromAnswers } from '../lib/onboardingBrainTraits';
 import { habitPicksFor } from '../lib/onboardingHabitPicks';
 import { enrolledOrGoalPreset } from '../lib/onboardingPreset';
@@ -54,6 +55,17 @@ const PREVIEWS: readonly PreviewEntry[] = [
   {
     id: 'azoOpeningCleaning', title: 'Azo message + cleaning_mode chat',
     render: (props) => <AzoOpeningPreview {...props} turns={CLEANING_AZO_CONVERSATION} />,
+  },
+  {
+    id: 'paywallCleaning', title: 'cleaning_mode paywall, long then design your trial',
+    render: ({ onBack }) => (
+      <OnboardingPaywallPreview
+        layout="long_then_trial"
+        planIntent="cleaning"
+        goalPhrase="keep your home tidy"
+        onClose={onBack}
+      />
+    ),
   },
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
   {

@@ -5,7 +5,8 @@ import OnboardingPaywallScreen from '../components/onboarding/screens/Onboarding
 import { onboardingPresetFor } from '../lib/onboardingPreset';
 import { computeMindMap } from '../lib/onboardingScores';
 import { colors } from '../theme/colors';
-import type { PaywallOffering, PaywallPackageId } from '../services/paywall';
+import type { PaywallLayout, PaywallOffering, PaywallPackageId } from '../services/paywall';
+import type { OnboardingIntent } from '../components/onboarding/types';
 
 const PREVIEW_OFFERING: PaywallOffering = {
   offeringIdentifier: 'onboarding_paywall_preview',
@@ -58,6 +59,35 @@ const PREVIEW_SCORES = computeMindMap({
 
 /** The real long paywall with sample plan data and no purchase actions. */
 export default function OnboardingPaywallPreviewScreen({ navigation, route }: OnboardingPaywallPreviewScreenProps) {
+  return (
+    <OnboardingPaywallPreview
+      layout={route.params.layout}
+      initialStep={route.params.initialStep}
+      cleaning={route.params.cleaning}
+      planIntent={route.params.cleaning ? 'cleaning' : 'stress_relief'}
+      goalPhrase="feel calmer on the hard days"
+      onClose={() => navigation.goBack()}
+    />
+  );
+}
+
+interface OnboardingPaywallPreviewProps {
+  layout: PaywallLayout;
+  initialStep?: 'plan';
+  cleaning?: boolean;
+  planIntent: OnboardingIntent;
+  goalPhrase: string;
+  onClose: () => void;
+}
+
+export function OnboardingPaywallPreview({
+  layout,
+  initialStep,
+  cleaning,
+  planIntent,
+  goalPhrase,
+  onClose,
+}: OnboardingPaywallPreviewProps) {
   const [selectedPackageId, setSelectedPackageId] = useState<PaywallPackageId>('annual');
   const previewOnly = () => Alert.alert('Preview only', 'Purchases are unavailable in this preview.');
 
@@ -65,14 +95,15 @@ export default function OnboardingPaywallPreviewScreen({ navigation, route }: On
     <View style={styles.screen}>
       <OnboardingPaywallScreen
         preview
-        initialStep={route.params.initialStep}
-        offering={{ ...PREVIEW_OFFERING, paywallLayout: route.params.layout }}
-        planIntent="stress_relief"
-        planPreset={onboardingPresetFor('stress_relief')}
-        selectedIntents={['stress_relief']}
-        goalPhrase="feel calmer on the hard days"
+        initialStep={initialStep}
+        offering={{ ...PREVIEW_OFFERING, paywallLayout: layout }}
+        planIntent={planIntent}
+        planPreset={onboardingPresetFor(planIntent)}
+        selectedIntents={[planIntent]}
+        goalPhrase={goalPhrase}
         scores={PREVIEW_SCORES}
         paywallMode="soft"
+        cleaning={cleaning}
         name="Alex"
         selectedPackageId={selectedPackageId}
         stepIndex={1}
@@ -87,7 +118,7 @@ export default function OnboardingPaywallPreviewScreen({ navigation, route }: On
         onOfferPurchased={previewOnly}
         onRestore={previewOnly}
         onRetry={previewOnly}
-        onContinueWithoutPro={() => navigation.goBack()}
+        onContinueWithoutPro={onClose}
       />
     </View>
   );

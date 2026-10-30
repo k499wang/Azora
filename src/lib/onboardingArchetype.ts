@@ -118,7 +118,7 @@ export const ARCHETYPE_FOR_PLAN: Record<PresetId, OnboardingArchetype> = {
       'A tidy corner lifts your whole mood.',
     ],
     futureName: 'The Home Keeper',
-    planName: 'Home Order',
+    planName: 'Home Order Plan',
     planPromise: 'A home that feels lighter, one small step a day.',
     changes: [
       'One small spot a day, never the whole house.',

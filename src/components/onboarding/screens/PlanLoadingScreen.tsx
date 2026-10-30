@@ -149,7 +149,9 @@ export default function PlanLoadingScreen({
       <OnboardingScreenLayout title="" footer={<View />}>
         <View style={styles.loadingBody}>
           <Text style={styles.percent}>{percent}%</Text>
-          <Text style={styles.headline}>We&apos;re building your personalized plan</Text>
+          <Text style={styles.headline}>
+            We&apos;re setting up <Text style={styles.headlineAccent}>your transformation</Text>
+          </Text>
 
           <View style={styles.track}>
             <Animated.View
@@ -223,6 +225,10 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     textAlign: 'center',
     color: colors.text.primary,
+  },
+  headlineAccent: {
+    fontFamily: fonts.heavy,
+    color: colors.primary.blue600,
   },
   headline: {
     ...typography.title.title1,

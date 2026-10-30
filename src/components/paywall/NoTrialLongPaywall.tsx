@@ -36,6 +36,7 @@ import type {
   PaywallPackageId,
   PaywallPackageOption,
 } from '../../services/paywall';
+import { posthog } from '../../config/posthog';
 import { getOnboardingImageSource } from '../../services/images/onboardingImageCache';
 import {
   computeAnnualSavings,
@@ -75,6 +76,7 @@ interface NoTrialLongPaywallProps {
   /** `plan` means an in-app upgrade, which slides in with the navigator. */
   initialStep?: 'plan';
   paywallMode: PaywallMode;
+  cleaning?: boolean;
   name?: string;
   planPreset: OnboardingPreset;
   planIntent?: OnboardingIntent;
@@ -98,6 +100,12 @@ interface NoTrialLongPaywallProps {
 }
 
 /**
+ * PostHog boolean flag: in the cleaning flow (or its dev preview), on swaps
+ * the 4.2X headline for the cleaning transformation one.
+ */
+const TRANSFORMATION_HEADLINE_FLAG = 'paywall_transformation_headline';
+
+/**
  * The long paywall page, opted into per offering. The plan is at the top and
  * the buy button is pinned, so everything below is the argument for pressing
  * it. An eligible trial turns the annual card and button into trial copy.
@@ -107,6 +115,7 @@ export function NoTrialLongPaywall({
   offering,
   initialStep,
   paywallMode,
+  cleaning = false,
   name,
   planPreset,
   planIntent = 'other',
@@ -130,6 +139,9 @@ export function NoTrialLongPaywall({
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [today] = useState(() => new Date());
+  const [isTransformationHeadline] = useState(
+    () => cleaning && (preview || posthog.getFeatureFlag(TRANSFORMATION_HEADLINE_FLAG) === true),
+  );
   const plan = personalizedPaywallPlan(planPreset, planIntent, name, goalPhrase, today);
 
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
@@ -255,9 +267,24 @@ export function NoTrialLongPaywall({
           </View>
 
           <View style={styles.content}>
-            <Text style={styles.headline}>
-              {plan.headline}
-            </Text>
+            {isTransformationHeadline ? (
+              <Text style={styles.headline}>
+                Your <Text style={styles.headlineAccent}>cleaning transformation</Text> starts today
+              </Text>
+            ) : (
+              <>
+                <View style={styles.brandRow}>
+                  <Text style={styles.brandName}>Azora</Text>
+                  <View style={styles.brandBadge}>
+                    <Text style={styles.brandBadgeText}>Pro</Text>
+                  </View>
+                </View>
+                <Text style={styles.headline}>
+                  Achieve your goals{'\n'}
+                  <Text style={styles.headlineAccent}>4.2X</Text> faster
+                </Text>
+              </>
+            )}
             <Text style={styles.planSummary}>
               {plan.planName} · Built around your answers
             </Text>
@@ -517,11 +544,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   headline: {
-    ...typography.display.display3,
-    fontFamily: fonts.semibold,
+    ...typography.display.display2,
+    fontFamily: fonts.heavy,
+    fontSize: 36,
+    lineHeight: 44,
     color: colors.text.primary,
     textAlign: 'center',
     marginTop: spacing.xs,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  brandName: {
+    ...typography.title.title2,
+    fontFamily: fonts.heavy,
+    color: colors.text.primary,
+  },
+  brandBadge: {
+    backgroundColor: colors.primary.blue600,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  brandBadgeText: {
+    ...typography.title.title3,
+    fontFamily: fonts.heavy,
+    color: colors.text.inverse,
+  },
+  headlineAccent: {
+    fontFamily: fonts.heavy,
+    color: colors.primary.blue600,
   },
   planSummary: {
     ...typography.label.medium,

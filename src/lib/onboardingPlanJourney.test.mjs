@@ -57,14 +57,14 @@ test('the shared journey normalizes personal inputs and preserves concrete selec
   const preset = onboardingPresetFor('cleaning');
   const named = personalizedPlanJourney(preset, 'cleaning', '  Alex  ', '  declutter my closet  ');
   assert.equal(named.goal, 'declutter my closet');
-  assert.match(named.firstDayLine, /^Alex, day one of Home Order/);
+  assert.match(named.firstDayLine, /^Alex, day one of Home Order Plan/);
   assert.ok(named.firstDayLine.length <= 70, named.firstDayLine);
   assert.match(named.milestones.at(-1).outcome, /ready to declutter my closet/);
 
   for (const [name, goal] of [[null, null], [undefined, undefined], ['  ', '  ']]) {
     const fallback = personalizedPlanJourney(preset, 'cleaning', name, goal);
     assert.equal(fallback.goal, 'make room for yourself');
-    assert.match(fallback.firstDayLine, /^Day one of Home Order/);
+    assert.match(fallback.firstDayLine, /^Day one of Home Order Plan/);
     assert.doesNotMatch(fallback.firstDayLine, /undefined|null|^,/);
     assert.match(fallback.milestones.at(-1).outcome, /ready to make room for yourself/);
   }

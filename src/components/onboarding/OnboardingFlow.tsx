@@ -3106,6 +3106,7 @@ function OnboardingFlowSteps({
               stakesBenefit={stakesBenefitFor(primaryIntent, intentFollowUpAnswers)}
               scores={planMindMap.scores}
               paywallMode={paywallMode}
+              cleaning={mode === 'cleaning_mode'}
               name={name}
               selectedPackageId={paywall.selectedPackageId}
               stepIndex={visualStepIndex}

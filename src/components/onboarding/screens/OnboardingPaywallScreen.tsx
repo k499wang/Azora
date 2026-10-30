@@ -72,6 +72,8 @@ interface OnboardingPaywallScreenProps {
   initialStep?: 'plan';
   /** `hard` locks the app and removes free continuation. */
   paywallMode: PaywallMode;
+  /** The cleaning_mode onboarding flow; gates cleaning-only copy. */
+  cleaning?: boolean;
   name?: string;
   selectedPackageId: PaywallPackageId;
   stepIndex: number;
