@@ -267,23 +267,21 @@ export function NoTrialLongPaywall({
           </View>
 
           <View style={styles.content}>
+            <View style={styles.brandRow}>
+              <Text style={styles.brandName}>Azora</Text>
+              <View style={styles.brandBadge}>
+                <Text style={styles.brandBadgeText}>Pro</Text>
+              </View>
+            </View>
             {isTransformationHeadline ? (
               <Text style={styles.headline}>
                 Your <Text style={styles.headlineAccent}>cleaning transformation</Text> starts today
               </Text>
             ) : (
-              <>
-                <View style={styles.brandRow}>
-                  <Text style={styles.brandName}>Azora</Text>
-                  <View style={styles.brandBadge}>
-                    <Text style={styles.brandBadgeText}>Pro</Text>
-                  </View>
-                </View>
-                <Text style={styles.headline}>
-                  Achieve your goals{'\n'}
-                  <Text style={styles.headlineAccent}>4.2X</Text> faster
-                </Text>
-              </>
+              <Text style={styles.headline}>
+                Achieve your goals{'\n'}
+                <Text style={styles.headlineAccent}>4.2X</Text> faster
+              </Text>
             )}
             <Text style={styles.planSummary}>
               {plan.planName} · Built around your answers
@@ -557,7 +555,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: -spacing.md,
   },
   brandName: {
     ...typography.title.title2,
