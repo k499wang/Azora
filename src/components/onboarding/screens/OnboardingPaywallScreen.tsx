@@ -450,7 +450,7 @@ function TrialDeck({
     onPurchase(selectedPackageId);
   };
   const priceSummaryLead = selectedPackageHasTrial
-    ? `${selectedTrialDays}-day free trial, then`
+    ? `${selectedTrialDays} days free, then`
     : selectedPackageId === 'monthly' && monthlyIntro != null
       ? `${monthlyIntro.days}-day trial for ${monthlyIntro.priceString}, then`
       : null;
@@ -459,7 +459,7 @@ function TrialDeck({
     : null;
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? 'Start my free trial'
+      ? `Redeem ${selectedTrialDays} days for $0.00`
       : isAnnualSelected
         ? 'Subscribe yearly'
         : monthlyIntro != null
@@ -594,14 +594,6 @@ function TrialDeck({
                       savingsPercent={savingsPercent}
                       hasAnnualTrial={hasAnnualTrial}
                     />
-                    <View style={styles.noPaymentRow}>
-                      <Icon
-                        name="check"
-                        size={NO_PAYMENT_ICON_SIZE}
-                        color={colors.text.primary}
-                      />
-                      <Text style={styles.noPaymentText}>No commitment, cancel anytime</Text>
-                    </View>
                     {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
                   </View>
                 ) : null}
@@ -650,6 +642,20 @@ function TrialDeck({
               </>
             ) : (
               <>
+                <View style={styles.noPaymentRow}>
+                  <Icon
+                    name="check"
+                    size={NO_PAYMENT_ICON_SIZE}
+                    color={colors.text.primary}
+                  />
+                  <Text style={styles.noPaymentText}>No commitment, cancel anytime</Text>
+                </View>
+                <OnboardingPrimaryButton
+                  label={ctaLabel}
+                  onPress={() => { void handlePurchase(); }}
+                  loading={isPurchasing || isCompleting}
+                  disabled={isBusy || selectedPackage == null}
+                />
                 {selectedPackage != null ? (
                   <Text style={styles.priceSummaryText}>
                     {priceSummaryLead ? `${priceSummaryLead} ` : ''}
@@ -659,12 +665,6 @@ function TrialDeck({
                     {priceSummaryPerMonth ? ` (${priceSummaryPerMonth}/mo)` : ''}
                   </Text>
                 ) : null}
-                <OnboardingPrimaryButton
-                  label={ctaLabel}
-                  onPress={() => { void handlePurchase(); }}
-                  loading={isPurchasing || isCompleting}
-                  disabled={isBusy || selectedPackage == null}
-                />
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}
@@ -841,7 +841,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   priceSummaryText: {
-    ...typography.body.small,
+    ...typography.body.medium,
     color: colors.text.primary,
     textAlign: 'center',
   },

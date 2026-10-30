@@ -62,7 +62,7 @@ export function PlanCard({
   const intro = isAnnual ? null : pkg.introOffer;
   const headline = isAnnual
     ? (hasTrial
-      ? (balanced ? `Free for ${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)} Days` : 'Start for free')
+      ? (balanced ? 'Free' : 'Start for free')
       : 'Yearly')
     : intro != null
       ? `${intro.days}-Day Trial`
@@ -70,7 +70,7 @@ export function PlanCard({
   const planDetail = isAnnual
     ? hasTrial
       ? balanced
-        ? `${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)}-day trial, then ${pkg.priceString}/year`
+        ? `${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)}-day trial`
         : pkg.trialLabel
       : null
     : null;

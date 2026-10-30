@@ -280,7 +280,7 @@ test('switching trial plans updates the timeline, price, and exact purchased pac
     assert.equal(free.trialLabel, '7-day free trial');
     assert.equal(free.trialDays, 7);
     assert.equal(free.paidTrial, null);
-    assert.equal(deck.component('Button').props.label, 'Start my free trial');
+    assert.equal(deck.component('Button').props.label, 'Redeem 7 days for $0.00');
     deck.pressNext();
   }
   assert.deepEqual(purchases, Array.from({ length: 10 }, () => ['monthly', 'annual']).flat());

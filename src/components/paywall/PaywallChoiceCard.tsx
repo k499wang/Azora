@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  detail: { ...typography.caption.caption1, color: colors.text.secondary, marginTop: 2 },
+  detail: { ...typography.body.small, color: colors.text.secondary, marginTop: 2 },
   radio: {
     width: 24, height: 24, borderRadius: 12,
     borderWidth: 2, borderColor: colors.neutral[300],
