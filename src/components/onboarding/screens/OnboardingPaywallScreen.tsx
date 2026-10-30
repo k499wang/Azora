@@ -841,12 +841,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   priceSummaryText: {
-    ...typography.body.medium,
+    ...typography.body.large,
     color: colors.text.primary,
     textAlign: 'center',
   },
   priceSummaryPrice: {
     fontFamily: fonts.heavy,
+    fontSize: typography.body.large.fontSize,
   },
   previewNote: {
     ...typography.caption.caption1,

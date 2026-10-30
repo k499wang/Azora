@@ -165,7 +165,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     '../../../theme/colors': { colors: { background: {}, text: {}, error: { 100: '', 700: '' }, border: {} } },
     '../../../theme/breakpoints': { dashboardContentColumn: {} },
     '../../../theme/spacing': { spacing: {} },
-    '../../../theme/typography': { fonts: {}, scaleType: value => value, typography: { button: {}, body: {}, caption: {} } },
+    '../../../theme/typography': { fonts: {}, scaleType: value => value, typography: { button: {}, body: { large: {} }, caption: {} } },
     '../onboardingVisualScale': { scaleControl: value => value },
     '../../../lib/paywall/planPrice': { computeAnnualSavings: () => 0, computePerMonth: () => null },
     '../paywall/paywallStepStyles': { paywallStepStyles: {} },
