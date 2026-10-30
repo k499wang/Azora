@@ -187,6 +187,7 @@ import {
   onboardingSections,
   onboardingStepOrder,
 } from './onboardingStepOrder';
+import { posthog } from '../../config/posthog';
 import { usePaywall } from '../../hooks/usePaywall';
 import { getPaywallOffering, PaywallPlacement } from '../../services/paywall';
 import type { PaywallPackageId } from '../../services/paywall';
@@ -248,7 +249,7 @@ import type { SavedOnboardingProfile } from '../../services/profile/onboardingSt
 import { changedOnboardingAnswers } from '../../services/profile/onboardingAnswers';
 import { saveOnboardingAnswers } from '../../services/profile/onboardingAnswersService';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
-import type { OnboardingMode } from '../../lib/onboardingMode';
+import { SKIP_AZO_CHAT_FLAG, type OnboardingMode } from '../../lib/onboardingMode';
 import { COMMUNITY_SIZE } from '../../data/socialProof';
 import { useAppStoreRatingQuery } from '../../queries/reviews/useAppStoreRatingQuery';
 import { CLEANING_COMMUNITY_REVIEWS } from '../../data/paywallTestimonials';
@@ -368,8 +369,12 @@ function OnboardingFlowSteps({
 }: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
-  const [step, setStep] = useState<OnboardingStep>(
-    initialSavedProfile == null ? 'azoChatInvite' : 'paywall',
+  // Mounts after `useOnboardingMode` has loaded flags, so the cache is current.
+  const [hasAzoChat] = useState(() => posthog.getFeatureFlag(SKIP_AZO_CHAT_FLAG) !== true);
+  const [step, setStep] = useState<OnboardingStep>(() =>
+    initialSavedProfile == null
+      ? onboardingStepOrder(null, 0, 0, null, mode, hasAzoChat)[0]
+      : 'paywall',
   );
   const [azoChatAnswers, setAzoChatAnswers] = useState<string[]>([]);
 
@@ -571,8 +576,9 @@ function OnboardingFlowSteps({
       intentFollowUps.length,
       adhdStatus,
       mode,
+      hasAzoChat,
     ),
-    [primaryIntent, selectedIntents.length, intentFollowUps.length, adhdStatus, mode],
+    [primaryIntent, selectedIntents.length, intentFollowUps.length, adhdStatus, mode, hasAzoChat],
   );
   const visibleStepOrder = useMemo(
     () => visibleSections.flatMap(({ steps }) => steps),
@@ -682,6 +688,7 @@ function OnboardingFlowSteps({
       intentFollowUps.length,
       answer,
       mode,
+      hasAzoChat,
     );
     const next = adjacentOnboardingStep(answeredStepOrder, 'adhdStatus', 'forward');
     if (next != null) goToStep(next, action, { adhd_status: answer });

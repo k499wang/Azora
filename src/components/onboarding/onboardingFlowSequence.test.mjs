@@ -223,7 +223,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planOutcome');
   }
-  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*adhdStatus,\s*mode,\s*\)/);
+  assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*adhdStatus,\s*mode,\s*hasAzoChat,\s*\)/);
   assert.match(flow, /const stepCount = visibleStepOrder.length/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'forward'\)/);
   assert.match(flow, /adjacentOnboardingStep\(visibleStepOrder, step, 'back'\)/);
@@ -243,7 +243,7 @@ test('retained render handlers follow the active sequence rather than hard-coded
 });
 
 test('chat answers survive Back and saved profiles still resume directly at the paywall', () => {
-  assert.match(flow, /initialSavedProfile == null \? 'azoChatInvite' : 'paywall'/);
+  assert.match(flow, /initialSavedProfile == null\s*\?\s*onboardingStepOrder\(null, 0, 0, null, mode, hasAzoChat\)\[0\]\s*:\s*'paywall'/);
   assert.match(stepBlock('azoChat'), /answers=\{azoChatAnswers\}/);
   assert.match(stepBlock('azoChat'), /onAnswersChange=\{setAzoChatAnswers\}/);
   assert.equal(adjacentOnboardingStep(stepsFor('cleaning'), 'greeting', 'back'), 'azoChat');
@@ -1038,4 +1038,13 @@ test('habit picks start on the recommended habit, cap at two, and skipping saves
   assert.match(flow, /starterPlanDrafts\(pickedHabits, \[\]\)/);
   const screen = readFileSync(new URL('./screens/HabitPicksScreen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const MAX_HABIT_PICKS = 2;/);
+});
+
+test('skip_azo_chat drops the invite, chat, and greeting from both flows', () => {
+  for (const mode of ['standard', 'cleaning_mode']) {
+    const withChat = onboardingStepOrder('focus', 1, 3, null, mode);
+    const withoutChat = onboardingStepOrder('focus', 1, 3, null, mode, false);
+    assert.deepEqual(withChat.slice(0, 3), ['azoChatInvite', 'azoChat', 'greeting']);
+    assert.deepEqual(withoutChat, withChat.slice(3));
+  }
 });

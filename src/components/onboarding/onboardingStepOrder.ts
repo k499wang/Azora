@@ -327,12 +327,12 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
 }
 
 /** The step order grouped into the sections the progress bar names. */
-export function onboardingSections(
+function modeOnboardingSections(
   primaryIntent: OnboardingIntent | null,
   selectedIntentCount: number,
   followUpCount: number,
-  adhdStatus: AdhdStatus | null = null,
-  mode: OnboardingMode = 'standard',
+  adhdStatus: AdhdStatus | null,
+  mode: OnboardingMode,
 ): OnboardingSectionSteps[] {
   if (mode === 'cleaning_mode') return cleaningOnboardingSections(adhdStatus);
 
@@ -397,6 +397,30 @@ export function onboardingSections(
   return sections.filter(({ steps }) => steps.length > 0);
 }
 
+const AZO_CHAT_STEPS = new Set<OnboardingStep>(['azoChatInvite', 'azoChat', 'greeting']);
+
+export function onboardingSections(
+  primaryIntent: OnboardingIntent | null,
+  selectedIntentCount: number,
+  followUpCount: number,
+  adhdStatus: AdhdStatus | null = null,
+  mode: OnboardingMode = 'standard',
+  azoChat = true,
+): OnboardingSectionSteps[] {
+  const sections = modeOnboardingSections(
+    primaryIntent,
+    selectedIntentCount,
+    followUpCount,
+    adhdStatus,
+    mode,
+  );
+  if (azoChat) return sections;
+  return sections.map((section) => ({
+    ...section,
+    steps: section.steps.filter((step) => !AZO_CHAT_STEPS.has(step)),
+  }));
+}
+
 /** One sequence owns navigation, analytics indices, and progress for the chosen goal. */
 export function onboardingStepOrder(
   primaryIntent: OnboardingIntent | null,
@@ -404,6 +428,7 @@ export function onboardingStepOrder(
   followUpCount: number,
   adhdStatus: AdhdStatus | null = null,
   mode: OnboardingMode = 'standard',
+  azoChat = true,
 ): OnboardingStep[] {
   return onboardingSections(
     primaryIntent,
@@ -411,6 +436,7 @@ export function onboardingStepOrder(
     followUpCount,
     adhdStatus,
     mode,
+    azoChat,
   ).flatMap(({ steps }) => steps);
 }
 
