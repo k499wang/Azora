@@ -119,6 +119,8 @@ export default function AzoChatScreen({
     // A second tap on a disappearing option must not advance another turn.
     const nextAnswers = chooseAzoReply(latestAnswers.current, replyId, turns, name);
     if (!nextAnswers) return;
+    // Skipping the name keeps nothing they had started typing.
+    if (replyId === 'unnamed') onNameChange('');
     latestAnswers.current = nextAnswers;
     onAnswersChange(nextAnswers);
     if (getAzoConversation(nextAnswers, turns, name).complete) {

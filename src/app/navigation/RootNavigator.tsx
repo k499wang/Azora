@@ -82,7 +82,7 @@ import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
 import { MainTabs } from './MainTabs';
 import { usePlanPrefetch } from '../../features/plan/usePlanPrefetch';
-import type { RootStackNavigationProp, RootStackParamList } from './types';
+import type { MainTabParamList, RootStackNavigationProp, RootStackParamList } from './types';
 import { stackTransitions } from './stackTransitions';
 import TourCelebration from '../../features/tour/TourCelebration';
 import { useTourCelebrationStore } from '../../features/tour/tourCelebrationStore';
@@ -95,6 +95,8 @@ type LastStableGateStatus = 'signed_out' | 'needs_onboarding' | 'ready' | null;
 interface AppStackProps {
   showBootPaywall: boolean;
   tourEnabled: boolean;
+  /** Home for a user arriving from onboarding, so the tour starts where they land. */
+  initialTab: keyof MainTabParamList;
 }
 
 /**
@@ -136,7 +138,7 @@ const SLIDE_UP_SCREEN_OPTIONS = {
   animationDuration: 300,
 } as const;
 
-function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
+function AppStack({ showBootPaywall, tourEnabled, initialTab }: AppStackProps) {
   const tourStatus = useTourStore((state) => state.status);
   const keepMainTabsLive = tourStatus === 'running' || tourStatus === 'closing';
 
@@ -158,6 +160,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           <MainTabsRoute
             showBootPaywall={showBootPaywall}
             tourEnabled={tourEnabled}
+            initialTab={initialTab}
           />
         )}
       </Stack.Screen>
@@ -476,7 +479,7 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
   );
 }
 
-function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
+function MainTabsRoute({ showBootPaywall, tourEnabled, initialTab }: AppStackProps) {
   // A pending exit offer takes precedence over the boot paywall, and still does
   // after it has played, so the just-onboarded user never sees both.
   const exitOfferPending = useExitOfferStore((state) => state.pending);
@@ -516,7 +519,7 @@ function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
       {exitOfferPending && canPresent && appOnTop ? (
         <ExitOfferPresenter />
       ) : null}
-      <MainTabs tourEnabled={tourEnabled} />
+      <MainTabs tourEnabled={tourEnabled} initialTab={initialTab} />
       {/* After MainTabs so the boot paywall can present over the app. */}
       {!hadExitOffer && showBootPaywall && canPresent ? (
         <BootPaywallGate />
@@ -805,6 +808,8 @@ export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
     return <OnboardingRoot gate={gate} />;
   }
 
+  // Read before it is overwritten: the tabs only use it on their first render.
+  const arrivedFromOnboarding = lastStableGateStatusRef.current === 'needs_onboarding';
   lastStableGateStatusRef.current = 'ready';
   lastOnboardingGateRef.current = null;
   return (
@@ -813,6 +818,7 @@ export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
       <AppStack
         showBootPaywall={isIntroComplete}
         tourEnabled={isIntroComplete}
+        initialTab={arrivedFromOnboarding ? 'Home' : 'Plan'}
       />
     </>
   );

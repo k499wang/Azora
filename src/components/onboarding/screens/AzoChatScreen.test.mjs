@@ -16,7 +16,7 @@ const NAME = 'Sam';
 const intro = ['named', 'tell'];
 const roomIndex = getAzoConversation(intro, undefined, NAME).messages.findIndex(({ id }) => id === 'moving-0');
 
-function render({ answers = [], visibleCount, width = 375, onAnswersChange = () => {} }) {
+function render({ answers = [], visibleCount, width = 375, onAnswersChange = () => {}, onNameChange = () => {} }) {
   const jsx = (type, props, key) => ({ type, props: props ?? {}, key });
   const exports = {};
   vm.runInNewContext(source, {
@@ -56,7 +56,7 @@ function render({ answers = [], visibleCount, width = 375, onAnswersChange = () 
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
-  return exports.default({ answers, name: NAME, onNameChange() {}, onAnswersChange, onContinue() {}, onBack() {} });
+  return exports.default({ answers, name: NAME, onNameChange, onAnswersChange, onContinue() {}, onBack() {} });
 }
 
 function nodes(tree) {
@@ -134,4 +134,12 @@ test('restoring and going Back scroll to the reached turn around the intermediat
     assert.equal(scrollCalls.length, 2);
     assert.equal(scrollCalls[1].y, positions.get(backAnchor) - spacing.md);
   }
+});
+
+test('skipping the name clears anything already typed', () => {
+  const cleared = [];
+  const tree = render({ answers: [], visibleCount: 100, onNameChange: (value) => cleared.push(value) });
+  const skip = nodes(tree).find((node) => node.type === 'Pressable' && node.props.accessibilityLabel === 'I’ll skip that for now.');
+  skip.props.onPress();
+  assert.deepEqual(cleared, ['']);
 });

@@ -36,7 +36,7 @@ const intro = ['azoChatInvite', 'azoChat', 'greeting', 'intent', 'usageStyle', '
 const planAndCompletion = [
   'dailyTime', 'wakeTime', 'sleepTime', 'planBoost',
   'planIntro', 'planLoading',
-  'diagnosis', 'planOutcome', 'planPersonalization', 'recommendedExercise', 'planDays',
+  'diagnosis', 'planPersonalization', 'planOutcome', 'recommendedExercise', 'planDays',
   'habitPicks', 'habitCurve',
   'acquisitionSource', 'doctorReferral',
   'attPriming', 'notifications', 'pact', 'paywall',
@@ -221,7 +221,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
     assert.equal(indices.paywall, steps.length);
     assert.equal(adjacentOnboardingStep(steps, 'intentDepth1', 'back'), 'communityProof');
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
-    assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
+    assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planOutcome');
   }
   assert.match(flow, /onboardingSections\(\s*primaryIntent,\s*selectedIntents.length,\s*intentFollowUps.length,\s*adhdStatus,\s*mode,\s*\)/);
   assert.match(flow, /const stepCount = visibleStepOrder.length/);
@@ -526,7 +526,7 @@ test('the original habit section order, copy, and cleaning exclusions remain unc
 
 
 test('the original profile, outcome, personalization, and plan reveal order is preserved for every goal', () => {
-  const reveal = ['diagnosis', 'planOutcome', 'planPersonalization',
+  const reveal = ['diagnosis', 'planPersonalization', 'planOutcome',
     'recommendedExercise', 'planDays'];
   for (const intent of intents) {
     const steps = stepsFor(intent);
@@ -536,7 +536,7 @@ test('the original profile, outcome, personalization, and plan reveal order is p
     assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
     assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
-    assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planPersonalization');
+    assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planOutcome');
   }
   for (const [step, phase] of [['diagnosis', 'diagnosis'], ['recommendedExercise', 'plan']]) {
     const render = stepBlock(step);

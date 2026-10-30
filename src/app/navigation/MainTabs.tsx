@@ -15,17 +15,18 @@ const Tab = createNativeBottomTabNavigator<MainTabParamList>();
 
 interface MainTabsProps {
   tourEnabled: boolean;
+  initialTab: keyof MainTabParamList;
 }
 
-export function MainTabs({ tourEnabled }: MainTabsProps) {
+export function MainTabs({ tourEnabled, initialTab }: MainTabsProps) {
   // The native tab bar emits tabPress even when re-tapping the active tab;
   // only buzz when the user actually switches tabs.
-  const lastActiveTabRef = useRef<keyof MainTabParamList>('Plan');
+  const lastActiveTabRef = useRef<keyof MainTabParamList>(initialTab);
 
   return (
     <>
       <Tab.Navigator
-        initialRouteName="Plan"
+        initialRouteName={initialTab}
         screenOptions={{
           headerShown: false,
           // Sidebar-adaptable: UIKit draws a sidebar at regular width (iPad,

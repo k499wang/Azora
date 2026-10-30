@@ -79,8 +79,8 @@ const PREVIEWS: readonly PreviewEntry[] = [
   { id: 'goalProof', title: 'Goals 2× faster bars', render: (props) => <GoalProofScreen {...props} /> },
   { id: 'goalProofCleaning', title: 'Cleaning 2× better bars', render: (props) => <GoalProofScreen {...props} intent="cleaning" /> },
   { id: 'planReveal', title: 'Azora profile report + plan', render: (props) => <PlanRevealPreview {...props} /> },
-  { id: 'planOutcome', title: 'Plan promise · In X days', render: (props) => <PlanBenefitsPreview phase="outcome" {...props} /> },
   { id: 'planPersonalization', title: 'Plan promise · Built around you', render: (props) => <PlanBenefitsPreview phase="personalization" {...props} /> },
+  { id: 'planOutcome', title: 'Plan promise · In X days', render: (props) => <PlanBenefitsPreview phase="outcome" {...props} /> },
   {
     id: 'planDays',
     title: 'Plan days + recommended plan',
