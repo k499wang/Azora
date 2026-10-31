@@ -429,7 +429,7 @@ interface PlanOptionProps {
 }
 
 function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: PlanOptionProps) {
-  const isAnnual = pkg.id === 'annual';
+  const isAnnual = pkg.billingPeriod === 'year';
   const cents = packagePriceCents(pkg);
   const perMonth =
     pkg.pricePerMonthString ??

@@ -56,7 +56,7 @@ export function PlanCard({
   balanced = false,
 }: PlanCardProps) {
   const isSideBySide = layout === 'side-by-side';
-  const isAnnual = pkg.id === 'annual';
+  const isAnnual = pkg.billingPeriod === 'year';
   const hasTrial = pkg.trialLabel != null;
   const perMonth = computePerMonth(pkg);
   const intro = pkg.introOffer;

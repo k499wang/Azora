@@ -33,10 +33,10 @@ const trialMonthly = packageWithOffer('MONTHLY', 'trial-monthly', {
   price: 0.99, priceString: '$0.99', periodUnit: 'DAY', periodNumberOfUnits: 3,
 });
 
-function setup(paidTrialPackages, { eligible = true, offeringError = null } = {}) {
+function setup(paidTrialPackages, { eligible = true, offeringError = null, placementOffering = null } = {}) {
   const exports = {};
   const purchased = [];
-  const placement = {
+  const placement = placementOffering ?? {
     identifier: 'onboarding', metadata: {}, annual, monthly: fallbackMonthly,
     availablePackages: [annual, fallbackMonthly],
   };
@@ -111,4 +111,27 @@ test('a weekly package fills the short-plan slot and bills per week', async () =
   assert.equal(result.offering.packages[1].billingPeriod, 'week');
   assert.equal(result.offering.packages[1].title, 'Weekly');
   assert.equal(result.offering.packages[0].billingPeriod, 'year');
+});
+
+test('weekly + monthly offerings put monthly first and can show either alone', async () => {
+  const trialWeekly = { ...packageWithOffer('WEEKLY', 'trial-weekly', {
+    price: 0.99, priceString: '$0.99', periodUnit: 'WEEK', periodNumberOfUnits: 1,
+  }) };
+  const pairMonthly = packageWithOffer('MONTHLY', 'pair-monthly', {
+    price: 4.99, priceString: '$4.99', periodUnit: 'MONTH', periodNumberOfUnits: 1,
+  });
+  const placementOffering = { identifier: 'pair', metadata: {}, availablePackages: [trialWeekly, pairMonthly] };
+  const result = await setup([trialMonthly], { placementOffering }).exports.getPaywallOffering('onboarding_complete');
+  const [first, second] = result.offering.packages;
+  assert.equal(`${first.id} ${first.billingPeriod} ${first.introOffer.days}`, 'annual month 30');
+  assert.equal(`${second.id} ${second.billingPeriod} ${second.introOffer.days}`, 'monthly week 7');
+  assert.equal(result.revenueCatPackages.annual, pairMonthly);
+  assert.equal(result.revenueCatPackages.monthly, trialWeekly);
+
+  for (const [trialPackage, expected] of [['monthly', 'annual'], ['weekly', 'monthly']]) {
+    const only = await setup([trialMonthly], {
+      placementOffering: { ...placementOffering, metadata: { trial_package: trialPackage } },
+    }).exports.getPaywallOffering('onboarding_complete');
+    assert.equal(only.offering.onlyPackageId, expected);
+  }
 });

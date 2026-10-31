@@ -18,6 +18,7 @@ import {
 } from '../debug/revenueCatDebugSnapshot';
 import { PaywallPlacement, type PaywallPlacementValue } from './paywallPlacements';
 import type {
+  PaywallBillingPeriod,
   PaywallLayout,
   PaywallOffering,
   PaywallPackageId,
@@ -101,8 +102,13 @@ export async function getPaywallOffering(
     };
   }
 
-  const monthly = await findPaidTrialMonthlyPackage(offering);
-  const annual = findPackage(offering, 'annual');
+  // An offering with weekly + monthly and no annual puts monthly in the first slot.
+  const ownAnnual = findPackage(offering, 'annual');
+  const ownMonthly = findPackageOfType(offering, PACKAGE_TYPE.MONTHLY);
+  const ownWeekly = findPackageOfType(offering, PACKAGE_TYPE.WEEKLY);
+  const pairsShortPlans = ownAnnual == null && ownMonthly != null && ownWeekly != null;
+  const annual = pairsShortPlans ? ownMonthly : ownAnnual;
+  const monthly = pairsShortPlans ? ownWeekly : await findPaidTrialMonthlyPackage(offering);
   const [annualTrialEligibilityStatus, monthlyIntroEligibilityStatus] = await Promise.all([
     getTrialEligibilityStatus(annual),
     getTrialEligibilityStatus(monthly),
@@ -112,6 +118,7 @@ export async function getPaywallOffering(
     .map((pkg) =>
       toPaywallPackageOption(
         pkg,
+        pkg === annual ? 'annual' : 'monthly',
         pkg === annual ? annualTrialEligibilityStatus : monthlyIntroEligibilityStatus,
       ),
     );
@@ -149,6 +156,7 @@ export async function getPaywallOffering(
       onlyPackageId: toOnlyPackageId(
         getMetadataString(offering.metadata, 'trial_package'),
         getMetadataString(offering.metadata, 'trial_options'),
+        packages,
       ),
       trialTitle: getMetadataString(offering.metadata, 'trial_title'),
       packages,
@@ -245,6 +253,13 @@ function findPackage(
   );
 }
 
+function findPackageOfType(
+  offering: PurchasesOffering,
+  packageType: PACKAGE_TYPE,
+): PurchasesPackage | null {
+  return offering.availablePackages.find((pkg) => pkg.packageType === packageType) ?? null;
+}
+
 function isShortPlanPackage(pkg: PurchasesPackage): boolean {
   return pkg.packageType === PACKAGE_TYPE.MONTHLY || pkg.packageType === PACKAGE_TYPE.WEEKLY;
 }
@@ -271,6 +286,7 @@ async function findPaidTrialMonthlyPackage(
 
 function toPaywallPackageOption(
   pkg: PurchasesPackage,
+  id: PaywallPackageId,
   trialEligibilityStatus: TrialEligibilityStatus,
 ): PaywallPackageOption {
   const isAnnual = pkg.packageType === PACKAGE_TYPE.ANNUAL;
@@ -283,7 +299,7 @@ function toPaywallPackageOption(
     : null;
 
   return {
-    id: isAnnual ? 'annual' : 'monthly',
+    id,
     packageIdentifier: pkg.identifier,
     productIdentifier: pkg.product.identifier,
     title: isAnnual ? 'Annual' : isWeekly ? 'Weekly' : 'Monthly',
@@ -303,19 +319,27 @@ function toPaywallPackageOption(
       introPrice: pkg.product.introPrice,
       eligibilityStatus: trialEligibilityStatus,
     }),
-    isRecommended: isAnnual,
+    isRecommended: id === 'annual',
   };
 }
+
+const TRIAL_PACKAGE_PERIODS: Record<string, PaywallBillingPeriod> = {
+  annual: 'year',
+  monthly: 'month',
+  weekly: 'week',
+};
 
 function toOnlyPackageId(
   trialPackage: string | null,
   trialOptions: string | null,
+  packages: PaywallPackageOption[],
 ): PaywallPackageId | null {
-  if (trialPackage === 'annual') return 'annual';
-  if (trialPackage === 'weekly' || trialPackage === 'monthly' || trialOptions === 'paid_only') {
-    return 'monthly';
+  const period = trialPackage == null ? undefined : TRIAL_PACKAGE_PERIODS[trialPackage];
+  if (period != null) {
+    const match = packages.find((pkg) => pkg.billingPeriod === period);
+    return match?.id ?? (period === 'year' ? 'annual' : 'monthly');
   }
-  return null;
+  return trialOptions === 'paid_only' ? 'monthly' : null;
 }
 
 function toPaywallLayout(value: string | null): PaywallLayout {

@@ -432,7 +432,7 @@ function TrialDeck({
     onContinueWithoutPro();
   }, [isBusy, paywallMode, onContinueWithoutPro]);
 
-  const isAnnualSelected = selectedPackageId === 'annual';
+  const isAnnualSelected = selectedPackage?.billingPeriod === 'year';
   const selectedIntro = selectedPackage?.introOffer ?? null;
   const paidTrial = selectedIntro != null && selectedPackage != null
     ? {
@@ -473,7 +473,7 @@ function TrialDeck({
         ? `Redeem ${selectedIntro.days} days for ${selectedIntro.priceString}`
         : isAnnualSelected
           ? 'Subscribe yearly'
-          : `Continue with ${monthlyPackage?.title.toLowerCase() ?? 'monthly'}`;
+          : `Continue with ${selectedPackage?.title.toLowerCase() ?? 'monthly'}`;
 
   return (
     <Animated.View style={[styles.screen, { opacity: fadeAnim }]}>
@@ -580,9 +580,6 @@ function TrialDeck({
                       onlyOption={isOnlyOption}
                       onlyOptionTitle={offering?.trialTitle}
                     />
-                    {isOnlyOption ? (
-                      <ReviewCardRow reviews={cleaning ? CLEANING_COMMUNITY_REVIEWS : COMMUNITY_REVIEWS} />
-                    ) : null}
                     {hasAnnualTrial || paidTrial != null ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
                         <PaywallTrialReminderControl
@@ -590,6 +587,9 @@ function TrialDeck({
                           disabled={isBusy || (!selectedPackageHasTrial && selectedIntro == null) || effectiveReminderDays == null}
                         />
                       </View>
+                    ) : null}
+                    {isOnlyOption ? (
+                      <ReviewCardRow reviews={cleaning ? CLEANING_COMMUNITY_REVIEWS : COMMUNITY_REVIEWS} />
                     ) : null}
                     {annualPackage != null && monthlyPackage != null ? (
                       <PaywallChoosePlanStep

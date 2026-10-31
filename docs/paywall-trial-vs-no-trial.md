@@ -37,6 +37,10 @@ In Targeting, "All other cases" covers every placement you don't list.
 | `no_trial_exit` | Annual $39.99, no trial | none needed |
 | `paid_trial_monthly` | The one short plan (monthly or weekly) with a paid intro offer | not a placement offering — see below |
 
+**Weekly + monthly offerings.** An offering with a weekly and a monthly package
+and no annual shows those two: monthly as the first card, weekly as the second.
+`paid_trial_monthly` is not used for it.
+
 **Where the short plan comes from.** If the placement offering's own weekly or
 monthly package has a paid intro offer, the paywall uses it. Otherwise it takes
 the short plan from `paid_trial_monthly`, which must contain one monthly or
@@ -57,7 +61,7 @@ quietly falls back to the default.
 | | `"long_then_trial"` | The long page; its Continue slides up the deck's trial timeline screen | |
 | `paywall_mode` | `"hard"` | No way out: no close / "continue without Pro" in onboarding, and the app-start paywall (read from `profile_upgrade`) blocks the app | `soft` (closeable) |
 | `trial_package` | `"annual"` | Trial timeline screen offers only the annual plan (free or paid trial); no plan card, review cards instead. Both packages stay in the offering | every package |
-| | `"weekly"` (or `"monthly"`) | Same, but only the short plan | |
+| | `"monthly"` / `"weekly"` | Same, but only the plan that bills monthly / weekly | |
 | `trial_options` | `"paid_only"` | Older name for `trial_package: "weekly"`; still works | |
 | `trial_title` | any text, `{days}` = trial length | Title of the paid-trial-only timeline screen, e.g. `"Try your plan for {days} days"` | `"How your {days}-day trial works"` |
 | `benefits_title` | any text, `{plan}` = goal noun | Replaces the deck's benefits-step title (only when a free trial is shown) | built-in title |
