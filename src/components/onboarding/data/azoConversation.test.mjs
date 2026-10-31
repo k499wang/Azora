@@ -31,7 +31,7 @@ test('a choice must belong to the active turn and repeated taps cannot skip ahea
   assert.equal(choose([], 'tasks'), undefined);
   const moved = choose(intro, 'help');
   assert.deepEqual(moved, [...intro, 'help']);
-  assert.equal(choose(moved, 'welcome'), undefined);
+  assert.equal(choose(moved, 'help'), undefined);
   const first = choose(moved, 'tasks');
   assert.deepEqual(first, [...intro, 'help', 'tasks']);
   assert.equal(choose(first, 'tasks'), undefined);
@@ -55,7 +55,7 @@ test('all recognition replies reach the plan and room without losing selected me
   for (const first of AZO_CONVERSATION[3].replies) {
     {
       let answers = [];
-      for (const id of [...intro, 'welcome', first.id, 'start', 'tasksHelp', 'next', 'show', 'makePlan']) {
+      for (const id of [...intro, 'help', first.id, 'start', 'tasksHelp', 'next', 'show', 'makePlan']) {
         answers = choose(answers, id);
         assert.ok(answers);
       }

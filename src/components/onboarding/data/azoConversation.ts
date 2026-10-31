@@ -58,10 +58,7 @@ const INTRODUCTION: readonly AzoConversationTurn[] = [
       'I really want it to feel like my home.',
       'Would you like to help decorate my house?',
     ],
-    replies: [
-      { id: 'help', label: 'I’d love to!' },
-      { id: 'welcome', label: 'Let’s support each other!' },
-    ],
+    replies: [{ id: 'help', label: 'I’d love to!' }],
   },
 ];
 
