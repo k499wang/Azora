@@ -17,11 +17,11 @@ const maximumTranscriptMessages = AZO_CONVERSATION.reduce(
 
 test('reading delays grow with visible text and stay within the reading limits', () => {
   const message = (text) => ({ id: 'test', kind: 'azo', text });
-  assert.equal(getAzoMessageReadDelay(message('hi')), 1550);
-  assert.equal(getAzoMessageReadDelay(message('  \n  ')), 1300);
+  assert.equal(getAzoMessageReadDelay(message('hi')), 1650);
+  assert.equal(getAzoMessageReadDelay(message('  \n  ')), 1400);
   assert.ok(getAzoMessageReadDelay(message('a longer message needs more time to read')) > getAzoMessageReadDelay(message('hi')));
   assert.equal(getAzoMessageReadDelay(message('word '.repeat(100))), 10000);
-  assert.equal(getAzoMessageReadDelay(message('  one   two\nthree  ')), 2050);
+  assert.equal(getAzoMessageReadDelay(message('  one   two\nthree  ')), 2150);
   assert.equal(
     getAzoMessageReadDelay(message('research shows **brief breathing** can help')),
     getAzoMessageReadDelay(message('research shows brief breathing can help')),
@@ -29,8 +29,8 @@ test('reading delays grow with visible text and stay within the reading limits',
 });
 
 test('the first message after a reply waits the same reading time as any other', () => {
-  assert.equal(getAzoMessageReadDelay({ id: 'reply', kind: 'reply', text: 'Of course.' }), 1800);
-  assert.equal(getAzoMessageReadDelay(), 1300);
+  assert.equal(getAzoMessageReadDelay({ id: 'reply', kind: 'reply', text: 'Of course.' }), 1900);
+  assert.equal(getAzoMessageReadDelay(), 1400);
 });
 
 test('the delivery hook schedules each next message from the latest visible message length', () => {

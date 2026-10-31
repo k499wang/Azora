@@ -97,7 +97,8 @@ export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'cbt',
     messages: [
       'We’ll work on the thoughts and habits that make getting started harder.',
-      'Your plan draws on cognitive behavioral therapy, or CBT. It’s been tested over hundreds of clinical trials, and I’m sure it’ll work for you too!',
+      'Your plan draws on cognitive behavioral therapy, or CBT.',
+      'It’s been tested over hundreds of clinical trials, and I’m sure it’ll work for you too!',
     ],
     replies: [{ id: 'next', label: 'What if I still don’t know where to start?' }],
   },
@@ -139,7 +140,8 @@ export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
     id: 'reassurance',
     messages: [
       'Don’t worry, you’re not alone. I struggle with chores too!',
-      'Having a messy home doesn’t mean you’re lazy. You might just be missing a way to make cleaning work for your brain.',
+      'Having a messy home doesn’t mean you’re lazy.',
+      'You might just be missing a way to make cleaning work for your brain.',
       'But don’t worry! We’ll figure out what makes chores hard for you.',
       'After answering some questions, I’ll build you a personalized 28-day cleaning plan!',
       'In 7 days, cleaning should feel at least 245% easier for you.',
