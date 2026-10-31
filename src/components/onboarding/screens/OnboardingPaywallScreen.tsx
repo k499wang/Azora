@@ -107,7 +107,7 @@ function TrialDeck({
   planIntent,
   stakesBenefit,
   paywallMode,
-  selectedPackageId,
+  selectedPackageId: chosenPackageId,
   isLoading,
   isPurchasing,
   isRestoring,
@@ -130,10 +130,14 @@ function TrialDeck({
   const insets = useSafeAreaInsets();
   const trialReminder = usePaywallTrialReminder(preview);
 
+  const paidTrialOnly = offering?.paidTrialOnly === true;
+  const selectedPackageId: PaywallPackageId = paidTrialOnly ? 'monthly' : chosenPackageId;
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
   );
-  const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
+  const annualPackage = paidTrialOnly
+    ? undefined
+    : offering?.packages.find((pkg) => pkg.id === 'annual');
   const monthlyPackage = offering?.packages.find((pkg) => pkg.id === 'monthly');
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const annualTrialDays = annualPackage?.trialDays ?? trialDaysFromLabel(annualPackage?.trialLabel);
@@ -578,6 +582,7 @@ function TrialDeck({
                             }
                           : null
                       }
+                      onlyOption={annualPackage == null}
                     />
                     {hasAnnualTrial ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
@@ -587,15 +592,17 @@ function TrialDeck({
                         />
                       </View>
                     ) : null}
-                    <PaywallChoosePlanStep
-                      isLoading={isLoading}
-                      annualPackage={annualPackage}
-                      monthlyPackage={monthlyPackage}
-                      selectedPackageId={selectedPackageId}
-                      onSelectPackage={(packageId) => { if (!isBusy) onSelectPackage(packageId); }}
-                      savingsPercent={savingsPercent}
-                      hasAnnualTrial={hasAnnualTrial}
-                    />
+                    {annualPackage != null && monthlyPackage != null ? (
+                      <PaywallChoosePlanStep
+                        isLoading={isLoading}
+                        annualPackage={annualPackage}
+                        monthlyPackage={monthlyPackage}
+                        selectedPackageId={selectedPackageId}
+                        onSelectPackage={(packageId) => { if (!isBusy) onSelectPackage(packageId); }}
+                        savingsPercent={savingsPercent}
+                        hasAnnualTrial={hasAnnualTrial}
+                      />
+                    ) : null}
                     {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
                   </View>
                 ) : null}

@@ -1,28 +1,101 @@
-# Switching between the trial and no-trial paywall
+# How the paywall works (every remote control)
 
-Everything is done in the RevenueCat dashboard. No app release is needed.
+Almost everything about the paywall is controlled remotely, in **RevenueCat**,
+with a few copy switches in **PostHog**. No app release is needed for anything
+in this section; users pick up a change the next time the app loads offerings
+(fully close and reopen to check).
 
-## What decides what a user sees
+## The pieces
 
-| Setting | Where | Result |
-|---|---|---|
-| Which **offering** a user gets | Targeting rule for the placement (or the Default offering) | Trial products or no-trial products |
-| `paywall_layout` metadata on that offering | Offering → Metadata | `"long"` = long scrolling page (trial or no trial), missing = step deck |
-| `paywall_mode` metadata on that offering | Offering → Metadata | `"hard"` = no close button, missing = soft |
+1. **Placement** — where in the app the paywall opens. The app asks RevenueCat
+   for "the offering for placement X".
+2. **Offering** — what RevenueCat answers with: the products (packages) to sell
+   plus metadata keys that shape the screen. Which offering a placement gets is
+   set by RevenueCat **Targeting** rules (or the Default offering).
+3. **Products / trials** — prices, free trials and paid intro offers live on
+   the products in App Store Connect. The app only shows a trial if the product
+   has one **and** RevenueCat says this user is still eligible.
+4. **PostHog flags** — a few copy switches on top.
 
-Offerings:
+## Placements the app asks for
+
+| Placement | Where it opens |
+|---|---|
+| `onboarding_complete` | The onboarding paywall (end of onboarding) |
+| `exit_discount` | Exit offer: after onboarding without buying, after cancelling the purchase sheet, or after sitting idle on the paywall |
+| `profile_upgrade` | The in-app Pro paywall, and the paywall shown on app start for non-Pro users |
+| `heart_rate_pro_gate`, `daily_result_pro_gate`, `exercise_premium_gate`, `routine_preset_pro_gate`, `routine_todo_limit_pro_gate`, `plan_week_pro_gate`, `azo_assist_pro_gate` | Pro gates on those features |
+
+In Targeting, "All other cases" covers every placement you don't list.
+
+## Offerings
 
 | Offering | Products | Metadata |
 |---|---|---|
 | Trial (current default) | Annual with free trial + weekly | `paywall_layout` missing or `"deck"` |
 | `no_trial_main` | Annual $59.99, no trial (+ weekly) | `"paywall_layout": "long"` |
 | `no_trial_exit` | Annual $39.99, no trial | none needed |
+| `paid_trial_monthly` | The one short plan (monthly or weekly) with a paid intro offer | not a placement offering — see below |
 
-Placements the app asks for:
+**`paid_trial_monthly` is special.** Every paywall takes its short plan from
+this offering, whatever offering the placement got. It must contain one
+monthly or weekly package. If it is missing or empty, the app falls back to
+the placement offering's own monthly package. The annual plan always comes
+from the placement offering; leave annual out of an offering and the paywall
+sells only the short plan.
 
-- `onboarding_complete`: the onboarding paywall
-- `exit_discount`: the exit offer
-- `profile_upgrade` and the other `*_gate` placements: the in-app Pro paywall
+## Offering metadata keys
+
+Set in RevenueCat → Offering → Metadata. Values are lowercase and exact; a typo
+quietly falls back to the default.
+
+| Key | Values | Effect | Default when missing |
+|---|---|---|---|
+| `paywall_layout` | `"deck"` | Step deck: benefits → free-trial gift → reminder → trial timeline + plans | ✔ |
+| | `"long"` | One long scrolling page with plan cards, comparison, testimonials, journey | |
+| | `"long_then_trial"` | The long page; its Continue slides up the deck's trial timeline screen | |
+| `paywall_mode` | `"hard"` | No way out: no close / "continue without Pro" in onboarding, and the app-start paywall (read from `profile_upgrade`) blocks the app | `soft` (closeable) |
+| `trial_options` | `"paid_only"` | Trial timeline screen offers only the short plan's paid trial; yearly is ignored there and no plan card is shown. The long page (`long_then_trial`) still shows both plans | both plans |
+| `benefits_title` | any text, `{plan}` = goal noun | Replaces the deck's benefits-step title (only when a free trial is shown) | built-in title |
+| `experiment_id`, `experiment_variant` | any text | Attached to every paywall analytics event so PostHog can split by variant | null |
+
+Rules that apply to every layout:
+
+- If the offering fails to load, the app uses `soft` + `deck`, so a config
+  or network problem never locks anyone out.
+- **The plan card only appears when there are two plans to pick from.** With a
+  single plan (annual-only offering, short-plan-only offering, or
+  `trial_options: "paid_only"`) the timeline screen shows just the timeline
+  and the button.
+- The deck only shows the benefits / gift / reminder intro steps when the
+  annual plan has a free trial this user is eligible for. Otherwise it opens
+  straight on the plan screen.
+- The timeline and button follow the selected plan: annual free trial
+  ("Redeem 7 days for $0.00"), the short plan's paid intro ("Redeem 3 days for
+  $0.99"), or plain prices ("Subscribe yearly" / "Continue with monthly") when
+  the user is not eligible for a trial.
+
+## PostHog feature flags
+
+| Flag | Type | Effect on the paywall |
+|---|---|---|
+| `cleaning_mode` | boolean | Serves the cleaning onboarding flow; its paywall uses cleaning-only copy |
+| `paywall_transformation_headline` | boolean | Cleaning flow only: swaps the long page's "4.2X" headline for the cleaning transformation headline |
+| `skip_azo_chat` | boolean | Onboarding only (drops the Azo chat); no paywall effect |
+
+Products, prices and which offering a user gets are **never** decided by
+PostHog — only by RevenueCat.
+
+## Recipes
+
+| I want… | Do this in RevenueCat |
+|---|---|
+| Only the paid trial on the trial timeline | Add `"trial_options": "paid_only"` to the offering |
+| Only the paid trial everywhere (long page too) | Make an offering without the annual package |
+| No trial | See "Switch to no trial" below |
+| No way to skip the paywall | `"paywall_mode": "hard"` |
+| A/B test two paywalls | RevenueCat Experiment between two offerings, each with its own `experiment_variant` |
+| Test before production | Add a Targeting condition (e.g. app version) that only matches you |
 
 ## Tracking the deck
 

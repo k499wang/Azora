@@ -109,6 +109,7 @@ export function PaywallTrialStep({
   hasAnnualTrial,
   trialLabel,
   paidTrial,
+  onlyOption = false,
   layout = 'step',
   reminderDaysBeforeEnd = TRIAL_REMINDER_DAYS_BEFORE_END,
   reminderEnabled = false,
@@ -123,6 +124,8 @@ export function PaywallTrialStep({
   trialLabel?: string | null;
   /** The selected plan's paid intro trial, which replaces the free trial's timeline. */
   paidTrial?: { days: number; introPrice: string; renewalPrice: string } | null;
+  /** The paid trial is the only plan on offer, so there is nothing to design. */
+  onlyOption?: boolean;
   variant?: 'pro' | 'onboarding';
   /**
    * `step` inside the trial deck, `section` on the long-form page, where the
@@ -208,7 +211,9 @@ export function PaywallTrialStep({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.trialDesignHeader}>
-        <Text style={styles.trialDesignTitle}>{title ?? (hasAnnualTrial || paidTrial != null ? 'Design your trial experience' : 'Choose your plan')}</Text>
+        <Text style={styles.trialDesignTitle}>{title ?? (paidTrial != null && onlyOption
+          ? `How your ${paidTrial.days}-day trial works`
+          : hasAnnualTrial || paidTrial != null ? 'Design your trial experience' : 'Choose your plan')}</Text>
       </View>
       <Timeline steps={reminderAvailable ? steps : steps.filter((step) => step.icon !== 'bell')} showTrialTail={hasAnnualTrial} layout="step" />
     </View>

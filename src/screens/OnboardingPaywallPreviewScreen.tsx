@@ -15,6 +15,7 @@ const PREVIEW_OFFERING: PaywallOffering = {
   paywallMode: 'soft',
   paywallLayout: 'long',
   benefitsTitle: null,
+  paidTrialOnly: false,
   packages: [
     {
       id: 'annual',
@@ -64,6 +65,7 @@ export default function OnboardingPaywallPreviewScreen({ navigation, route }: On
       layout={route.params.layout}
       initialStep={route.params.initialStep}
       cleaning={route.params.cleaning}
+      paidTrialOnly={route.params.paidTrialOnly}
       planIntent={route.params.cleaning ? 'cleaning' : 'stress_relief'}
       goalPhrase="feel calmer on the hard days"
       onClose={() => navigation.goBack()}
@@ -75,6 +77,7 @@ interface OnboardingPaywallPreviewProps {
   layout: PaywallLayout;
   initialStep?: 'plan';
   cleaning?: boolean;
+  paidTrialOnly?: boolean;
   planIntent: OnboardingIntent;
   goalPhrase: string;
   onClose: () => void;
@@ -84,6 +87,7 @@ export function OnboardingPaywallPreview({
   layout,
   initialStep,
   cleaning,
+  paidTrialOnly = false,
   planIntent,
   goalPhrase,
   onClose,
@@ -96,7 +100,7 @@ export function OnboardingPaywallPreview({
       <OnboardingPaywallScreen
         preview
         initialStep={initialStep}
-        offering={{ ...PREVIEW_OFFERING, paywallLayout: layout }}
+        offering={{ ...PREVIEW_OFFERING, paywallLayout: layout, paidTrialOnly }}
         planIntent={planIntent}
         planPreset={onboardingPresetFor(planIntent)}
         selectedIntents={[planIntent]}

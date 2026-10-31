@@ -146,7 +146,7 @@ export type RootStackParamList = {
   /** dev-only run of the welcome shown after a Pro purchase */
   ProWelcomePreview: { trialDays: number | null };
   /** dev-only preview of the personalized scrolling paywall */
-  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean };
+  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean; paidTrialOnly?: boolean };
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;

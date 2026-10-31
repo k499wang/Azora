@@ -301,7 +301,8 @@ test('a monthly plan without an eligible intro does not display the annual free 
 
 test('plan selection is locked while checkout is pending', () => {
   const selections = [];
-  const deck = deckHarness({ initialStep: 'plan', isPurchasing: true, onSelectPackage: id => selections.push(id) });
+  const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null };
+  const deck = deckHarness({ offering: { ...offering, packages: [annual, monthly] }, initialStep: 'plan', isPurchasing: true, onSelectPackage: id => selections.push(id) });
   deck.component('PaywallChoosePlanStep').props.onSelectPackage('monthly');
   assert.deepEqual(selections, []);
   assert.equal(deck.component('Button').props.disabled, true);
@@ -315,10 +316,21 @@ test('losing trial eligibility on a later step leaves a working plan checkout', 
   deck.pressNext(); deck.transition(); deck.transition();
   deck.pressNext(); deck.transition(); deck.transition();
   deck.render({ offering: noTrial });
-  assert.ok(deck.component('PaywallChoosePlanStep'));
+  assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
   assert.equal(deck.component('Button').props.label, 'Subscribe yearly');
   deck.pressNext();
   assert.deepEqual(purchases, ['annual']);
+  deck.unmount();
+});
+
+test('paid-trial-only offerings check out the short plan without a plan card', () => {
+  const purchases = [];
+  const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' } };
+  const deck = deckHarness({ offering: { ...offering, paidTrialOnly: true, packages: [annual, monthly] }, onPurchase: id => purchases.push(id) });
+  assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
+  assert.equal(deck.component('Button').props.label, 'Redeem 3 days for $0.99');
+  deck.pressNext();
+  assert.deepEqual(purchases, ['monthly']);
   deck.unmount();
 });
 
