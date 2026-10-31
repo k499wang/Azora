@@ -17,11 +17,11 @@ const maximumTranscriptMessages = AZO_CONVERSATION.reduce(
 
 test('reading delays grow with visible text and stay within the reading limits', () => {
   const message = (text) => ({ id: 'test', kind: 'azo', text });
-  assert.equal(getAzoMessageReadDelay(message('hi')), 1100);
-  assert.equal(getAzoMessageReadDelay(message('  \n  ')), 1100);
+  assert.equal(getAzoMessageReadDelay(message('hi')), 1800);
+  assert.equal(getAzoMessageReadDelay(message('  \n  ')), 1800);
   assert.ok(getAzoMessageReadDelay(message('a longer message needs more time to read')) > getAzoMessageReadDelay(message('hi')));
-  assert.equal(getAzoMessageReadDelay(message('word '.repeat(100))), 3600);
-  assert.equal(getAzoMessageReadDelay(message('  one   two\nthree  ')), 1100);
+  assert.equal(getAzoMessageReadDelay(message('word '.repeat(100))), 9000);
+  assert.equal(getAzoMessageReadDelay(message('  one   two\nthree  ')), 1800);
   assert.equal(
     getAzoMessageReadDelay(message('research shows **brief breathing** can help')),
     getAzoMessageReadDelay(message('research shows brief breathing can help')),
@@ -133,7 +133,7 @@ test('a selected reply appears immediately and only the new incoming group is sc
 });
 
 test('Back and remount restore reached messages without replaying their entrances', () => {
-  const answers = [...intro, 'help', 'recognize', 'start', 'tasksHelp', 'next', 'show'];
+  const answers = [...intro, 'help', 'tasks', 'start', 'tasksHelp', 'next', 'show'];
   const room = getAzoConversation(answers, AZO_CONVERSATION, NAME);
   const partial = { ...getAzoDeliveryState(room), visibleCount: room.messages.length - 1 };
   const back = getAzoDeliveryState(getAzoConversation(answers.slice(0, -1), AZO_CONVERSATION, NAME), partial);
@@ -240,7 +240,7 @@ test('parent answer changes, Back, and visibility remain bounded across ten conv
     };
     ownDelivery();
     clock.drain();
-    for (const id of [...intro, 'help', cycle % 2 === 0 ? 'recognize' : 'sometimes', 'start', 'tasksHelp', 'next', 'show']) {
+    for (const id of [...intro, 'help', cycle % 2 === 0 ? 'tasks' : 'routine', 'start', 'tasksHelp', 'next', 'show']) {
       assert.equal(state.visibleCount, state.messageCount);
       answers = chooseAzoReply(answers, id, AZO_CONVERSATION, NAME);
       state = getAzoDeliveryState(getAzoConversation(answers, AZO_CONVERSATION, NAME), state);

@@ -1,6 +1,8 @@
 export interface AzoReply {
   id: string;
   label: string;
+  /** What Azo says it struggles with too, opening the reassurance. */
+  struggle?: string;
 }
 
 export interface AzoConversationMessage {
@@ -31,7 +33,7 @@ const INTRODUCTION: readonly AzoConversationTurn[] = [
     messages: [
       'Hi there! I’m Azo.',
       'I’m so glad you’re here.',
-      'What should I call you? Just your first name is perfect.',
+      'What should I call you?',
     ],
     replies: [
       { id: 'named', label: '' },
@@ -41,11 +43,24 @@ const INTRODUCTION: readonly AzoConversationTurn[] = [
   },
   {
     id: 'tell',
-    messages: ['Can I tell you something?'],
+    messages: ['Can I tell you something I’ve been putting off?'],
     replies: [
       { id: 'tell', label: 'Of course.' },
       { id: 'listening', label: 'I’m listening.' },
       { id: 'goAhead', label: 'Sure, go ahead.' },
+    ],
+  },
+  {
+    id: 'moving',
+    messages: [
+      'Two weeks ago, I moved into this room.',
+      'I still haven’t found any furniture or put up any decorations.',
+      'I really want it to feel like my home.',
+      'Would you like to help decorate my house?',
+    ],
+    replies: [
+      { id: 'help', label: 'I’d love to!' },
+      { id: 'welcome', label: 'Let’s support each other!' },
     ],
   },
 ];
@@ -54,187 +69,109 @@ const INTRODUCTION: readonly AzoConversationTurn[] = [
 export const AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   ...INTRODUCTION,
   {
-    id: 'moving',
-    messages: [
-      'Two weeks ago, I moved into this room.',
-      'As you can see, it’s still empty.',
-      'I still need a rug, a desk, and even a lamp.',
-      'By evening, I’m too exhausted to decorate.',
-      'Even choosing a lamp feels overwhelming.',
-      'I keep putting it off until tomorrow, but nothing changes.',
-      'Would you like us to help each other stay on track?',
-    ],
-    replies: [
-      { id: 'help', label: 'I’d like to help.' },
-      { id: 'welcome', label: 'Let’s support each other.' },
-    ],
-  },
-  {
     id: 'recognition',
     messages: [
-      'Thank you! And I’d love to help you in return.',
-      'Maybe you find it hard to switch off.',
-      'Your focus drifts, or you feel worn out.',
-      'The dishes and laundry pile up.',
-      'You want to clean, but getting started feels difficult.',
-      'You want a routine, but struggle to keep it going.',
-      'Even small tasks get put off.',
-      'Does any of that feel familiar?',
+      'Thank you! I’d also love to help you in return.',
+      'What’s been hardest to keep up with in your daily life?',
     ],
     replies: [
-      { id: 'recognize', label: 'Yes, that feels familiar.' },
-      { id: 'caught', label: 'I’ve been feeling that way.' },
-      { id: 'sometimes', label: 'Sometimes, yes.' },
+      { id: 'tasks', label: 'Getting things done' },
+      { id: 'selfCare', label: 'Taking care of myself' },
+      { id: 'routine', label: 'Keeping a routine' },
     ],
   },
   {
     id: 'reassurance',
     messages: [
-      'Struggling doesn’t mean you’re lazy.',
-      'We’ll look at what feels hardest for you.',
-      'In **7 days**, you’ll feel more confident getting started.',
-      'Even with tasks you’ve been avoiding.',
+      'Don’t worry, you’re not alone. I struggle with everyday tasks too!',
+      'Struggling to keep up doesn’t mean you’re lazy. You might just be missing a way to make your routine work for your brain.',
+      'But don’t worry! We’ll figure out what makes everyday tasks hard for you.',
+      'After answering some questions, I’ll build you a personalized 7-day life-reset plan!',
+      'In 7 days, everyday tasks should feel at least 245% easier for you.',
     ],
-    replies: [{ id: 'start', label: 'What comes next?' }],
+    replies: [{ id: 'start', label: 'What would my plan look like?' }],
   },
   {
     id: 'plan',
-    messages: [
-      'Answer a few questions, and we’ll build your **personalized life reset plan**.',
-      'Your goals and what feels hardest for you shape each daily step.',
-      'A mix of short lessons, calming resets, practical tools, and small daily actions.',
-      'Your answers help us choose the right mix for you.',
-      'Your plan isn’t guesswork.',
-      'It’s built by **Stanford researchers** on CBT, a method tested in **hundreds of clinical trials**.',
-      'In **14 days**, you’ll feel less overwhelmed by everyday tasks.',
-    ],
-    replies: [{ id: 'tasksHelp', label: 'How can you help me overcome procrastination?' }],
+    messages: ['It’ll just be a mix of short lessons, calming resets, AI tools, and small daily actions.'],
+    replies: [{ id: 'tasksHelp', label: 'How will that help me actually get started?' }],
   },
   {
-    id: 'tools',
+    id: 'cbt',
     messages: [
-      'I’ve also got **AI tools** to help along the way.',
-      'Overwhelmed? **Brain dump** out loud, and I’ll sort it into small to-dos.',
-      'Messy room? **Snap a photo**, and I’ll show you where to start.',
-      'Stuck on something? **Ask me** anytime, and we’ll talk it through.',
+      'We’ll work on the thoughts and habits that make getting started harder.',
+      'Your plan draws on cognitive behavioral therapy, or CBT. It’s been tested over hundreds of clinical trials, and I’m sure it’ll work for you too!',
     ],
-    replies: [{ id: 'next', label: 'How will you help me build a routine?' }],
+    replies: [{ id: 'next', label: 'What if I still don’t know where to start?' }],
   },
   {
     id: 'dailyPlan',
     messages: [
-      'I’ll help you start small and build a routine you can keep.',
-      'Your routine is **tailored to your goals**.',
-      'Some days, that might mean tackling a chore you’ve been putting off.',
-      'Other days, taking a moment to reset before you start.',
-      'In **28 days**, you’ll feel more in control of your day.',
-      'With support that fits what you want to change.',
+      'We’ll start small and build a routine you can keep.',
+      'Your answers will help us choose daily steps that fit your life.',
+      'Some days, that might mean a short reset before you start.',
+      'Other days, it might mean tackling a task you’ve been putting off.',
+      'When you finish your daily plan, you’ll earn a decoration for my room.',
+      'You get to choose what we add!',
     ],
-    replies: [{ id: 'show', label: 'I’d like to see how it works.' }],
+    replies: [{ id: 'show', label: 'So we’ll make progress together?' }],
   },
   {
     id: 'room',
-    messages: [
-      'Here’s how we’ll support each other.',
-      'When you finish your daily plan…',
-      'You earn a decoration for my room.',
-      'You choose what to add.',
-      'As the room fills, you can see the steps you’ve completed.',
-      'You help me make this place feel like home.',
-      'I help you keep going.',
-      'Miss a day? Your decorations stay.',
-      'We’ll pick up when you’re ready.',
-    ],
+    messages: ['Exactly! You’ll help make my room feel like a home while I help you build your routine.'],
     replies: [{ id: 'makePlan', label: 'Let’s make my plan.' }],
   },
 ];
 
-/**
- * The cleaning-mode opening. Same turns and reply ids as the default, so the
- * acknowledgment and saved answers read the same way.
- */
+/** The cleaning-mode opening. Same turn ids as the default; only the recognition replies differ. */
 export const CLEANING_AZO_CONVERSATION: readonly AzoConversationTurn[] = [
   ...INTRODUCTION,
   {
-    id: 'moving',
-    messages: [
-      'Two weeks ago, I moved into this room.',
-      'Most of my things are still in boxes.',
-      'The walls are bare, and there’s nowhere to sit.',
-      'I really want it to feel like home.',
-      'But after a long day, unpacking is the last thing I want to do.',
-      'So the boxes just sit there, week after week.',
-      'Would you like to help decorate my house?',
-    ],
-    replies: [
-      { id: 'help', label: 'I’d like to help.' },
-      { id: 'welcome', label: 'Let’s support each other.' },
-    ],
-  },
-  {
     id: 'recognition',
     messages: [
-      'Thank you! And I’d love to help you in return.',
-      'Maybe the dishes and laundry pile up.',
-      'You look around and don’t know where to start.',
-      'You clean one day, and it’s messy again by the weekend.',
-      'You want a tidy home, but getting started feels difficult.',
-      'Even small chores get put off.',
-      'Does any of that feel familiar?',
+      'Thank you! I’d also love to help you in return.',
+      'What’s been hardest to keep up with in your home?',
     ],
     replies: [
-      { id: 'recognize', label: 'Yes, that feels familiar.' },
-      { id: 'caught', label: 'I’ve been feeling that way.' },
-      { id: 'sometimes', label: 'Sometimes, yes.' },
+      { id: 'chores', label: 'Keeping up with chores' },
+      { id: 'declutter', label: 'Decluttering', struggle: 'decluttering' },
+      { id: 'tidy', label: 'Keeping things tidy', struggle: 'keeping things tidy' },
     ],
   },
   {
     id: 'reassurance',
     messages: [
-      'A messy home doesn’t mean you’re lazy.',
-      'We’ll look at what makes cleaning hardest for you.',
-      'In **7 days**, you’ll feel more confident getting started.',
-      'Even with the chores you’ve been avoiding.',
+      'Don’t worry, you’re not alone. I struggle with chores too!',
+      'Having a messy home doesn’t mean you’re lazy. You might just be missing a way to make cleaning work for your brain.',
+      'But don’t worry! We’ll figure out what makes chores hard for you.',
+      'After answering some questions, I’ll build you a personalized 28-day cleaning plan!',
+      'In 7 days, cleaning should feel at least 245% easier for you.',
     ],
-    replies: [{ id: 'start', label: 'What comes next?' }],
+    replies: [{ id: 'start', label: 'What would my plan look like?' }],
   },
   {
     id: 'plan',
-    messages: [
-      'Answer a few questions, and we’ll build your **personalized cleaning plan**.',
-      'Your home, your schedule, and what feels hardest shape each daily step.',
-      'A mix of short lessons, quick tidy-ups, practical tools, and small daily actions.',
-      'Your plan isn’t guesswork.',
-      'It’s built on **CBT**, a method tested in **hundreds of clinical trials**.',
-      'CBT has been shown to help people **stop procrastinating** and **get more organized**.',
-      'In **14 days**, cleaning will feel less overwhelming.',
-    ],
-    replies: [{ id: 'tasksHelp', label: 'How can you help me actually start cleaning?' }],
+    messages: ['It’ll just be a mix of short lessons, quick tidy-ups, AI tools, and small daily actions.'],
+    replies: [{ id: 'tasksHelp', label: 'How will that help me actually start cleaning?' }],
   },
-  {
-    id: 'tools',
-    messages: [
-      'I’ve also got **AI tools** made for cleaning.',
-      'Messy room? **Snap a photo**, and I’ll give you step-by-step cleaning instructions.',
-      'Too many chores in your head? **Brain dump** out loud, and I’ll sort them into small to-dos.',
-      'Not sure where to start? **Ask me** anytime, and we’ll pick the first step together.',
-    ],
-    replies: [{ id: 'next', label: 'How will you help me keep a routine?' }],
-  },
+  AZO_CONVERSATION.find(({ id }) => id === 'cbt')!,
   {
     id: 'dailyPlan',
     messages: [
-      'I’ll help you start small and build a cleaning routine you can keep.',
-      'We’ll ask you a few questions to personalize your routine.',
-      'Your routine is **tailored to your answers**.',
+      'We’ll start small and build a cleaning routine you can keep.',
+      'Your answers will help us choose daily steps that fit your life.',
       'Some days, that might mean a five-minute tidy of one surface.',
-      'Other days, finally tackling the pile you’ve been putting off.',
-      'In **28 days**, keeping your home tidy will feel like part of your day.',
-      'Not another thing to catch up on.',
+      'Other days, it might mean tackling a doom pile you’ve been putting off.',
+      'When you finish your daily plan, you’ll earn a decoration for my room.',
+      'You get to choose what we add!',
     ],
-    replies: [{ id: 'show', label: 'I’d like to see how it works.' }],
+    replies: [{ id: 'show', label: 'So we’ll make progress together?' }],
   },
-  AZO_CONVERSATION[AZO_CONVERSATION.length - 1],
+  {
+    id: 'room',
+    messages: ['Exactly! You’ll help make my room feel like a home while I help you take care of yours.'],
+    replies: [{ id: 'makePlan', label: 'Let’s make my plan.' }],
+  },
 ];
 
 export interface EmphasisPart {
@@ -259,6 +196,7 @@ export function getAzoConversation(
   const messages: AzoConversationMessage[] = [];
   const acceptedAnswers: string[] = [];
   const typedName = name.trim();
+  let struggle: string | undefined;
 
   for (const [index, turn] of turns.entries()) {
     if (turn.id === 'tell') {
@@ -269,18 +207,13 @@ export function getAzoConversation(
       });
     }
 
-    if (turn.id === 'reassurance') {
-      messages.push({
-        id: 'acknowledgment',
-        kind: 'azo',
-        text: acceptedAnswers.includes('sometimes')
-          ? 'Even when it happens only sometimes, it can still be difficult.'
-          : 'You’re not alone in feeling this way. I struggle with it too.',
-      });
-    }
-
     turn.messages.forEach((text, messageIndex) => {
-      messages.push({ id: `${turn.id}-${messageIndex}`, kind: 'azo', text });
+      const opensReassurance = turn.id === 'reassurance' && messageIndex === 0 && struggle;
+      messages.push({
+        id: `${turn.id}-${messageIndex}`,
+        kind: 'azo',
+        text: opensReassurance ? `Don’t worry, you’re not alone. I struggle with ${struggle} too!` : text,
+      });
     });
 
     const reply = turn.replies.find(({ id }) => id === answers[index] && (id !== 'named' || typedName));
@@ -288,6 +221,7 @@ export function getAzoConversation(
       return { messages, answers: acceptedAnswers, replies: turn.replies, complete: false };
     }
     acceptedAnswers.push(reply.id);
+    struggle = reply.struggle ?? struggle;
     messages.push({ id: `${turn.id}-reply`, kind: 'reply', text: reply.id === 'named' ? typedName : reply.label });
   }
 

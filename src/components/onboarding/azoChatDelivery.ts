@@ -1,10 +1,10 @@
 import type { AzoConversationMessage, AzoConversationState } from './data/azoConversation';
 
 const REPLY_RESPONSE_DELAY_MS = 450;
-const READING_BASE_DELAY_MS = 800;
-const READING_WORD_DELAY_MS = 90;
-const MIN_READING_DELAY_MS = 1100;
-const MAX_READING_DELAY_MS = 3600;
+const READING_BASE_DELAY_MS = 1000;
+const READING_WORD_DELAY_MS = 250;
+const MIN_READING_DELAY_MS = 1800;
+const MAX_READING_DELAY_MS = 9000;
 
 /** Give the visible message time to be read before delivering the next one. */
 export function getAzoMessageReadDelay(message?: AzoConversationMessage): number {

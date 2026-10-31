@@ -10,8 +10,7 @@ export function useAzoChatDelivery(conversation: AzoConversationState, onContinu
   const [delivery, setDelivery] = useState(() => getAzoDeliveryState(conversation));
   const [active, setActive] = useState(false);
   const [finishing, setFinishing] = useState(false);
-  const resolved = getAzoDeliveryState(conversation, delivery);
-  const current = reducedMotion ? { ...resolved, visibleCount: resolved.messageCount } : resolved;
+  const current = getAzoDeliveryState(conversation, delivery);
   const latest = useRef(current);
   latest.current = current;
   const stopDelivery = useRef<() => void>(() => {});
@@ -23,7 +22,7 @@ export function useAzoChatDelivery(conversation: AzoConversationState, onContinu
     setDelivery(current);
     // A changed answer prefix starts a new group or restores a reached one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.key, reducedMotion]);
+  }, [current.key]);
 
   useWhileVisible(() => {
     setActive(true);
@@ -57,7 +56,7 @@ export function useAzoChatDelivery(conversation: AzoConversationState, onContinu
       stop();
       setActive(false);
     };
-  }, [current.key, finishing, reducedMotion]);
+  }, [current.key, finishing]);
 
   const cancel = () => {
     stopDelivery.current();
