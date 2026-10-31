@@ -34,7 +34,7 @@ import { PRO_ENTITLEMENT, mapRevenueCatProEntitlement } from '../subscriptions/e
 
 const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
 const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
-/** its own RevenueCat offering, holding the one monthly or weekly package every paywall shows */
+/** its own RevenueCat offering, holding the monthly or weekly package a paywall shows when its offering's own short plan has no paid intro */
 const PAID_TRIAL_MONTHLY_OFFERING = 'paid_trial_monthly';
 
 type PaywallFlow = 'purchase' | 'restore';
@@ -252,6 +252,9 @@ function isShortPlanPackage(pkg: PurchasesPackage): boolean {
 async function findPaidTrialMonthlyPackage(
   placementOffering: PurchasesOffering,
 ): Promise<PurchasesPackage | null> {
+  const ownShortPlan = placementOffering.availablePackages.find(isShortPlanPackage);
+  if ((ownShortPlan?.product.introPrice?.price ?? 0) > 0) return ownShortPlan ?? null;
+
   try {
     const paidTrial = await getRevenueCatOffering(PAID_TRIAL_MONTHLY_OFFERING);
     const pkg = paidTrial?.availablePackages.find(isShortPlanPackage);

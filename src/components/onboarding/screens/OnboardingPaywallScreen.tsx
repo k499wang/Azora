@@ -29,7 +29,7 @@ import { fonts, scaleType, typography } from '../../../theme/typography';
 import { scaleControl } from '../onboardingVisualScale';
 import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { computeAnnualSavings, computePerMonth } from '../../../lib/paywall/planPrice';
+import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
@@ -466,14 +466,6 @@ function TrialDeck({
     }
     onPurchase(selectedPackageId);
   };
-  const priceSummaryLead = selectedPackageHasTrial
-    ? `${selectedTrialDays} days free, then`
-    : selectedIntro != null
-      ? `${selectedIntro.days}-day trial for ${selectedIntro.priceString}, then`
-      : null;
-  const priceSummaryPerMonth = selectedPackage?.billingPeriod === 'year'
-    ? computePerMonth(selectedPackage)
-    : null;
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
       ? `Redeem ${selectedTrialDays} days for $0.00`
@@ -591,7 +583,7 @@ function TrialDeck({
                     {isOnlyOption ? (
                       <ReviewCardRow reviews={cleaning ? CLEANING_COMMUNITY_REVIEWS : COMMUNITY_REVIEWS} />
                     ) : null}
-                    {hasAnnualTrial ? (
+                    {hasAnnualTrial || paidTrial != null ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
                         <PaywallTrialReminderControl
                           reminder={finalReminder}
@@ -607,7 +599,7 @@ function TrialDeck({
                         selectedPackageId={selectedPackageId}
                         onSelectPackage={(packageId) => { if (!isBusy) onSelectPackage(packageId); }}
                         savingsPercent={savingsPercent}
-                        hasAnnualTrial={hasAnnualTrial}
+                        followsReminder={hasAnnualTrial || paidTrial != null}
                       />
                     ) : null}
                     {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
@@ -672,15 +664,6 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {selectedPackage != null && !(isOnlyOption && paidTrial != null) ? (
-                  <Text style={styles.priceSummaryText}>
-                    {priceSummaryLead ? `${priceSummaryLead} ` : ''}
-                    <Text style={styles.priceSummaryPrice}>
-                      {`${selectedPackage.priceString}/${selectedPackage.billingPeriod}`}
-                    </Text>
-                    {priceSummaryPerMonth ? ` (${priceSummaryPerMonth}/mo)` : ''}
-                  </Text>
-                ) : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}
@@ -855,14 +838,6 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-  },
-  priceSummaryText: {
-    ...typography.body.medium,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  priceSummaryPrice: {
-    fontSize: typography.body.large.fontSize,
   },
   previewNote: {
     ...typography.caption.caption1,

@@ -59,14 +59,14 @@ export function PlanCard({
   const isAnnual = pkg.id === 'annual';
   const hasTrial = pkg.trialLabel != null;
   const perMonth = computePerMonth(pkg);
-  const intro = isAnnual ? null : pkg.introOffer;
-  const headline = isAnnual
-    ? (hasTrial
-      ? (balanced ? 'Free' : 'Start for free')
-      : 'Yearly')
+  const intro = pkg.introOffer;
+  const headline = isAnnual && hasTrial
+    ? (balanced ? 'Free' : 'Start for free')
     : intro != null
       ? `${intro.days}-Day Trial`
-      : pkg.title;
+      : isAnnual
+        ? 'Yearly'
+        : pkg.title;
   const planDetail = isAnnual
     ? hasTrial
       ? balanced
@@ -191,9 +191,9 @@ export function PlanCard({
     return (
       <PaywallChoiceCard
         title={headline}
-        detail={planDetail ?? (isAnnual
+        detail={planDetail ?? intro?.priceString ?? (isAnnual
           ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
-          : intro?.priceString ?? `${pkg.priceString}/${pkg.billingPeriod}`)}
+          : `${pkg.priceString}/${pkg.billingPeriod}`)}
         selected={isSelected}
         onPress={() => onSelect(pkg.id)}
       />
@@ -231,10 +231,10 @@ export function PlanCard({
           ) : null}
           {!(balanced && isAnnual && hasTrial) ? (
             <Text style={[styles.planCardPrice, light && styles.textMutedLight]}>
-              {isAnnual
-                ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
-                : intro != null
-                  ? `${intro.priceString}, then ${pkg.priceString}/${pkg.billingPeriod}`
+              {intro != null
+                ? `${intro.priceString}, then ${pkg.priceString}/${pkg.billingPeriod}`
+                : isAnnual
+                  ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
                   : `${pkg.priceString}/${pkg.billingPeriod}`}
             </Text>
           ) : null}

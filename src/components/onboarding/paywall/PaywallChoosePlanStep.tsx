@@ -15,7 +15,8 @@ interface PaywallChoosePlanStepProps {
   selectedPackageId: PaywallPackageId;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
-  hasAnnualTrial: boolean;
+  /** The trial reminder toggle sits above, already spacing the cards from the timeline. */
+  followsReminder: boolean;
 }
 
 export function PaywallChoosePlanStep({
@@ -25,16 +26,16 @@ export function PaywallChoosePlanStep({
   selectedPackageId,
   onSelectPackage,
   savingsPercent,
-  hasAnnualTrial,
+  followsReminder,
 }: PaywallChoosePlanStepProps) {
   return (
     <View style={styles.choosePlanContainer}>
       {isLoading ? (
-        <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
+        <View style={[styles.cardsLoading, !followsReminder && styles.planCardsNoTrial]}>
           <ActivityIndicator color={colors.primary.blue500} />
         </View>
       ) : (
-        <View style={[styles.planCardsStacked, !hasAnnualTrial && styles.planCardsNoTrial]}>
+        <View style={[styles.planCardsStacked, !followsReminder && styles.planCardsNoTrial]}>
           {annualPackage ? (
             <View style={styles.annualCard}>
               <PlanCard
