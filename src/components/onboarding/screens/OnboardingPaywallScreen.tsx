@@ -672,7 +672,7 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {selectedPackage != null ? (
+                {selectedPackage != null && !(isOnlyOption && paidTrial != null) ? (
                   <Text style={styles.priceSummaryText}>
                     {priceSummaryLead ? `${priceSummaryLead} ` : ''}
                     <Text style={styles.priceSummaryPrice}>

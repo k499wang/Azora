@@ -55,7 +55,15 @@ const PREVIEW_OFFERING: PaywallOffering = {
 
 const PREVIEW_PAID_ANNUAL_PACKAGES = PREVIEW_OFFERING.packages.map((pkg) =>
   pkg.id === 'annual'
-    ? { ...pkg, trialLabel: null, trialDays: null, introOffer: { priceString: '$4.99', days: 7 } }
+    ? {
+        ...pkg,
+        priceString: '$29.99',
+        priceCents: 2999,
+        pricePerMonthString: '$2.50',
+        trialLabel: null,
+        trialDays: null,
+        introOffer: { priceString: '$4.99', days: 30 },
+      }
     : pkg,
 );
 
