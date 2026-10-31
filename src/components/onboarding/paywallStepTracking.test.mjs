@@ -170,6 +170,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     '../../../lib/paywall/planPrice': { computeAnnualSavings: () => 0, computePerMonth: () => null },
     '../paywall/paywallStepStyles': { paywallStepStyles: {} },
     '../../../hooks/usePaywallTrialReminder': { usePaywallTrialReminder: () => patch.reminderState ?? ({ enabled: false, daysBeforeEnd: 2 }) },
+    '../../../data/paywallTestimonials': { COMMUNITY_REVIEWS: ['standard'], CLEANING_COMMUNITY_REVIEWS: ['cleaning'] },
     '../../../lib/paywall/trialReminder': { trialDaysFromLabel: () => 7, availableTrialReminderDays: days => [2, 3].filter(offset => offset < days) },
   };
   for (const [path, name, defaultExport] of [
@@ -183,6 +184,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     ['../../paywall/NoTrialLongPaywall', 'NoTrialLongPaywall'],
     ['../../paywall/PaywallTrialReminderToggle', 'PaywallTrialReminderControl'],
     ['../paywall/PaywallTrialStep', 'PaywallTrialStep'],
+    ['../ReviewCardRow', 'ReviewCardRow', true],
   ]) dependencies[path] = { [defaultExport ? 'default' : name]: name };
   let renderingRouter = false;
   dependencies.react = Object.fromEntries(Object.keys(engine.react).map(key => [key, (...args) => (renderingRouter ? routerEngine : engine).react[key](...args)]));
@@ -326,11 +328,27 @@ test('losing trial eligibility on a later step leaves a working plan checkout', 
 test('paid-trial-only offerings check out the short plan without a plan card', () => {
   const purchases = [];
   const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' } };
-  const deck = deckHarness({ offering: { ...offering, paidTrialOnly: true, packages: [annual, monthly] }, onPurchase: id => purchases.push(id) });
+  const deck = deckHarness({ offering: { ...offering, onlyPackageId: 'monthly', packages: [annual, monthly] }, onPurchase: id => purchases.push(id) });
   assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
   assert.equal(deck.component('Button').props.label, 'Redeem 3 days for $0.99');
+  assert.equal(deck.component('PaywallTrialStep').props.onlyOption, true);
+  assert.deepEqual(deck.component('ReviewCardRow').props.reviews, ['standard']);
   deck.pressNext();
   assert.deepEqual(purchases, ['monthly']);
+  deck.unmount();
+});
+
+test('annual paid-trial-only offerings show the paid intro and buy annual', () => {
+  const purchases = [];
+  const paidAnnual = { ...annual, trialLabel: null, trialDays: null, introOffer: { days: 7, priceString: '$4.99' } };
+  const monthly = { ...annual, id: 'monthly', title: 'Weekly', billingPeriod: 'week', trialLabel: null, introOffer: { days: 3, priceString: '$2.99' } };
+  const deck = deckHarness({ offering: { ...offering, onlyPackageId: 'annual', packages: [paidAnnual, monthly] }, selectedPackageId: 'monthly', onPurchase: id => purchases.push(id) });
+  assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
+  const { paidTrial } = deck.component('PaywallTrialStep').props;
+  assert.equal(`${paidTrial.days} ${paidTrial.introPrice} ${paidTrial.renewalPrice}`, '7 $4.99 $59.99/year');
+  assert.equal(deck.component('Button').props.label, 'Redeem 7 days for $4.99');
+  deck.pressNext();
+  assert.deepEqual(purchases, ['annual']);
   deck.unmount();
 });
 

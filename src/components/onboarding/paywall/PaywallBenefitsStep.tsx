@@ -43,6 +43,7 @@ const GOAL_BENEFITS: Partial<Record<OnboardingIntent, [string, string]>> = {
 const DEFAULT_BENEFITS: [string, string] = ['Build habits that actually stick', 'Feel a little better every day'];
 
 const DEFAULT_TITLE = 'Build a life that feels better with Azora.';
+const CLEANING_TITLE = 'Build a better home life with Azora.';
 
 interface PaywallBenefitsStepProps {
   intent?: OnboardingIntent;
@@ -76,7 +77,7 @@ export function PaywallBenefitsStep({
 }: PaywallBenefitsStepProps) {
   const title = hasTrial && remoteTitle?.trim()
     ? remoteTitle.trim().replaceAll('{plan}', planNounForIntent(intent))
-    : DEFAULT_TITLE;
+    : intent === 'cleaning' ? CLEANING_TITLE : DEFAULT_TITLE;
   const benefits = [
     stakesBenefit ?? 'A daily plan built from your answers to fit your life',
     ...((intent != null ? GOAL_BENEFITS[intent] : undefined) ?? DEFAULT_BENEFITS),

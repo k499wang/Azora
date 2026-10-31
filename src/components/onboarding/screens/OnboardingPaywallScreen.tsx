@@ -35,6 +35,8 @@ import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderC
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import { NoTrialLongPaywall } from '../../paywall/NoTrialLongPaywall';
+import ReviewCardRow from '../ReviewCardRow';
+import { CLEANING_COMMUNITY_REVIEWS, COMMUNITY_REVIEWS } from '../../../data/paywallTestimonials';
 import { PaywallTrialReminderControl } from '../../paywall/PaywallTrialReminderToggle';
 import { usePaywallTrialReminder } from '../../../hooks/usePaywallTrialReminder';
 import { availableTrialReminderDays, trialDaysFromLabel } from '../../../lib/paywall/trialReminder';
@@ -106,6 +108,7 @@ function TrialDeck({
   offering,
   planIntent,
   stakesBenefit,
+  cleaning = false,
   paywallMode,
   selectedPackageId: chosenPackageId,
   isLoading,
@@ -130,15 +133,18 @@ function TrialDeck({
   const insets = useSafeAreaInsets();
   const trialReminder = usePaywallTrialReminder(preview);
 
-  const paidTrialOnly = offering?.paidTrialOnly === true;
-  const selectedPackageId: PaywallPackageId = paidTrialOnly ? 'monthly' : chosenPackageId;
+  const onlyPackageId = offering?.onlyPackageId ?? null;
+  const selectedPackageId: PaywallPackageId = onlyPackageId ?? chosenPackageId;
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
   );
-  const annualPackage = paidTrialOnly
+  const annualPackage = onlyPackageId === 'monthly'
     ? undefined
     : offering?.packages.find((pkg) => pkg.id === 'annual');
-  const monthlyPackage = offering?.packages.find((pkg) => pkg.id === 'monthly');
+  const monthlyPackage = onlyPackageId === 'annual'
+    ? undefined
+    : offering?.packages.find((pkg) => pkg.id === 'monthly');
+  const isOnlyOption = annualPackage == null || monthlyPackage == null;
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const annualTrialDays = annualPackage?.trialDays ?? trialDaysFromLabel(annualPackage?.trialLabel);
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
@@ -427,12 +433,17 @@ function TrialDeck({
   }, [isBusy, paywallMode, onContinueWithoutPro]);
 
   const isAnnualSelected = selectedPackageId === 'annual';
-  const monthlyIntro = monthlyPackage?.introOffer;
+  const selectedIntro = selectedPackage?.introOffer ?? null;
+  const paidTrial = selectedIntro != null && selectedPackage != null
+    ? {
+        days: selectedIntro.days,
+        introPrice: selectedIntro.priceString,
+        renewalPrice: `${selectedPackage.priceString}/${selectedPackage.billingPeriod}`,
+      }
+    : null;
   const selectedTrialDays = selectedPackageHasTrial
     ? selectedPackage?.trialDays ?? trialDaysFromLabel(selectedPackage?.trialLabel)
-    : selectedPackageId === 'monthly'
-      ? monthlyIntro?.days ?? 0
-      : 0;
+    : selectedIntro?.days ?? 0;
   const availableReminderDays = availableTrialReminderDays(selectedTrialDays);
   const effectiveReminderDays = availableReminderDays.includes(trialReminder.daysBeforeEnd)
     ? trialReminder.daysBeforeEnd
@@ -457,8 +468,8 @@ function TrialDeck({
   };
   const priceSummaryLead = selectedPackageHasTrial
     ? `${selectedTrialDays} days free, then`
-    : selectedPackageId === 'monthly' && monthlyIntro != null
-      ? `${monthlyIntro.days}-day trial for ${monthlyIntro.priceString}, then`
+    : selectedIntro != null
+      ? `${selectedIntro.days}-day trial for ${selectedIntro.priceString}, then`
       : null;
   const priceSummaryPerMonth = selectedPackage?.billingPeriod === 'year'
     ? computePerMonth(selectedPackage)
@@ -466,10 +477,10 @@ function TrialDeck({
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
       ? `Redeem ${selectedTrialDays} days for $0.00`
-      : isAnnualSelected
-        ? 'Subscribe yearly'
-        : monthlyIntro != null
-          ? `Redeem ${monthlyIntro.days} days for ${monthlyIntro.priceString}`
+      : selectedIntro != null
+        ? `Redeem ${selectedIntro.days} days for ${selectedIntro.priceString}`
+        : isAnnualSelected
+          ? 'Subscribe yearly'
           : `Continue with ${monthlyPackage?.title.toLowerCase() ?? 'monthly'}`;
 
   return (
@@ -573,22 +584,18 @@ function TrialDeck({
                       reminderEnabled={finalReminder.enabled}
                       trialDays={selectedTrialDays}
                       trialLabel={selectedPackage?.trialLabel}
-                      paidTrial={
-                        selectedPackageId === 'monthly' && monthlyIntro != null && monthlyPackage != null
-                          ? {
-                              days: monthlyIntro.days,
-                              introPrice: monthlyIntro.priceString,
-                              renewalPrice: `${monthlyPackage.priceString}/${monthlyPackage.billingPeriod}`,
-                            }
-                          : null
-                      }
-                      onlyOption={annualPackage == null}
+                      paidTrial={paidTrial}
+                      onlyOption={isOnlyOption}
+                      onlyOptionTitle={offering?.trialTitle}
                     />
+                    {isOnlyOption && paidTrial != null ? (
+                      <ReviewCardRow reviews={cleaning ? CLEANING_COMMUNITY_REVIEWS : COMMUNITY_REVIEWS} />
+                    ) : null}
                     {hasAnnualTrial ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
                         <PaywallTrialReminderControl
                           reminder={finalReminder}
-                          disabled={isBusy || (!selectedPackageHasTrial && !(selectedPackageId === 'monthly' && monthlyIntro != null)) || effectiveReminderDays == null}
+                          disabled={isBusy || (!selectedPackageHasTrial && selectedIntro == null) || effectiveReminderDays == null}
                         />
                       </View>
                     ) : null}

@@ -55,7 +55,10 @@ quietly falls back to the default.
 | | `"long"` | One long scrolling page with plan cards, comparison, testimonials, journey | |
 | | `"long_then_trial"` | The long page; its Continue slides up the deck's trial timeline screen | |
 | `paywall_mode` | `"hard"` | No way out: no close / "continue without Pro" in onboarding, and the app-start paywall (read from `profile_upgrade`) blocks the app | `soft` (closeable) |
-| `trial_options` | `"paid_only"` | Trial timeline screen offers only the short plan's paid trial; yearly is ignored there and no plan card is shown. The long page (`long_then_trial`) still shows both plans | both plans |
+| `trial_package` | `"annual"` | Trial timeline screen offers only the annual plan (free or paid trial); no plan card, review cards instead. Both packages stay in the offering | every package |
+| | `"weekly"` (or `"monthly"`) | Same, but only the short plan (which still comes from `paid_trial_monthly`) | |
+| `trial_options` | `"paid_only"` | Older name for `trial_package: "weekly"`; still works | |
+| `trial_title` | any text, `{days}` = trial length | Title of the paid-trial-only timeline screen, e.g. `"Try your plan for {days} days"` | `"How your {days}-day trial works"` |
 | `benefits_title` | any text, `{plan}` = goal noun | Replaces the deck's benefits-step title (only when a free trial is shown) | built-in title |
 | `experiment_id`, `experiment_variant` | any text | Attached to every paywall analytics event so PostHog can split by variant | null |
 
@@ -65,15 +68,20 @@ Rules that apply to every layout:
   or network problem never locks anyone out.
 - **The plan card only appears when there are two plans to pick from.** With a
   single plan (annual-only offering, short-plan-only offering, or
-  `trial_options: "paid_only"`) the timeline screen shows just the timeline
+  `trial_package`) the timeline screen shows just the timeline
   and the button.
 - The deck only shows the benefits / gift / reminder intro steps when the
   annual plan has a free trial this user is eligible for. Otherwise it opens
   straight on the plan screen.
 - The timeline and button follow the selected plan: annual free trial
-  ("Redeem 7 days for $0.00"), the short plan's paid intro ("Redeem 3 days for
-  $0.99"), or plain prices ("Subscribe yearly" / "Continue with monthly") when
+  ("Redeem 7 days for $0.00"), a paid intro on either plan ("Redeem 7 days for
+  $4.99"), or plain prices ("Subscribe yearly" / "Continue with monthly") when
   the user is not eligible for a trial.
+
+- **A paid intro on the annual plan only shows on the trial timeline screen.**
+  The long page and plan cards still show annual as its full price ("Annual",
+  "Subscribe yearly"). Don't serve an annual paid-trial product to `long` or
+  `long_then_trial` offerings.
 
 ## PostHog feature flags
 
@@ -90,12 +98,36 @@ PostHog — only by RevenueCat.
 
 | I want… | Do this in RevenueCat |
 |---|---|
-| Only the paid trial on the trial timeline | Add `"trial_options": "paid_only"` to the offering |
+| Only the annual paid trial on the trial timeline | Add `"trial_package": "annual"` to the offering |
+| Only the weekly paid trial on the trial timeline | Add `"trial_package": "weekly"` to the offering |
 | Only the paid trial everywhere (long page too) | Make an offering without the annual package |
 | No trial | See "Switch to no trial" below |
 | No way to skip the paywall | `"paywall_mode": "hard"` |
+| A/B test the paid-trial title | See "A/B test the paid-trial title" below |
 | A/B test two paywalls | RevenueCat Experiment between two offerings, each with its own `experiment_variant` |
 | Test before production | Add a Targeting condition (e.g. app version) that only matches you |
+
+## A/B test the paid-trial title
+
+1. Make sure the current paid-trial offering has `"trial_package": "weekly"`.
+2. Duplicate it twice (same packages), with metadata:
+
+   | Offering | Metadata |
+   |---|---|
+   | `paid_trial_title_a` | `{ "trial_package": "weekly", "experiment_id": "paid_trial_title", "experiment_variant": "how_it_works" }` (no `trial_title`, uses the default) |
+   | `paid_trial_title_b` | `{ "trial_package": "weekly", "experiment_id": "paid_trial_title", "experiment_variant": "try_your_plan", "trial_title": "Try your plan for {days} days" }` |
+
+   Keep any other metadata (`paywall_layout`, `paywall_mode`, …) identical in both.
+3. RevenueCat → **Experiments** → new experiment on placement
+   `onboarding_complete`, control `paid_trial_title_a`, treatment
+   `paid_trial_title_b`, 50/50, new customers only.
+4. Read results in RevenueCat (trial starts, conversion to paid, revenue), or in
+   PostHog by splitting `paywall_step_viewed` (`paywall_step: plan`) and
+   `paywall_purchase_started` by `experiment_variant`.
+5. Run until each arm has a few hundred plan-screen views before calling it.
+
+Needs the build with `trial_title` support; older builds ignore the key and
+show their built-in title in both arms.
 
 ## Tracking the deck
 

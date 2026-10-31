@@ -15,7 +15,8 @@ const PREVIEW_OFFERING: PaywallOffering = {
   paywallMode: 'soft',
   paywallLayout: 'long',
   benefitsTitle: null,
-  paidTrialOnly: false,
+  onlyPackageId: null,
+  trialTitle: null,
   packages: [
     {
       id: 'annual',
@@ -52,6 +53,12 @@ const PREVIEW_OFFERING: PaywallOffering = {
   ],
 };
 
+const PREVIEW_PAID_ANNUAL_PACKAGES = PREVIEW_OFFERING.packages.map((pkg) =>
+  pkg.id === 'annual'
+    ? { ...pkg, trialLabel: null, trialDays: null, introOffer: { priceString: '$4.99', days: 7 } }
+    : pkg,
+);
+
 const PREVIEW_SCORES = computeMindMap({
   stressLevel: 7,
   sleepQuality: 4,
@@ -65,7 +72,7 @@ export default function OnboardingPaywallPreviewScreen({ navigation, route }: On
       layout={route.params.layout}
       initialStep={route.params.initialStep}
       cleaning={route.params.cleaning}
-      paidTrialOnly={route.params.paidTrialOnly}
+      onlyPackageId={route.params.onlyPackageId}
       planIntent={route.params.cleaning ? 'cleaning' : 'stress_relief'}
       goalPhrase="feel calmer on the hard days"
       onClose={() => navigation.goBack()}
@@ -77,7 +84,7 @@ interface OnboardingPaywallPreviewProps {
   layout: PaywallLayout;
   initialStep?: 'plan';
   cleaning?: boolean;
-  paidTrialOnly?: boolean;
+  onlyPackageId?: PaywallPackageId;
   planIntent: OnboardingIntent;
   goalPhrase: string;
   onClose: () => void;
@@ -87,7 +94,7 @@ export function OnboardingPaywallPreview({
   layout,
   initialStep,
   cleaning,
-  paidTrialOnly = false,
+  onlyPackageId,
   planIntent,
   goalPhrase,
   onClose,
@@ -100,7 +107,12 @@ export function OnboardingPaywallPreview({
       <OnboardingPaywallScreen
         preview
         initialStep={initialStep}
-        offering={{ ...PREVIEW_OFFERING, paywallLayout: layout, paidTrialOnly }}
+        offering={{
+          ...PREVIEW_OFFERING,
+          paywallLayout: layout,
+          onlyPackageId: onlyPackageId ?? null,
+          packages: onlyPackageId === 'annual' ? PREVIEW_PAID_ANNUAL_PACKAGES : PREVIEW_OFFERING.packages,
+        }}
         planIntent={planIntent}
         planPreset={onboardingPresetFor(planIntent)}
         selectedIntents={[planIntent]}

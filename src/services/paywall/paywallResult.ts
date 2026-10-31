@@ -42,9 +42,13 @@ export interface PaywallOffering {
   paywallLayout: PaywallLayout;
   // Remote-controlled via `benefits_title` metadata; `{plan}` becomes the goal noun.
   benefitsTitle: string | null;
-  // Remote-controlled via `trial_options: "paid_only"` metadata; the trial
-  // timeline screen then offers only the short plan's paid trial.
-  paidTrialOnly: boolean;
+  // Remote-controlled via `trial_package` metadata ("annual" or "weekly"/"monthly");
+  // legacy `trial_options: "paid_only"` means the short plan. The trial timeline
+  // screen then offers only that package. Null offers every package.
+  onlyPackageId: PaywallPackageId | null;
+  // Remote-controlled via `trial_title` metadata; `{days}` becomes the trial
+  // length. Titles the paid-trial-only timeline screen.
+  trialTitle: string | null;
   packages: PaywallPackageOption[];
 }
 

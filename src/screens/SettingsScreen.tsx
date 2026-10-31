@@ -453,7 +453,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 />
                 <SettingsRow
                   label="Preview design your trial, paid trial only (dev)"
-                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', paidTrialOnly: true })}
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', onlyPackageId: 'monthly' })}
+                />
+                <SettingsRow
+                  label="Preview design your trial, annual paid trial only (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', onlyPackageId: 'annual' })}
                 />
                 <SettingsRow
                   label="Preview breathing result (dev)"

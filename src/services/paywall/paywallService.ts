@@ -146,7 +146,11 @@ export async function getPaywallOffering(
           : 'soft',
       paywallLayout: toPaywallLayout(getMetadataString(offering.metadata, 'paywall_layout')),
       benefitsTitle: getMetadataString(offering.metadata, 'benefits_title'),
-      paidTrialOnly: getMetadataString(offering.metadata, 'trial_options') === 'paid_only',
+      onlyPackageId: toOnlyPackageId(
+        getMetadataString(offering.metadata, 'trial_package'),
+        getMetadataString(offering.metadata, 'trial_options'),
+      ),
+      trialTitle: getMetadataString(offering.metadata, 'trial_title'),
       packages,
     },
     revenueCatPackages: { annual, monthly },
@@ -292,14 +296,23 @@ function toPaywallPackageOption(
     trialDays: isAnnual && trialLabel != null
       ? trialLengthDays(pkg.product.introPrice)
       : null,
-    introOffer: isAnnual
-      ? null
-      : eligiblePaidIntroOffer({
-          introPrice: pkg.product.introPrice,
-          eligibilityStatus: trialEligibilityStatus,
-        }),
+    introOffer: eligiblePaidIntroOffer({
+      introPrice: pkg.product.introPrice,
+      eligibilityStatus: trialEligibilityStatus,
+    }),
     isRecommended: isAnnual,
   };
+}
+
+function toOnlyPackageId(
+  trialPackage: string | null,
+  trialOptions: string | null,
+): PaywallPackageId | null {
+  if (trialPackage === 'annual') return 'annual';
+  if (trialPackage === 'weekly' || trialPackage === 'monthly' || trialOptions === 'paid_only') {
+    return 'monthly';
+  }
+  return null;
 }
 
 function toPaywallLayout(value: string | null): PaywallLayout {
