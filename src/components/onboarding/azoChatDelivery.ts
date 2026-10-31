@@ -1,7 +1,7 @@
 import type { AzoConversationMessage, AzoConversationState } from './data/azoConversation';
 
-const READING_BASE_DELAY_MS = 1400;
-const READING_WORD_DELAY_MS = 250;
+const READING_BASE_DELAY_MS = 1500;
+const READING_WORD_DELAY_MS = 275;
 const MAX_READING_DELAY_MS = 10000;
 
 /** Give the visible message, Azo's or the user's reply, time to be read before delivering the next one. */
