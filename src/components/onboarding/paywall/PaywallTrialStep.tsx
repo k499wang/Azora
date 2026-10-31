@@ -127,7 +127,7 @@ export function PaywallTrialStep({
   paidTrial?: { days: number; introPrice: string; renewalPrice: string } | null;
   /** The paid trial is the only plan on offer, so there is nothing to design. */
   onlyOption?: boolean;
-  /** Remote title for the only-option screen; `{days}` becomes the trial length. */
+  /** Remote title for the only-option trial screen; `{days}` becomes the trial length. */
   onlyOptionTitle?: string | null;
   variant?: 'pro' | 'onboarding';
   /**
@@ -203,6 +203,10 @@ export function PaywallTrialStep({
         },
       ];
 
+  const onlyOptionHeading = paidTrial != null || hasAnnualTrial
+    ? (onlyOptionTitle?.trim() || 'How your {days}-day trial works').replaceAll('{days}', String(trialDays))
+    : 'Unlock your Personalized Plan';
+
   if (layout === 'section') {
     return (
       <PaywallSection title="How Your Personalized Plan Works" singleLineTitle>
@@ -214,8 +218,8 @@ export function PaywallTrialStep({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.trialDesignHeader}>
-        <Text style={styles.trialDesignTitle}>{title ?? (paidTrial != null && onlyOption
-          ? (onlyOptionTitle?.trim() || 'How your {days}-day trial works').replaceAll('{days}', String(paidTrial.days))
+        <Text style={styles.trialDesignTitle}>{title ?? (onlyOption
+          ? onlyOptionHeading
           : hasAnnualTrial || paidTrial != null ? 'Design your trial experience' : 'Choose your plan')}</Text>
       </View>
       <Timeline steps={reminderAvailable ? steps : steps.filter((step) => step.icon !== 'bell')} showTrialTail={hasAnnualTrial} layout="step" />

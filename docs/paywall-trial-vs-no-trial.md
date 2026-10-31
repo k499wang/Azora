@@ -70,6 +70,9 @@ Rules that apply to every layout:
   single plan (annual-only offering, short-plan-only offering, or
   `trial_package`) the timeline screen shows just the timeline
   and the button.
+- With a single plan the timeline screen is titled "How your {days}-day trial
+  works" (or `trial_title`) when the user gets a trial, and "Unlock your
+  Personalized Plan" when they don't. Review cards show either way.
 - The deck only shows the benefits / gift / reminder intro steps when the
   annual plan has a free trial this user is eligible for. Otherwise it opens
   straight on the plan screen.

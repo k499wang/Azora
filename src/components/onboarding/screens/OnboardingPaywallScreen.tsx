@@ -588,7 +588,7 @@ function TrialDeck({
                       onlyOption={isOnlyOption}
                       onlyOptionTitle={offering?.trialTitle}
                     />
-                    {isOnlyOption && paidTrial != null ? (
+                    {isOnlyOption ? (
                       <ReviewCardRow reviews={cleaning ? CLEANING_COMMUNITY_REVIEWS : COMMUNITY_REVIEWS} />
                     ) : null}
                     {hasAnnualTrial ? (
