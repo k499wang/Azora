@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   headlineAccent: {
-    fontFamily: fonts.heavy,
+    fontFamily: fonts.semibold,
     color: colors.primary.blue600,
   },
   headline: {
