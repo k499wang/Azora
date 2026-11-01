@@ -637,7 +637,7 @@ export const FOCUS_LESSONS = [
   },
   {
     id: 'focus.homelaundry',
-    title: 'Choose one laundry job at a time',
+    title: 'Laundry Is Three Jobs',
     step: 'Choose one load to wash or one clean pile to put away.',
     blocks: [
       {
@@ -685,7 +685,7 @@ export const FOCUS_LESSONS = [
   },
   {
     id: 'focus.homedishes',
-    title: 'Make space to use the sink',
+    title: 'Tackle the Full Sink',
     step: 'Choose one safe dishwashing step that makes your sink easier to use.',
     blocks: [
       {

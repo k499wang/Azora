@@ -6,12 +6,12 @@ import Animated, {
   interpolateColor,
   ReduceMotion,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
@@ -42,7 +42,7 @@ interface Props {
  * change from one phase to the next.
  */
 export default function AttentionSqueezeShape({ phase, remaining }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const form = useSharedValue(0);
   const tint = useSharedValue(0);
   const pulse = useSharedValue(0);

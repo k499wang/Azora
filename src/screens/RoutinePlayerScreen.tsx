@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTimerKeepAwake } from '../features/selfCare/shared/useTimerKeepAwake';
 import { useIsFocused } from '@react-navigation/native';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import type { RoutinePlayerScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
 import ChunkyButton from '../components/common/ChunkyButton';
@@ -340,7 +340,7 @@ interface FinishedViewProps {
 
 function FinishedView({ player, userId, onDone }: FinishedViewProps) {
   const { width, height } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const { done, skipped, total, coins: earned, minutes } = routinePlayerSummary(player);
   const celebrating = done > 0;
   // The last tick may still be saving, and the balance only takes its coins

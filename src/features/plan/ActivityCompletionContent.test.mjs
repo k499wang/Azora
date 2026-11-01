@@ -62,6 +62,7 @@ function setup(file, extraExports = '', reducedMotion = false) {
   vm.runInNewContext(compiled, {
     exports,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       return { ...dependencies, default: name === 'react-native-reanimated' ? { View: 'AnimatedView' } : name };

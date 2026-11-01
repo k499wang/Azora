@@ -4,13 +4,13 @@ import {
   interpolateColor,
   runOnUI,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { colors } from '../../theme/colors';
 import { duration, easing, spring } from '../../theme/motion';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
@@ -63,7 +63,7 @@ export function goalCompletionMotionSettled(): Promise<void> {
  * New cards grow into their slot without hiding a shown card.
  */
 export function useGoalCompletionMotion(done: boolean, filing = false) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const fill = useSharedValue(done ? 1 : 0);
   const strike = useSharedValue(done ? 1 : 0);
   const pop = useSharedValue(0);

@@ -2,7 +2,6 @@ import { Pressable, StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -10,6 +9,7 @@ import Animated, {
   ZoomIn,
   ZoomOut,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Icon from '../../components/common/icons/Icon';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -58,7 +58,7 @@ export default function TodayJumpButton({ direction, bottom, onPress }: Props) {
 }
 
 function BobbingArrow({ direction }: { direction: TodayDirection }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const bob = useSharedValue(0);
   const sign = direction === 'up' ? -1 : 1;
 

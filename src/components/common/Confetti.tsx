@@ -22,11 +22,11 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useDerivedValue,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { holdMotionQuiet } from '../../lib/ui/motionQuiet';
 
 // Fixed rather than random: the same burst every time reads as choreography,
@@ -167,7 +167,7 @@ const Confetti = memo(forwardRef<ConfettiHandle, ConfettiProps>(function Confett
   active = true,
   onComplete,
 }, ref) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const { height, width } = useWindowDimensions();
   const renderedPieceCount = Number.isFinite(pieceCount)
     ? Math.max(0, Math.min(PIECES.length, Math.floor(pieceCount)))

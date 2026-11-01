@@ -5,12 +5,12 @@ import Animated, {
   interpolate,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CoinWorth from '../../components/common/CoinWorth';
 import { Text } from '../../components/common/Text';
@@ -67,7 +67,7 @@ interface Props {
 export default function PathDayCard({ content, visible, onClose }: Props) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   // Held open past `visible` so the card can shrink back into its node.
   const [mounted, setMounted] = useState(visible);
   const [placed, setPlaced] = useState(false);

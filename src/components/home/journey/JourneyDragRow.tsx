@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../../hooks/useReducedMotionSetting';
 import {
   triggerLightHaptic,
   triggerTapHaptic,
@@ -114,6 +115,7 @@ function PositionedRow({
    * transform only says how far it is from it.
    */
   const positioned = contentHeight != null;
+  const reducedMotion = useReducedMotionSetting();
   // Its resting offset, taken from the same props the layout is built from.
   // Reading it off the shared heights instead would let the transform and the
   // layout disagree for a frame on the render that commits a drop — which is
@@ -285,7 +287,7 @@ function PositionedRow({
           // movement.
           translateY: held
             ? pickup.value + translation.value - base
-            : dragging.value || (positioned && settled.value)
+            : dragging.value || (positioned && (settled.value || reducedMotion))
               ? withTiming(resting - base, settle)
               : resting - base,
         },
@@ -304,7 +306,7 @@ function PositionedRow({
         JOURNEY_DRAG_SETTLE,
       ),
     };
-  }, [id, ids, gap, restingOffset, positioned, restingTiming]);
+  }, [id, ids, gap, restingOffset, positioned, restingTiming, reducedMotion]);
 
   return (
     <GestureDetector gesture={gesture}>

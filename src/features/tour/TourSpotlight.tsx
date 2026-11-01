@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Svg, { Defs, Mask, Path, Rect } from 'react-native-svg';
 import { Text } from '../../components/common/Text';
 import AzoAside from '../../components/onboarding/AzoAside';
@@ -48,7 +48,7 @@ export const BOTTOM_META_HEIGHT = 48;
  * different place on screen, or the app itself.
  */
 export function useTourFadeIn(visible: boolean): Animated.Value {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

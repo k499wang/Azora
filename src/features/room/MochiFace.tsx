@@ -3,9 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useFrameCallback,
-  useReducedMotion,
   useSharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { colors } from '../../theme/colors';
 
 /**
@@ -101,7 +101,7 @@ interface MochiFaceProps {
 
 function MochiFace({ size }: MochiFaceProps) {
   const u = size / BODY_W;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
 
   const clock = useSharedValue(0);
   const stride = useSharedValue(0);

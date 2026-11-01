@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import Animated, {
   FadeIn,
+  ReduceMotion,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
-  useReducedMotion,
   measure,
   useAnimatedReaction,
   useAnimatedRef,
@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
   type AnimatedRef,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
@@ -162,7 +163,7 @@ const GOAL_LEAVE_MS = Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duratio
 const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
 const JOURNEY_ROW_GAP = 12;
 const FOLDED_HEADER_SPACE = JOURNEY_ROW_GAP + spacing.md;
-const FOLD_TIMING = { duration: duration.fast, easing: easing.enter } as const;
+const FOLD_TIMING = { duration: duration.fast, easing: easing.enter, reduceMotion: ReduceMotion.Never } as const;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 // A load shorter than this never shows the skeleton: shown for a few frames and
 // swapped straight out, it read as the list flashing.
@@ -462,11 +463,9 @@ const GoalRow = memo(function GoalRow({
   folded,
   ...card
 }: GoalRowProps) {
-  const reducedMotion = useReducedMotion();
-  const foldStyle = useAnimatedStyle(() => {
-    const target = folded ? 0 : 1;
-    return { opacity: reducedMotion ? target : withTiming(target, FOLD_TIMING) };
-  }, [folded, reducedMotion]);
+  const foldStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(folded ? 0 : 1, FOLD_TIMING),
+  }), [folded]);
   return (
     <JourneyDragRow
       controller={controller}
@@ -525,7 +524,7 @@ function AllDoneState({
   fillAvailableSpace?: boolean;
   onAddHabit?: () => void;
 }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const burst = useSharedValue(0);
   const [celebrates] = useState(celebrate);
 
@@ -607,18 +606,15 @@ function DaypartHeader({
   /** plays the part of the day's open to-dos one at a time; left out when there is nothing to play */
   onStart?: () => void;
 }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: leaving && !reducedMotion
       ? withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
       : leaving ? 0 : 1,
   }));
-  const chevronStyle = useAnimatedStyle(() => {
-    const target = folded ? -90 : 0;
-    return {
-      transform: [{ rotate: `${reducedMotion ? target : withTiming(target, FOLD_TIMING)}deg` }],
-    };
-  }, [folded, reducedMotion]);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${withTiming(folded ? -90 : 0, FOLD_TIMING)}deg` }],
+  }), [folded]);
   return (
     <Animated.View style={[styles.daypartHeaderRow, fadeStyle]}>
       <Pressable
@@ -688,7 +684,7 @@ function TodoListSection(props: TodoListSectionProps) {
   const pageRef = tasksOnly ? props.scrollRef : undefined;
   const isFocused = useIsFocused();
   const playCompletionSound = useCompletionSound('todo');
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const focused = useRef(isFocused);
   useEffect(() => {
     focused.current = isFocused;

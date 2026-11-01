@@ -44,6 +44,7 @@ function loadTaskTimer() {
   ).outputText, {
     exports,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => false };
       const key = Object.keys(modules).find((key) => name === key || name.endsWith(`/${key}`));
       if (!key) throw new Error(`Unexpected import: ${name}`);
       return modules[key];

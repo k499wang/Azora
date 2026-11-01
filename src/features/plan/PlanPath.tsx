@@ -19,7 +19,6 @@ import Svg, { Ellipse } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -28,6 +27,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
@@ -556,7 +556,7 @@ function DayNode({
  * hops inside it.
  */
 function TodayRing({ size, color, active }: { size: number; color: string; active: boolean }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const pulse = useSharedValue(0);
   const width = size + RING_REACH * 2;
   const height = size / COIN_ASPECT + COIN_DEPTH + RING_REACH * 2;
@@ -746,7 +746,7 @@ function PathTrail({ points, stretches }: {
 
 /** A small hop now and then, resting in between, so today's node reads as the one waiting. */
 function Hop({ active, children }: { active: boolean; children: ReactNode }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const lift = useSharedValue(0);
 
   useWhileVisible(() => {

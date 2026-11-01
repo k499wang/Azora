@@ -64,6 +64,7 @@ function setup(componentName, props, options = {}) {
   vm.runInNewContext(source, {
     exports, AbortController,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => options.reducedMotion ?? false };
       if (name === 'react') return {
         memo: (fn) => fn,
         useState(initial) {

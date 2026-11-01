@@ -5,11 +5,11 @@ import Animated, {
   Easing,
   interpolateColor,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
@@ -48,7 +48,7 @@ export default function StreakExtendStep({
   onIgnite,
   onContinue,
 }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const [today] = useState(() => new Date().getDay());
   const count = routineStreakCount(streakDays);
   const columns = streakOdometerDigits(count - 1, count);

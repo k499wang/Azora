@@ -56,6 +56,7 @@ function setup() {
   }).outputText, {
     exports,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => false };
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react-native-reanimated') return reanimated;

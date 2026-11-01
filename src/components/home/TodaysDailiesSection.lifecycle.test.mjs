@@ -77,6 +77,7 @@ function setup() {
   vm.runInNewContext(compile('./TodaysDailiesSection.tsx', '\nexport { ClaimButton };'), {
     exports,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react-native') return { Pressable: 'Pressable', View: 'View', StyleSheet: { create: (styles) => styles } };
       if (name === 'react-native-reanimated') return reanimated;

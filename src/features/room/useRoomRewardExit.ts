@@ -3,15 +3,15 @@ import {
   cancelAnimation,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { easing } from '../../theme/motion';
 
 /** Fade the whole reward surface before its owner closes it. */
 export function useRoomRewardExit(onDone: () => void) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const progress = useSharedValue(0);
   const started = useRef(false);
   const [leaving, setLeaving] = useState(false);

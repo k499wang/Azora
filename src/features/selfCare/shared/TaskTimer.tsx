@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import Animated, {
   cancelAnimation, Keyframe, LayoutAnimationConfig, useAnimatedStyle,
-  useDerivedValue, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming,
+  useDerivedValue, useSharedValue, withRepeat, withSequence, withTiming,
   type EntryExitAnimationFunction, type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../../hooks/useReducedMotionSetting';
 import { Text } from '../../../components/common/Text';
 import Icon from '../../../components/common/icons/Icon';
 import TaskIllustration from '../../../components/common/icons/TaskIllustration';
@@ -71,7 +72,7 @@ export default function TaskTimer({
   const clockFontSize = Math.round(width * CLOCK_FONT_SHARE);
   const durationMs = minutes == null ? null : minutes * 60_000;
   const timeUp = durationMs != null && timer.fill === 0;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const pulse = useSharedValue(1);
   useWhileVisible(() => {
     if (timeUp && !reducedMotion) {

@@ -1,3 +1,4 @@
+import { ReduceMotion } from 'react-native-reanimated';
 import { duration, easing } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 
@@ -63,4 +64,5 @@ export const TODAY_JOURNEY_RAIL_TIMING = {
   // change arriving mid-slide carries on at speed rather than stalling to
   // ease in again, which an ease-in-out does on every retarget.
   easing: easing.settle,
+  reduceMotion: ReduceMotion.Never,
 } as const;

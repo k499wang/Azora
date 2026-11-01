@@ -6,12 +6,12 @@ import Animated, {
   Easing,
   interpolateColor,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Text } from '../../components/common/Text';
 import { colors } from '../../theme/colors';
@@ -112,7 +112,7 @@ export default function StreakGoalStep({
   committing,
   onCommitFinished,
 }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const picked = selectedGoal != null;
   const [today] = useState(() => new Date());
   const current = useMemo<CalendarPage>(() => {

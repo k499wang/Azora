@@ -29,6 +29,7 @@ function setup() {
     setTimeout,
     clearTimeout,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => false };
       if (name === 'react') return {
         useRef: (initial) => stable(() => ({ current: initial })),
         useState(initial) {
@@ -51,6 +52,7 @@ function setup() {
         },
       };
       if (name === 'react-native-reanimated') return {
+        ReduceMotion: { Never: 'never' },
         useSharedValue: (initial) => stable(() => ({ value: initial })),
       };
       if (name.endsWith('/motion')) return { duration: { base: 200 }, easing: { settle: {} } };

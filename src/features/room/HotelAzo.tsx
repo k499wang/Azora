@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withSequence,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import RoomAzo from './RoomAzo';
 import { firstRoom, nextRoom } from './hotelWander';
 import { HEX_W, slotAt } from './pyramidLayout';
@@ -71,7 +71,7 @@ export default function HotelAzo({
   translateX,
   translateY,
 }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
 
   const at = useRef(firstRoom(rooms));
   const from = useRef<number | null>(null);

@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../components/common/icons/Icon';
@@ -104,7 +104,7 @@ export default function AuthLandingScreen({
   introComplete = true,
 }: AuthLandingScreenProps) {
   const { height: screenHeight } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const [animate] = useState(() => !entrancePlayed && !reducedMotion);
 
   useEffect(() => {

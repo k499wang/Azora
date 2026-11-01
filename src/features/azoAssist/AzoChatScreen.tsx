@@ -5,10 +5,10 @@ import { useIsFocused } from '@react-navigation/native';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import Animated, {
   LinearTransition,
-  useReducedMotion,
   ZoomIn,
   ZoomOut,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import type { AzoChatScreenProps } from '../../app/navigation';
 import GlassSurface from '../../components/common/GlassSurface';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
@@ -72,7 +72,7 @@ interface Message extends AzoChatTurn {
 export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps) {
   const focused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   // From the Routine add menu, Azo opens by asking, so their first reply is a plan request.
   const planning = route.params?.opener === 'plan';
   const assist = useAzoAssist(planning ? 'sparkle' : 'chat');

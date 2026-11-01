@@ -2,7 +2,7 @@ import { useCompletionSound } from '../hooks/useCompletionSound';
 import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ActivityRewardScreenProps, RootStackParamList } from '../app/navigation';
@@ -120,7 +120,7 @@ function ActivityRewardContent({ navigation, params, claim, resolveDayCompleteUn
   const handleShare = useShareActivityResult(resultCopy.shareMessage);
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const cardEnterAt = rewardCardEnterAt(0);
   const flight = useCoinRewardFlight({ coins, landedAfterMs: cardEnterAt });
   // The habit is already done; saving confirms its expected award without restarting the card entrance.

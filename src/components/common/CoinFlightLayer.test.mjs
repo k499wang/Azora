@@ -63,6 +63,7 @@ function setup({ deferred = false, reducedMotion = false, deferredPreparation = 
     },
     cancelIdleCallback(handle) { idleCallbacks.delete(handle); },
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return {
         jsx: (type, props) => ({ type, props }),

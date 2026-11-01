@@ -3,7 +3,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import type { AzoPlanScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
 import ChunkyButton, { CHUNKY_TONE_DESTRUCTIVE } from '../../components/common/ChunkyButton';
@@ -53,7 +54,7 @@ function azoTurn(reply: string, todos: SuggestedTodo[], changes: TodoChange[], t
 /** Talk through a brain dump and the to-dos build up on screen, ready to keep or untick — no chat, no typing. */
 export default function AzoPlanScreen({ navigation }: AzoPlanScreenProps) {
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const assist = useAzoAssist('voice_plan');
   const copy = useAzoAssistCopy();
   const todayLocalDate = useTodayLocalDate();

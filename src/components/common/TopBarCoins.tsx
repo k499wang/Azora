@@ -3,10 +3,10 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   cancelAnimation,
-  useReducedMotion,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import TaskIllustration from './icons/TaskIllustration';
 import StatChip, { type StatChipSize, type StatChipSurface } from './StatChip';
 import { useCountUp } from '../../hooks/useCountUp';
@@ -41,7 +41,7 @@ export default function TopBarCoins({
   surface = 'glass',
 }: TopBarCoinsProps) {
   const scale = useSharedValue(1);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const lastFeedbackAt = useRef(-Infinity);
   useWhileVisible(() => () => {
     cancelAnimation(scale);

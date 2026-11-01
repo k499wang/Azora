@@ -19,6 +19,7 @@ function setup(reducedMotion = false) {
   vm.runInNewContext(source, {
     exports,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name === 'react') return {
         useCallback: (fn) => fn,
         useEffect: (fn) => { cleanup = fn(); },

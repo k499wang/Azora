@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Icon from '../../components/common/icons/Icon';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
@@ -22,7 +22,7 @@ interface Props {
 
 /** A quiet mic inside the glass composer that starts and stops a voice note; the halo breathes with the speaker's voice. */
 export default function VoiceNoteButton({ phase, metering, size = 48, onPress }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const level = useSharedValue(0);
   const recording = phase === 'recording';
   const hue = recording ? colors.playful.coral : colors.playful.sky;

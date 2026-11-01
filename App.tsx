@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LogBox, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
 import {
   SafeAreaProvider,
   initialWindowMetrics,
@@ -136,6 +137,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <ReducedMotionConfig mode={ReduceMotion.Never} />
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <StatusBar style="dark" />
         <View

@@ -12,6 +12,7 @@ const compiled = ts.transpileModule(readFileSync(new URL('./CelebrationToast.tsx
 vm.runInNewContext(compiled, {
   exports,
   require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => false };
     if (name === 'react') return { memo: (component) => component, useEffect() {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { View: 'View', StyleSheet: { create: (styles) => styles } };

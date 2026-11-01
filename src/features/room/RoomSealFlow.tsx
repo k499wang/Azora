@@ -6,11 +6,11 @@ import Animated, {
   interpolate,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
 import ChunkyButton, { type ChunkyTone } from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
@@ -89,7 +89,7 @@ export default function RoomSealFlow({
     typography.body.xsmall.lineHeight,
     LINE,
   );
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const createNextRoom = useCreateNextRoomMutation(userId);
 
   const [phase, setPhase] = useState<'rebuild' | 'picking'>('rebuild');

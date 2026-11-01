@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ProFeedbackScreenProps } from '../app/navigation';
 import ChunkyButton, {
@@ -29,7 +29,7 @@ const CHOICES: { value: Disappointment; label: string }[] = [
 ];
 
 function FounderNote() {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
 
   return (
     <View style={styles.thanks}>

@@ -2,11 +2,11 @@ import { useRef, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Svg, { ClipPath, Defs, Ellipse, G, Polygon, Rect } from 'react-native-svg';
 import { CHUNKY_LIP_DEPTH } from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
@@ -65,7 +65,7 @@ export default function LipToken({
   children,
 }: Props) {
   const ref = useRef<View>(null);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const drop = useSharedValue(0);
   const faceHeight = (shape === 'hex' ? size * HEX_TALL : size) / aspect;
 

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { Ref } from 'react';
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../common/Text';
 import Icon, { type IconName } from '../common/icons/Icon';
 import TaskIllustration from '../common/icons/TaskIllustration';
@@ -322,7 +323,7 @@ const MOOD_ROW_STYLE: CategoryStyle = {
 
 function ClaimButton({ title, isArranging, onPress, onMove }: Pick<DailyTaskRowProps, 'title' | 'isArranging' | 'onPress' | 'onMove'>) {
   const hop = useSharedValue(0);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   useWhileVisible(() => {
     cancelAnimation(hop);
     hop.value = 0;

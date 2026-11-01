@@ -1,6 +1,7 @@
 import { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import StreakFlame from './StreakFlame';
 import { Text } from './Text';
 import { colors } from '../../theme/colors';
@@ -25,7 +26,7 @@ interface CelebrationToastProps {
  * is removed so an unrelated update cannot restore a settled native opacity.
  */
 function CelebrationToast({ title, detail, visible }: CelebrationToastProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const progress = useSharedValue(0);
   useEffect(() => {
     progress.value = reducedMotion ? Number(visible) : withTiming(Number(visible), {

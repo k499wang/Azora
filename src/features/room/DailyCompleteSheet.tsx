@@ -12,7 +12,6 @@ import Animated, {
   interpolate,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
@@ -21,6 +20,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import * as Haptics from 'expo-haptics';
 import { useSurfacePresented } from './DailyRewardSurface';
 import { Text } from '../../components/common/Text';
@@ -136,7 +136,7 @@ function DailyCompleteSheet({
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const flameSize = Math.min(FLAME_MAX, width * FLAME_WIDTH_RATIO);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const [ownPresented, setOwnPresented] = useState(false);
   // Hosted, the surface owns the presentation and says when it is on screen.
   const surfacePresented = useSurfacePresented();

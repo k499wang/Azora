@@ -528,73 +528,73 @@ export const GOAL_LESSON_CONTEXTS = {
   },
   home: {
     "attention.anchor": {
-      "title": "Return to One Spot",
+      "title": "When the Whole Room Calls",
       "explanation": "**When one surface leads** you to notice the whole room, attention can scatter before you finish anything. Practise returning to one prompt, then one chosen spot at home.",
       "step": "Return to one chosen home task after following the guide.",
       "alternative": "Restart the whole room whenever another mess catches my eye"
     },
     "attention.effort": {
-      "title": "A Gentler Home Reset",
+      "title": "Tidying Isn't a Test",
       "explanation": "**A home reset does** not need to become a test of effort. Follow the breathing guide comfortably, then choose a task small enough for the energy available.",
       "step": "Practise comfortably before one manageable home task.",
       "alternative": "Push through discomfort to prove I deserve a tidy home"
     },
     "attention.grows": {
-      "title": "Pauses Around Tidying",
+      "title": "The Pause Before Tidying",
       "explanation": "**A short guide can** make a clear pause before returning to a small home task. Follow today’s listed practices without turning them into more jobs to complete perfectly.",
       "step": "Fit today’s listed pauses around one small home task.",
       "alternative": "Add extra practice before I am allowed to tidy anything"
     },
     "breath.exhale": {
-      "title": "Pause Before Sorting",
+      "title": "Breathe, Then Sort",
       "explanation": "**When a cluttered space** feels like many decisions at once, use a comfortable breathing pause before choosing one item or one surface to work on.",
       "step": "Follow the breathing guide before sorting one small home area.",
       "alternative": "Plan the entire house during every breath"
     },
     "quiet.kind": {
-      "title": "Mess Without Blame",
+      "title": "Quiet the Inner Critic",
       "explanation": "**Seeing an untidy room** can bring a harsh judgment about yourself. Replace the judgment with a description of one thing you can put away now.",
       "step": "Replace one harsh judgment with a small home action.",
       "alternative": "Criticize myself until the whole room becomes tidy"
     },
     "focus.inbox": {
-      "title": "A Place for Papers",
+      "title": "Tame the Paper Pile",
       "explanation": "**Mail and loose papers** can become many unfinished decisions spread across a room. Give incoming papers one clear place before deciding which single item needs action.",
       "step": "Gather loose home papers into one clear incoming place.",
       "alternative": "Read and resolve every paper while collecting it"
     },
     "body.appetite": {
-      "title": "Care Before Chores",
+      "title": "Eat Before You Clean",
       "explanation": "**After a rough night,** you may need food before tackling the mess. Meet an ordinary need and choose a smaller household task instead of expecting unlimited energy.",
       "step": "Eat if needed before choosing a smaller household task.",
       "alternative": "Skip food until every household chore is complete"
     },
     "focus.ready": {
-      "title": "Begin the Small Job",
+      "title": "Don't Wait to Feel Ready",
       "explanation": "**Waiting to feel ready** for the whole room can stop you from moving one cup. Choose a first action that does not require finishing the entire space.",
       "step": "Begin one small home task before feeling fully ready.",
       "alternative": "Wait until I feel ready to clean the entire home"
     },
     "focus.done": {
-      "title": "A Home Stopping Point",
+      "title": "Stop Before It Grows",
       "explanation": "**A room will keep** being used after you tidy it. Decide what this small tidy-up includes so you can finish without expanding it into every visible job.",
       "step": "Name a clear stopping point for one small tidy-up.",
       "alternative": "Keep adding chores whenever another unfinished item appears"
     },
     "plan.carry": {
-      "title": "Keep One Home Cue",
+      "title": "Make Tidy Automatic",
       "explanation": "**A useful home habit** can be smaller than a complete tidy. Link one action, such as returning an item, to a moment that already happens at home.",
       "step": "Link one small home reset to an everyday cue.",
       "alternative": "Create a whole-house cleaning promise for every day"
     },
     "focus.return": {
-      "title": "Return to One Home Step",
+      "title": "Missed a Day? Read This",
       "explanation": "**A missed tidy does** not mean every household job must be caught up at once. Choose one small home task that fits the time and energy you have now.",
       "step": "Return to one small home task without catching up.",
       "alternative": "Complete every missed chore before allowing a fresh start"
     },
     "focus.blocks": {
-      "title": "A Small Home Block",
+      "title": "The Short-Window Trick",
       "explanation": "**A whole room can** feel too big for the time you have. Give one small household job a bounded window so beginning does not commit you to cleaning everything.",
       "step": "Give one small home task a clear, short window.",
       "alternative": "Keep working until every room is completely finished"

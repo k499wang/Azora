@@ -83,6 +83,7 @@ function setup(claim, { reducedMotion = false, dev = true, earnedShown = false, 
     requestAnimationFrame: (callback) => { frames.set(++nextFrame, callback); return nextFrame; },
     cancelAnimationFrame: (id) => frames.delete(id),
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react-native') return {
         View: 'View', ActivityIndicator: 'ActivityIndicator',

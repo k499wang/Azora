@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../../../hooks/useReducedMotionSetting';
 import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import type { BreathFace } from '../../shared/components/breathFaces';
 import BreathingCompanion from '../../shared/components/BreathingCompanion';
@@ -137,7 +137,7 @@ export const GuidedBreathingPresentation = forwardRef<
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const viewport = height - insets.top;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   // Held across every phase after the intro card so the lead-in between finding
   // the pulse and the first cue cannot tear the capture down mid-session.
   const pulseAttached =

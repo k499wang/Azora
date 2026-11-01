@@ -12,11 +12,11 @@ import Animated, {
   cancelAnimation,
   interpolate,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Icon from '../../components/common/icons/Icon';
@@ -136,7 +136,7 @@ function DailyRewardFlow({
 }: Props) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
 
   const [selected, setSelected] = useState<string | null>(null);
   /**

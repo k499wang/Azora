@@ -6,7 +6,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { LessonScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
@@ -104,7 +104,7 @@ export default function LessonScreen({ navigation, route }: LessonScreenProps) {
   const itemCount = pages.length + 2;
   const [revealed, setRevealed] = useState(1);
   const [startedLessonId, setStartedLessonId] = useState<string | null>(previewPreviousLessonId != null ? previewLessonId ?? null : null);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const feed = useRef<ScrollView>(null);
   const followLatest = useRef(previewPreviousLessonId == null);
   const [choiceSelections, setChoiceSelections] = useState<Record<number, number>>({});

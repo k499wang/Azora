@@ -11,12 +11,12 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useFrameCallback,
-  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { duration, spring } from '../../theme/motion';
@@ -178,7 +178,7 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const walkable = floor ?? flatFloor();
 
   const pa = useSharedValue(START.a);

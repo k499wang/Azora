@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 
 /** How many of the newest words are still fading in. */
@@ -22,7 +22,7 @@ export interface StreamedText {
  * once every word has settled.
  */
 export function useStreamedText(text: string, streaming: boolean, onDone: () => void): StreamedText {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const words = useMemo(() => text.match(/\S+\s*/g) ?? [], [text]);
   const animate = streaming && !reducedMotion;
   const end = words.length + STREAM_TAIL_LENGTH;

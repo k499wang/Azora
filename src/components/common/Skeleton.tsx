@@ -13,10 +13,10 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  useReducedMotion,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/card';
@@ -57,7 +57,7 @@ export default function Skeleton({
   duration = DEFAULT_DURATION,
   style,
 }: SkeletonProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const blockStyle: ViewStyle = {
     width,
     height,

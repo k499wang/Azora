@@ -5,6 +5,7 @@ import type {
   NativeSyntheticEvent,
 } from 'react-native';
 import {
+  ReduceMotion,
   useSharedValue,
   type SharedValue,
   type WithTimingConfig,
@@ -29,6 +30,7 @@ export const JOURNEY_DRAG_LONG_PRESS_MS = 240;
 export const JOURNEY_DRAG_SETTLE = {
   duration: duration.base,
   easing: easing.settle,
+  reduceMotion: ReduceMotion.Never,
 } as const;
 /** How far the held row lifts off the list. */
 export const JOURNEY_DRAG_LIFT_SCALE = 1.03;

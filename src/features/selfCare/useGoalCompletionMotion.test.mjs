@@ -38,6 +38,7 @@ function setup(reducedMotion = false) {
   ).outputText, {
     exports,
     require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name === 'react') return react;
       if (name === 'react-native-reanimated') return {
         useReducedMotion: () => reducedMotion,

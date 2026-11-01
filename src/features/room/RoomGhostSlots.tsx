@@ -7,8 +7,8 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  useReducedMotion,
-} from 'react-native-reanimated';
+  } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Svg, { Polygon } from 'react-native-svg';
 import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './roomGeometry';
 import { ROOM_GHOST_SHAPES } from './roomGhostShapes';
@@ -53,7 +53,7 @@ interface Props {
 }
 
 function RoomGhostSlots({ width, slot, pulsing = false }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const pulse = useSharedValue(0);
 
   useEffect(() => {

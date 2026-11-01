@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -104,7 +104,7 @@ export default function SessionCompleteScreen({
     preview = false,
   } = route.params;
 
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const flight = useCoinRewardFlight({ coins, landedAfterMs: rewardCardEnterAt(2) });
   const enterAt = (card: number) => (reducedMotion ? undefined : rewardCardEnterAt(card));
   const user = useAuthStore((state) => state.user);

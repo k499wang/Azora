@@ -54,6 +54,7 @@ function mount({ answer = { reply: 'Done', todos: [], changes: [] } } = {}) {
   };
   const exports = {};
   vm.runInNewContext(compiled, { exports, require(name) {
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => true };
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return {
       jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }),

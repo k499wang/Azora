@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Easing, Modal, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../../theme/colors';
@@ -47,7 +47,7 @@ export default function RoutineFirstCompletionModal({
   const reveal = useRef(new Animated.Value(0)).current;
   const stepProgress = useRef(new Animated.Value(0)).current;
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from './useReducedMotionSetting';
 import type { CoinFlightHandle } from '../components/common/CoinFlightLayer';
 import { startUiTimer } from '../lib/ui/uiThreadTimer';
 import { useCompletionSound } from './useCompletionSound';
@@ -29,7 +29,7 @@ interface Options {
  * and the balance is simply whole.
  */
 export function useCoinRewardFlight({ coins, landedAfterMs }: Options) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const flightRef = useRef<CoinFlightHandle>(null);
   const balanceRef = useRef<View>(null);
   const sourceRef = useRef<View>(null);

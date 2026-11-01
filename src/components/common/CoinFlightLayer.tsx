@@ -13,11 +13,11 @@ import Animated, {
   Easing,
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import TaskIllustration from './icons/TaskIllustration';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
@@ -105,7 +105,7 @@ const CoinFlightLayer = forwardRef<CoinFlightHandle, Props>(function CoinFlightL
   const busyUntil = useRef<number[]>(Array(POOL_SIZE).fill(0));
   const visible = useRef(false);
   const generation = useRef(0);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const [armed, setArmed] = useState(false);
   const prepared = useRef(false);
 

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import ConfettiFall from '../../components/common/ConfettiFall';
 import { useFirstWinOfDayStore } from '../selfCare/firstWinOfDayStore';
 import { TOUR_CELEBRATION_MS, useTourCelebrationStore } from './tourCelebrationStore';
@@ -17,7 +17,7 @@ export default function TourCelebration() {
   const clear = useTourCelebrationStore((state) => state.clear);
   const held = useFirstWinOfDayStore((state) => state.showing);
   const { height } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
 
   useEffect(() => {
     if (!celebrating || held) return;

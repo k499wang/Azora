@@ -15,11 +15,11 @@ import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
   type WithTimingConfig,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { duration, easing } from '../../theme/motion';
 
 /**
@@ -84,7 +84,7 @@ export default function Collapsible({
   timing,
   mountOnOpen = true,
 }: CollapsibleProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const opened = useRef(onOpened);
   opened.current = onOpened;
   const announceOpened = useCallback(() => opened.current?.(), []);

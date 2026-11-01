@@ -5,12 +5,12 @@ import Svg, { Path } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import {
@@ -117,7 +117,7 @@ interface FeedEntranceProps {
  * animation is interrupted or a native scroll view reattaches an earlier row.
  */
 export function FeedEntrance({ children, style }: FeedEntranceProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const progress = useSharedValue(reducedMotion ? 1 : 0);
   useEffect(() => {
     if (reducedMotion) {
@@ -361,7 +361,7 @@ interface ArrangeChipProps {
  * bank never reflows under the next tap.
  */
 function ArrangeChip({ label, used, onPress }: ArrangeChipProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const offset = useSharedValue(0);
   const miss = useSharedValue(0);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));

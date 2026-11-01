@@ -5,11 +5,11 @@ import {
   cancelAnimation,
   Easing,
   useDerivedValue,
-  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 
@@ -40,7 +40,7 @@ const GLOW_COLORS = [
  * slowly turning blue-violet glow runs around whatever it wraps. Quiet at rest.
  */
 export default function AzoGlow({ active, radius, children }: Props) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const [size, setSize] = useState({ width: 0, height: 0 });
   const spin = useSharedValue(0);
   const shown = useSharedValue(0);

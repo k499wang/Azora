@@ -1,6 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { RiseUnlessReducedMotion } from '../../components/common/Reveal';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
@@ -30,7 +30,7 @@ export default function ActivityCompletionContent({
   onReady,
 }: ActivityCompletionContentProps) {
   const { width, height } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const [heroReady, setHeroReady] = useState(false);
   const handleHeroReady = useCallback(() => {
     setHeroReady(true);

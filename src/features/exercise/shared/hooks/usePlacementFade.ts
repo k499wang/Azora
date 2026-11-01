@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../../../hooks/useReducedMotionSetting';
 
 export const PLACEMENT_FADE_MS = 500;
 
@@ -9,7 +9,7 @@ export const PLACEMENT_FADE_MS = 500;
  * as one surface instead of snapping in behind the session that just started.
  */
 export function usePlacementFade(active: boolean): Animated.Value {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

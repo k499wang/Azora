@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
@@ -67,7 +67,7 @@ export default function TourOverlay() {
   const completeClosing = useTourStore((state) => state.completeClosing);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const totalStops = tourSteps.length;
   const [positionedRect, setPositionedRect] = useState<PositionedRect | null>(null);
   const [hasPlacedAnyStep, setHasPlacedAnyStep] = useState(false);

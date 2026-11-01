@@ -4,11 +4,11 @@ import Animated, {
   cancelAnimation,
   runOnJS,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { colors } from '../../theme/colors';
 import { popAnimation } from '../../hooks/usePopOnChange';
 import { duration, easing, emphasis } from '../../theme/motion';
@@ -94,7 +94,7 @@ export default function ProgressBar({
 }: ProgressBarProps) {
   const fraction = useSharedValue(clamp(from ?? progress));
   const bump = useSharedValue(1);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
 
   useEffect(() => {
     const target = clamp(progress);
