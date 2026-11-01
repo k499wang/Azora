@@ -15,6 +15,7 @@ function setup({ enterAt = 0, sparkleRing = false } = {}) {
     Children: {}, View: 'View', Text: 'Text',
     StyleSheet: { create: identity, absoluteFillObject: {} },
     Easing: { out: identity, in: identity, inOut: identity, quad: identity, cubic: identity, back: () => identity, linear: identity },
+    useAnimationReduceMotion: () => 'system',
     useState: (value) => [value, () => {}],
     useEffect: (effect) => effects.push(effect),
     useSharedValue: (value) => {

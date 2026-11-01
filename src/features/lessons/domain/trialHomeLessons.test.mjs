@@ -35,7 +35,7 @@ test('KonMari attribution distinguishes the small adaptation from the full categ
 test('cleaning lessons introduce named methods before relying on them', () => {
   const lessons = week();
   assert.doesNotMatch(copy(lessons[0]), /Marie Kondo|KonMari/);
-  assert.equal(lessons[1].title, 'Sort One Kind of Thing');
+  assert.equal(lessons[1].title, "Marie Kondo's Joy Test");
   assert.match(lessons[1].blocks[0].text, /Marie Kondo is a tidying expert who created the KonMari Method/);
   assert.doesNotMatch(copy(lessons[3]), /Clean My Space/);
   assert.doesNotMatch(copy(lessons[6]), /FlyLady/);

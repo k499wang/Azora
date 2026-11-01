@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Reanimated, {
+  ReduceMotion,
   cancelAnimation,
   Extrapolation,
   interpolate,
@@ -104,7 +105,11 @@ export default function GoalProofScreen({
   useEffect(() => {
     rise(alone, aloneSquish, ALONE_START_MS, duration.fill);
     rise(azora, azoraSquish, AZORA_START_MS, AZORA_RISE_MS);
-    badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.pop));
+    badge.value = withDelay(
+      BADGE_AT_MS,
+      withSpring(1, { ...spring.pop, reduceMotion: ReduceMotion.Never }),
+      ReduceMotion.Never,
+    );
     const stopHapticTimer = startUiTimer(BADGE_AT_MS, triggerSuccessHaptic);
     return () => {
       stopHapticTimer();
@@ -156,14 +161,17 @@ function rise(
 ) {
   progress.value = withDelay(
     startMs,
-    withTiming(1, { duration: riseMs, easing: easing.enter }),
+    withTiming(1, { reduceMotion: ReduceMotion.Never, duration: riseMs, easing: easing.enter }),
+    ReduceMotion.Never,
   );
   squish.value = withDelay(
     startMs + riseMs - SQUASH_MS / 2,
     withSequence(
-      withTiming(1, { duration: SQUASH_MS, easing: easing.enter }),
-      withSpring(0, spring.bounce),
+      ReduceMotion.Never,
+      withTiming(1, { reduceMotion: ReduceMotion.Never, duration: SQUASH_MS, easing: easing.enter }),
+      withSpring(0, { ...spring.bounce, reduceMotion: ReduceMotion.Never }),
     ),
+    ReduceMotion.Never,
   );
 }
 

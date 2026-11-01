@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
-import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Reanimated, { ReduceMotion, FadeIn, FadeOut } from 'react-native-reanimated';
 import { card } from '../../theme/card';
 import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
@@ -13,8 +13,8 @@ interface OnboardingFooterNoticeProps {
 export default function OnboardingFooterNotice({ children }: OnboardingFooterNoticeProps) {
   return (
     <Reanimated.View
-      entering={FadeIn.duration(duration.base)}
-      exiting={FadeOut.duration(duration.fast)}
+      entering={FadeIn.duration(duration.base).reduceMotion(ReduceMotion.Never)}
+      exiting={FadeOut.duration(duration.fast).reduceMotion(ReduceMotion.Never)}
       pointerEvents="none"
       style={styles.notice}
     >

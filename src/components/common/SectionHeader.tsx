@@ -18,6 +18,7 @@ interface SectionHeaderProps {
   icon?: IconName;
   /** overrides the title tint for the icon alone */
   iconColor?: string;
+  iconSize?: number;
   /** `inverse` for a heading that sits on artwork rather than on the canvas */
   tone?: 'default' | 'inverse';
   /** a second line under the title, for what the section currently is */
@@ -34,6 +35,7 @@ export default function SectionHeader({
   titleNumberOfLines = 1,
   icon,
   iconColor,
+  iconSize = ICON_SIZE,
   tone = 'default',
   subtitle,
   right,
@@ -51,7 +53,7 @@ export default function SectionHeader({
       <View style={styles.row}>
         <View style={styles.leading}>
           {icon == null ? null : (
-            <Icon name={icon} size={ICON_SIZE} color={iconColor ?? color} />
+            <Icon name={icon} size={iconSize} color={iconColor ?? color} />
           )}
           <Text style={[styles.title, titleStyle, { color }]} numberOfLines={titleNumberOfLines}>
             {title}

@@ -1,7 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { Keyframe, runOnJS } from 'react-native-reanimated';
-import Icon, { type IconName } from './icons/Icon';
+import Animated, { FadeIn, FadeOut, Keyframe, runOnJS } from 'react-native-reanimated';
+import TaskIllustration from './icons/TaskIllustration';
 import { Text } from './Text';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
@@ -11,13 +11,13 @@ import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
-const MENU_MIN_WIDTH = 240;
-const ICON_BADGE_SIZE = 36;
+const ITEM_STAGGER_MS = 40;
+const ILLUSTRATION_SIZE = 28;
 
-// Grows out of the trigger's corner and eases to rest, with no overshoot.
-const MENU_POP = new Keyframe({
-  0: { opacity: 0, transform: [{ scale: 0.92 }] },
-  100: { opacity: 1, transform: [{ scale: 1 }], easing: easing.settle },
+// Each pill rises out of the trigger and eases to rest, with no overshoot.
+const PILL_POP = new Keyframe({
+  0: { opacity: 0, transform: [{ translateY: spacing.sm }, { scale: 0.9 }] },
+  100: { opacity: 1, transform: [{ translateY: 0 }, { scale: 1 }], easing: easing.settle },
 }).duration(duration.base);
 
 const MENU_DISMISS = new Keyframe({
@@ -27,9 +27,7 @@ const MENU_DISMISS = new Keyframe({
 
 export interface PopupMenuItem {
   label: string;
-  icon: IconName;
-  iconColor?: string;
-  iconBackground?: string;
+  icon: ComponentProps<typeof TaskIllustration>['name'];
   onPress: () => void;
 }
 
@@ -43,12 +41,13 @@ interface Props {
 }
 
 interface Anchor {
+  left: number;
   top: number;
-  bottom: number;
-  right: number;
+  width: number;
+  height: number;
 }
 
-/** A trigger that opens a small white card of actions beside it. */
+/** A trigger that dims the screen and opens a stack of action pills beside it, nearest first, like a FAB menu. */
 export default function PopupMenu({ items, placement, accessibilityLabel, children }: Props) {
   const trigger = useRef<View>(null);
   const window = useWindowDimensions();
@@ -64,7 +63,7 @@ export default function PopupMenu({ items, placement, accessibilityLabel, childr
   const show = () => {
     triggerTapHaptic();
     trigger.current?.measureInWindow((x, y, width, height) => {
-      setAnchor({ top: y, bottom: y + height, right: x + width });
+      setAnchor({ left: x, top: y, width, height });
       setOpen(true);
     });
   };
@@ -100,37 +99,56 @@ export default function PopupMenu({ items, placement, accessibilityLabel, childr
         {children(open)}
       </Pressable>
       <Modal transparent statusBarTranslucent visible={anchor != null} animationType="none" onRequestClose={close} onDismiss={runChosen}>
+        {open ? (
+          <Animated.View
+            pointerEvents="none"
+            entering={FadeIn.duration(duration.base)}
+            exiting={FadeOut.duration(duration.fast)}
+            style={[StyleSheet.absoluteFill, styles.scrim]}
+          />
+        ) : null}
         <Pressable accessibilityLabel="Close menu" style={StyleSheet.absoluteFill} onPress={close} />
+        {anchor == null ? null : (
+          // The trigger again, above the dim, so its close mark stays bright.
+          <Pressable
+            accessibilityLabel="Close menu"
+            onPress={close}
+            style={[styles.triggerCopy, anchor]}
+          >
+            {children(open)}
+          </Pressable>
+        )}
         {anchor == null || !open ? null : (
           <Animated.View
-            entering={MENU_POP}
             exiting={dismissed}
             style={[
-              card.base,
-              card.shadow,
               styles.menu,
               { transformOrigin: placement === 'below' ? 'top right' : 'bottom right' },
-              { right: window.width - anchor.right },
+              { right: window.width - (anchor.left + anchor.width) },
               placement === 'below'
-                ? { top: anchor.bottom + spacing.sm }
+                ? { top: anchor.top + anchor.height + spacing.sm }
                 : { bottom: window.height - anchor.top + spacing.sm },
             ]}
           >
-            {items.map((item) => (
-              <Pressable
+            {items.map((item, index) => (
+              <Animated.View
                 key={item.label}
-                accessibilityRole="menuitem"
-                onPress={() => {
-                  triggerTapHaptic();
-                  choose(item.onPress);
-                }}
-                style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+                entering={PILL_POP.delay(
+                  (placement === 'above' ? items.length - 1 - index : index) * ITEM_STAGGER_MS,
+                )}
               >
-                <View style={[styles.iconBadge, { backgroundColor: item.iconBackground ?? colors.background.canvas }]}>
-                  <Icon name={item.icon} size={20} color={item.iconColor ?? colors.text.secondary} />
-                </View>
-                <Text style={styles.label}>{item.label}</Text>
-              </Pressable>
+                <Pressable
+                  accessibilityRole="menuitem"
+                  onPress={() => {
+                    triggerTapHaptic();
+                    choose(item.onPress);
+                  }}
+                  style={({ pressed }) => [card.base, card.shadow, styles.item, pressed && styles.itemPressed]}
+                >
+                  <TaskIllustration name={item.icon} size={ILLUSTRATION_SIZE} />
+                  <Text style={styles.label}>{item.label}</Text>
+                </Pressable>
+              </Animated.View>
             ))}
           </Animated.View>
         )}
@@ -140,29 +158,28 @@ export default function PopupMenu({ items, placement, accessibilityLabel, childr
 }
 
 const styles = StyleSheet.create({
+  scrim: {
+    backgroundColor: colors.overlay.menu,
+  },
+  triggerCopy: {
+    position: 'absolute',
+  },
   menu: {
     position: 'absolute',
-    minWidth: MENU_MIN_WIDTH,
-    padding: spacing.xs,
-    borderRadius: radius.card,
+    alignItems: 'flex-end',
+    gap: spacing.sm,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.medium,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.mdPlus,
+    borderRadius: radius.full,
   },
   itemPressed: {
-    backgroundColor: colors.background.canvas,
-  },
-  iconBadge: {
-    width: ICON_BADGE_SIZE,
-    height: ICON_BADGE_SIZE,
-    borderRadius: ICON_BADGE_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    transform: [{ scale: 0.96 }],
   },
   label: {
     ...typography.body.large,

@@ -4,7 +4,7 @@ import type { LessonDefinition } from '../lessonBlock';
 export const TRIAL_HOME_LESSONS = [
   {
     "id": "focus.trialhomevision",
-    "title": "A Home That Works",
+    "title": "When Is Clean Enough?",
     "step": "Clear enough table space to eat a meal.",
     "blocks": [
       {
@@ -60,7 +60,7 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "breath.trialhome",
-    "title": "Sort One Kind of Thing",
+    "title": "Marie Kondo's Joy Test",
     "step": "Sort one sock drawer and put back the pairs you keep.",
     "blocks": [
       {
@@ -112,7 +112,7 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "attention.trialskillsenseshome",
-    "title": "A Home for Everyday Items",
+    "title": "Lost Your Keys Again?",
     "step": "Choose a place to keep one thing you use every day.",
     "blocks": [
       {
@@ -172,7 +172,7 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "focus.trialhomepasses",
-    "title": "Tidy, Surfaces, Floors",
+    "title": "Stop Cleaning Twice",
     "step": "Put things away, wipe the table, then clean the floor below.",
     "blocks": [
       {
@@ -220,7 +220,7 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "focus.trialhomesort",
-    "title": "Decide Before Storage",
+    "title": "Don't Buy That Basket",
     "step": "Sort your things and choose where unwanted items will go.",
     "blocks": [
       {
@@ -276,7 +276,7 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "attention.trialskillmuscleshomeready",
-    "title": "Your Small Cleaning Kit",
+    "title": "Before You Spray",
     "step": "Read the cleaner’s label before cleaning one table.",
     "blocks": [
       {
@@ -335,7 +335,7 @@ export const TRIAL_HOME_LESSONS = [
   },
   {
     "id": "focus.trialhomeroutine",
-    "title": "A Rhythm for Chores",
+    "title": "How Tidy Homes Stay Tidy",
     "step": "Choose when to do one daily job and one weekly job.",
     "blocks": [
       {

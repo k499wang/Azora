@@ -17,7 +17,7 @@ import { easing, spring } from '../../theme/motion';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { triggerMediumHaptic } from '../../native/tapHaptics';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
-import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
+import { useAnimationReduceMotion, useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { GIFT_BOX_VIEWBOX, GiftBoxBody, GiftBoxLid, type GiftBoxPalette, type GiftBoxRibbonPalette } from '../common/GiftBoxArt';
 
@@ -64,6 +64,7 @@ export default function OfferGiftArt({ size, delay }: Props) {
   const gradientId = useId().replace(/:/g, '');
   const fill = (name: string) => `url(#${gradientId}-${name})`;
   const reducedMotion = useReducedMotionSetting();
+  const reduceMotion = useAnimationReduceMotion();
   const open = useSharedValue(reducedMotion ? 1 : 0);
   const rotation = useSharedValue(0);
   const pulse = useSharedValue(0);
@@ -79,18 +80,25 @@ export default function OfferGiftArt({ size, delay }: Props) {
       open.value = 1;
     } else {
       const openingDelay = hasOpened.current ? 0 : delay;
-      open.value = withDelay(openingDelay, withSpring(1, spring.pop));
+      open.value = withDelay(openingDelay, withSpring(1, { ...spring.pop, reduceMotion }), reduceMotion);
       rotation.value = withDelay(
         openingDelay,
         withRepeat(withTiming(rotation.value + 360, {
+          reduceMotion,
           duration: BEAM_ROTATION_MS,
           easing: Easing.linear,
-        }), -1, false),
+        }),
+          -1,
+          false,
+          undefined,
+          reduceMotion),
+        reduceMotion,
       );
       pulse.value = 0;
       pulse.value = withDelay(
         openingDelay,
-        withRepeat(withTiming(1, { duration: 2600, easing: easing.breathe }), -1, true),
+        withRepeat(withTiming(1, { reduceMotion, duration: 2600, easing: easing.breathe }), -1, true, undefined, reduceMotion),
+        reduceMotion,
       );
       if (!hasOpened.current) {
         stopTimer = startUiTimer(openingDelay, () => {
@@ -106,7 +114,7 @@ export default function OfferGiftArt({ size, delay }: Props) {
       cancelAnimation(rotation);
       cancelAnimation(pulse);
     };
-  }, [delay, open, rotation, pulse, reducedMotion]);
+  }, [delay, open, rotation, pulse, reduceMotion, reducedMotion]);
 
   const glowStyle = useAnimatedStyle(() => ({
     opacity: interpolate(open.value, [0, 1], [0, 1], 'clamp'),

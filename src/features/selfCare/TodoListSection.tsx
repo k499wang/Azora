@@ -26,7 +26,6 @@ import Icon from '../../components/common/icons/Icon';
 import type { IconName } from '../../components/common/icons/paths';
 import TaskIllustration from '../../components/common/icons/TaskIllustration';
 import SectionHeader from '../../components/common/SectionHeader';
-import { ARCHETYPE_FOR_PLAN } from '../../lib/onboardingArchetype';
 import ChunkyButton, { CHUNKY_TONE_QUIET } from '../../components/common/ChunkyButton';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
 import { holdMotionQuiet } from '../../lib/ui/motionQuiet';
@@ -162,6 +161,8 @@ const GOAL_LEAVE_MS = Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duratio
 /** from a tick until its card has been filed and the list is still */
 const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
 const JOURNEY_ROW_GAP = 12;
+const FOLDED_HEADER_SPACE = JOURNEY_ROW_GAP + spacing.md;
+const FOLD_TIMING = { duration: duration.fast, easing: easing.enter } as const;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 // A load shorter than this never shows the skeleton: shown for a few frames and
 // swapped straight out, it read as the list flashing.
@@ -462,17 +463,10 @@ const GoalRow = memo(function GoalRow({
   ...card
 }: GoalRowProps) {
   const reducedMotion = useReducedMotion();
-  const shown = useSharedValue(folded ? 0 : 1);
-  const settledFolded = useRef(folded);
-  useEffect(() => {
-    if (settledFolded.current === folded) return;
-    settledFolded.current = folded;
+  const foldStyle = useAnimatedStyle(() => {
     const target = folded ? 0 : 1;
-    shown.value = reducedMotion
-      ? target
-      : withTiming(target, { duration: duration.fast, easing: easing.enter });
-  }, [folded, reducedMotion, shown]);
-  const foldStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
+    return { opacity: reducedMotion ? target : withTiming(target, FOLD_TIMING) };
+  }, [folded, reducedMotion]);
   return (
     <JourneyDragRow
       controller={controller}
@@ -619,19 +613,12 @@ function DaypartHeader({
       ? withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
       : leaving ? 0 : 1,
   }));
-  const turn = useSharedValue(folded ? -90 : 0);
-  const settledFolded = useRef(folded);
-  useEffect(() => {
-    if (settledFolded.current === folded) return;
-    settledFolded.current = folded;
+  const chevronStyle = useAnimatedStyle(() => {
     const target = folded ? -90 : 0;
-    turn.value = reducedMotion
-      ? target
-      : withTiming(target, { duration: duration.fast, easing: easing.enter });
-  }, [folded, reducedMotion, turn]);
-  const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${turn.value}deg` }],
-  }));
+    return {
+      transform: [{ rotate: `${reducedMotion ? target : withTiming(target, FOLD_TIMING)}deg` }],
+    };
+  }, [folded, reducedMotion]);
   return (
     <Animated.View style={[styles.daypartHeaderRow, fadeStyle]}>
       <Pressable
@@ -650,7 +637,7 @@ function DaypartHeader({
         <Animated.View style={chevronStyle}>
           <Icon bold name="chevron-down" size={DAYPART_CHEVRON_SIZE} color={colors.text.tertiary} />
         </Animated.View>
-        {folded && openCount > 0 ? <Text style={styles.daypartLabel}>{openCount}</Text> : null}
+        {folded && openCount > 0 ? <Text style={[styles.daypartLabel, styles.daypartCount]}>{openCount}</Text> : null}
         {now ? <Text style={styles.daypartNow}>Now</Text> : null}
       </Pressable>
       {onStart == null ? null : (
@@ -865,6 +852,12 @@ function TodoListSection(props: TodoListSectionProps) {
     if (hiddenRows.length === 0) return filingIds;
     return new Set([...filingIds, ...hiddenRows.map((row) => row.id)]);
   }, [tasksOnly, clearingForAllDone, listRows, filingIds, isFolded]);
+  const foldedHeaderSpace = useMemo(() => {
+    if (!tasksOnly) return undefined;
+    return new Map(listRows
+      .filter((row) => row.kind === 'header' && isFolded(row.section))
+      .map((row) => [row.id, FOLDED_HEADER_SPACE]));
+  }, [tasksOnly, listRows, isFolded]);
   // The header that will stand first once the leaving rows are gone takes the
   // first header's spacing now, so it closes up once instead of settling twice.
   const firstHeaderIndex = Math.max(
@@ -1017,6 +1010,7 @@ function TodoListSection(props: TodoListSectionProps) {
     estimatedHeight: tasksOnly ? GOAL_ROW_HEIGHT : undefined,
     fixedTailId: tasksOnly && !readOnly ? ADD_GOAL_ROW_ID : undefined,
     collapsed: collapsedIds,
+    spaceAfter: foldedHeaderSpace,
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
     onReorder: (orderedIds) => {
       if (tasksOnly) {
@@ -1121,8 +1115,9 @@ function TodoListSection(props: TodoListSectionProps) {
       {...(props.mode === 'tasks' && props.tourOverviewTarget ? routineOverviewTarget : {})}
     >
       <SectionHeader
-        icon={tasksOnly ? "todo-plan" : "calendar"}
+        icon={tasksOnly ? "checklist" : "plan-path"}
         iconColor={tasksOnly ? colors.neutral[900] : undefined}
+        iconSize={typography.title.title3.lineHeight}
         titleNumberOfLines={allGoalsCompleted ? 2 : 1}
         title={tasksOnly
           ? (readOnly ? "To-dos for this day" : allGoalsCompleted
@@ -1131,13 +1126,6 @@ function TodoListSection(props: TodoListSectionProps) {
               ? "My To-dos"
               : `${remainingTaskCount} ${remainingTaskCount === 1 ? 'task' : 'tasks'} left for today`)
           : "My Plan"}
-        subtitle={
-          planPosition == null || planPosition.isFinished ? null : (
-            <Text style={styles.planDay}>
-              Day {planPosition.day} of {ARCHETYPE_FOR_PLAN[planPosition.planId].planName}
-            </Text>
-          )
-        }
         right={
           props.mode === 'tasks' ? (readOnly ? null : (
             <RoutineBrowseButton onPress={props.onBrowseRoutines} />
@@ -1403,10 +1391,6 @@ const styles = StyleSheet.create({
   tasksJourney: {
     gap: spacing.xs,
   },
-  planDay: {
-    ...typography.label.detail,
-    color: colors.text.secondary,
-  },
   planWeek: {
     ...typography.label.detail,
     color: colors.text.tertiary,
@@ -1492,8 +1476,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   daypartLabel: {
-    ...typography.label.medium,
+    ...typography.label.large,
     fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  daypartCount: {
     color: colors.text.tertiary,
   },
   daypartHeaderRow: {

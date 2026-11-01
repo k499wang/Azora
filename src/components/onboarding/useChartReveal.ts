@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import {
+  ReduceMotion,
   cancelAnimation,
   Easing,
   type SharedValue,
@@ -43,7 +44,8 @@ export function useChartReveal() {
       chartReveal.delayMs,
       // Linear, because the x axis is time — an eased pen makes a trace look
       // like it speeds up mid-recording.
-      withTiming(1, { duration: chartReveal.durationMs, easing: Easing.linear }),
+      withTiming(1, { reduceMotion: ReduceMotion.Never, duration: chartReveal.durationMs, easing: Easing.linear }),
+      ReduceMotion.Never,
     );
     return () => cancelAnimation(progress);
   }, [progress, width]);
@@ -63,7 +65,7 @@ export function useChartPop(
     () => progress.value >= revealAt,
     (isShown, wasShown) => {
       if (isShown === wasShown) return;
-      shown.value = isShown ? withSpring(1, config) : 0;
+      shown.value = isShown ? withSpring(1, { ...config, reduceMotion: ReduceMotion.Never }) : 0;
     },
     [revealAt, config],
   );

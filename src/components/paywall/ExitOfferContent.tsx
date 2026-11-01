@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown, ReduceMotion, ZoomIn } from 'react-native-reanimated';
+import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
@@ -34,24 +35,28 @@ const GIFT_BOX_SIZE = 320;
 const CTA_MIN_HEIGHT = 60;
 // The modal slides up first; the card waits for it to land so its fade is seen.
 const CARD_DELAY = duration.slow;
-const CARD_ENTRANCE = FadeInDown.delay(CARD_DELAY)
-  .duration(duration.slower)
-  .easing(easing.settle)
-  .reduceMotion(ReduceMotion.System);
+function cardEntrance(reduceMotion: ReduceMotion) {
+  return FadeInDown.delay(CARD_DELAY)
+    .duration(duration.slower)
+    .easing(easing.settle)
+    .reduceMotion(reduceMotion);
+}
 const CONTENT_DELAY = CARD_DELAY + duration.base;
 const GIFT_OPEN_DELAY = CONTENT_DELAY + duration.slow;
-const MASCOT_ENTRANCE = ZoomIn.delay(CONTENT_DELAY)
-  .springify()
-  .damping(spring.pop.damping)
-  .stiffness(spring.pop.stiffness)
-  .mass(spring.pop.mass)
-  .reduceMotion(ReduceMotion.System);
+function mascotEntrance(reduceMotion: ReduceMotion) {
+  return ZoomIn.delay(CONTENT_DELAY)
+    .springify()
+    .damping(spring.pop.damping)
+    .stiffness(spring.pop.stiffness)
+    .mass(spring.pop.mass)
+    .reduceMotion(reduceMotion);
+}
 
-function contentEntrance(step: number) {
+function contentEntrance(step: number, reduceMotion: ReduceMotion) {
   return FadeInDown.delay(CONTENT_DELAY + (step + 1) * stagger.base)
     .duration(duration.slow)
     .easing(easing.settle)
-    .reduceMotion(ReduceMotion.System);
+    .reduceMotion(reduceMotion);
 }
 
 export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
@@ -92,6 +97,7 @@ export function ExitOfferContent({
   onDecline,
 }: ExitOfferContentProps) {
   const insets = useSafeAreaInsets();
+  const reduceMotion = useAnimationReduceMotion();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
   const [offerDeadlineMs] = useState(
@@ -189,7 +195,7 @@ export function ExitOfferContent({
                 <Text style={styles.timerLabel}>Offer ends in</Text>
                 <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
               </View>
-              <Animated.View entering={CARD_ENTRANCE} style={styles.offerWrap}>
+              <Animated.View entering={cardEntrance(reduceMotion)} style={styles.offerWrap}>
                 <LinearGradient
                   colors={[colors.primary.blue300, colors.primary.blue200, colors.primary.blue100]}
                   locations={[0, 0.5, 1]}
@@ -207,7 +213,7 @@ export function ExitOfferContent({
                     <Text style={[styles.percentMark, styles.percentMiddleRight]}>%</Text>
                   </View>
                   <View style={styles.offerMain}>
-                    <Animated.View entering={contentEntrance(0)}>
+                    <Animated.View entering={contentEntrance(0, reduceMotion)}>
                       <Text style={styles.title}>Your welcome gift</Text>
                     </Animated.View>
                     {showInitialLoading ? (
@@ -215,20 +221,20 @@ export function ExitOfferContent({
                     ) : (
                       <>
                         {discountPercent != null ? (
-                          <Animated.View entering={contentEntrance(1)} style={styles.discountWrap}>
+                          <Animated.View entering={contentEntrance(1, reduceMotion)} style={styles.discountWrap}>
                             <Text style={styles.discountHeadline} numberOfLines={1}>
                               {discountPercent}% OFF
                             </Text>
                           </Animated.View>
                         ) : null}
                         {monthly ? (
-                          <Animated.View entering={contentEntrance(2)} style={styles.monthlyPill}>
+                          <Animated.View entering={contentEntrance(2, reduceMotion)} style={styles.monthlyPill}>
                             <Text style={styles.monthlyPrice} numberOfLines={1}>
                               {monthly} / month
                             </Text>
                           </Animated.View>
                         ) : null}
-                        <Animated.View entering={contentEntrance(3)} style={styles.reassuranceRow}>
+                        <Animated.View entering={contentEntrance(3, reduceMotion)} style={styles.reassuranceRow}>
                           <Icon name="check" size={18} color={colors.primary.blue700} />
                           <Text style={styles.reassuranceText}>One-time offer</Text>
                         </Animated.View>
@@ -239,7 +245,7 @@ export function ExitOfferContent({
                     <Animated.View
                       entering={FadeIn.delay(CONTENT_DELAY + 5 * stagger.base)
                         .duration(duration.slow)
-                        .reduceMotion(ReduceMotion.System)}
+                        .reduceMotion(reduceMotion)}
                       style={styles.annualSummary}
                     >
                       <View style={styles.annualPriceRow}>
@@ -255,7 +261,7 @@ export function ExitOfferContent({
                     </Animated.View>
                   ) : null}
                 </LinearGradient>
-                <Animated.View entering={MASCOT_ENTRANCE} style={styles.mascotWrap}>
+                <Animated.View entering={mascotEntrance(reduceMotion)} style={styles.mascotWrap}>
                   <Image
                     source={require('../../../assets/blue_koala_hugging_gift_transparent.png')}
                     contentFit="contain"
@@ -267,13 +273,13 @@ export function ExitOfferContent({
             </>
           ) : (
             <>
-              <Animated.View entering={MASCOT_ENTRANCE} style={styles.giftBox}>
+              <Animated.View entering={mascotEntrance(reduceMotion)} style={styles.giftBox}>
                 <OfferGiftArt size={Math.min(GIFT_BOX_SIZE, windowWidth - 2 * spacing.lg)} delay={GIFT_OPEN_DELAY} />
               </Animated.View>
-              <Animated.View entering={contentEntrance(0)}>
+              <Animated.View entering={contentEntrance(0, reduceMotion)}>
                 <Text style={paywallStepStyles.stepTitle}>Wait — a better price</Text>
               </Animated.View>
-              <Animated.View entering={CARD_ENTRANCE}>
+              <Animated.View entering={cardEntrance(reduceMotion)}>
                 {showInitialLoading ? (
                   <ActivityIndicator color={colors.text.primary} style={styles.loading} />
                 ) : annual ? (

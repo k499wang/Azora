@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -44,17 +45,21 @@ function TypingDot({ clock, index }: { clock: SharedValue<number>; index: number
 
 /** Azo's typing indicator: three dots that hop in a wave on one shared clock. */
 export default function AzoTypingDots({ reducedMotion }: AzoTypingDotsProps) {
+  const reduceMotion = useAnimationReduceMotion();
   const clock = useSharedValue(0);
 
   useWhileVisible(() => {
     if (reducedMotion) return () => {};
     clock.value = 0;
     clock.value = withRepeat(
-      withTiming(1, { duration: WAVE_PERIOD, easing: Easing.linear }),
+      withTiming(1, { reduceMotion, duration: WAVE_PERIOD, easing: Easing.linear }),
       -1,
+      false,
+      undefined,
+      reduceMotion,
     );
     return () => cancelAnimation(clock);
-  }, [clock, reducedMotion]);
+  }, [clock, reduceMotion, reducedMotion]);
 
   return (
     <View style={styles.row}>

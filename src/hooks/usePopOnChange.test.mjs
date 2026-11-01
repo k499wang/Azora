@@ -36,6 +36,7 @@ function setup() {
         },
       };
       if (name === 'react-native-reanimated') return {
+        ReduceMotion: { System: 'system' },
         useReducedMotion: () => reducedMotion,
         useSharedValue(initial) {
           const index = cursor++;
@@ -44,9 +45,9 @@ function setup() {
         cancelAnimation: (scale) => cancellations.push(scale),
         withTiming: (to, config) => ({ kind: 'timing', to, config }),
         withSpring: (to, config) => ({ kind: 'spring', to, config }),
-        withSequence: (...steps) => ({ steps }),
+        withSequence: (reduceMotion, ...steps) => ({ reduceMotion, steps }),
       };
-      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
+      if (name.endsWith('/useReducedMotionSetting')) return { useAnimationReduceMotion: () => 'system', useReducedMotionSetting: () => reducedMotion };
       if (name.endsWith('/motion')) return {
         duration: { fast: 180 },
         easing: { enter: 'enter' },
@@ -111,4 +112,14 @@ test('deselection and reduced motion cancel feedback and restore rest', () => {
   harness.render(true, { enabled: true });
   assert.equal(scale.value, 1);
   assert.equal(harness.cancellations.at(-1), scale);
+});
+
+test('answer pop propagates the scoped policy through the sequence, timing and spring', () => {
+  const { popAnimation } = setup();
+  for (const mode of ['system', 'never']) {
+    const result = mode === 'system' ? popAnimation(1.04) : popAnimation(1.04, mode);
+    assert.equal(result.reduceMotion, mode);
+    assert.equal(result.steps[0].config.reduceMotion, mode);
+    assert.equal(result.steps[1].config.reduceMotion, mode);
+  }
 });

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
+  ReduceMotion,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
@@ -177,7 +178,7 @@ export default function PactScreen({
               {name ? `Signed by ${name} · ${signedToday()}` : `Signed · ${signedToday()}`}
             </Text>
             {signed || stamped ? (
-              <Animated.View style={styles.seal} entering={FadeIn}>
+              <Animated.View style={styles.seal} entering={FadeIn.reduceMotion(ReduceMotion.Never)}>
                 <Pressable
                   onPress={handleConfirm}
                   disabled={hasConfirmed}
@@ -216,11 +217,14 @@ function SealTarget() {
   useEffect(() => {
     pulse.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: SEAL_PULSE_MS / 2 }),
-        withTiming(0, { duration: SEAL_PULSE_MS / 2 }),
+        ReduceMotion.Never,
+        withTiming(1, { reduceMotion: ReduceMotion.Never, duration: SEAL_PULSE_MS / 2 }),
+        withTiming(0, { reduceMotion: ReduceMotion.Never, duration: SEAL_PULSE_MS / 2 }),
       ),
       -1,
       false,
+      undefined,
+      ReduceMotion.Never,
     );
     return () => cancelAnimation(pulse);
   }, [pulse]);

@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion, useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../common/Text';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -22,7 +23,7 @@ import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerHeavyHaptic } from '../../native/tapHaptics';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import { Rise } from '../common/Reveal';
+import { RiseUnlessReducedMotion } from '../common/Reveal';
 import { CHUNKY_TONE } from '../common/ChunkyButton';
 import { scaleVisual } from './onboardingVisualScale';
 
@@ -78,11 +79,13 @@ export default function CelebrationOverlay({
   statusMessage,
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
-  const backdrop = useSharedValue(0);
-  const light = useSharedValue(0);
+  const reducedMotion = useReducedMotionSetting();
+  const reduceMotion = useAnimationReduceMotion();
+  const backdrop = useSharedValue(reducedMotion ? 1 : 0);
+  const light = useSharedValue(reducedMotion ? 1 : 0);
   const spin = useSharedValue(0);
-  const pop = useSharedValue(0);
-  const draw = useSharedValue(0);
+  const pop = useSharedValue(reducedMotion ? 1 : 0);
+  const draw = useSharedValue(reducedMotion ? 1 : 0);
   const onFinishedRef = useRef(onFinished);
   onFinishedRef.current = onFinished;
 
@@ -92,18 +95,23 @@ export default function CelebrationOverlay({
     if (isHapticsEnabled()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
-    backdrop.value = withTiming(1, { duration: duration.base, easing: easing.enter });
+    if (reducedMotion) return;
+
+    backdrop.value = withTiming(1, { reduceMotion, duration: duration.base, easing: easing.enter });
     pop.value = withDelay(
       POP_AT_MS,
-      withTiming(1, { duration: duration.base, easing: easing.enter }),
+      withTiming(1, { reduceMotion, duration: duration.base, easing: easing.enter }),
+      reduceMotion,
     );
     draw.value = withDelay(
       DRAW_AT_MS,
-      withTiming(1, { duration: DRAW_MS, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { reduceMotion, duration: DRAW_MS, easing: Easing.out(Easing.cubic) }),
+      reduceMotion,
     );
     light.value = withDelay(
       LANDED_MS,
-      withTiming(1, { duration: duration.slower, easing: easing.enter }),
+      withTiming(1, { reduceMotion, duration: duration.slower, easing: easing.enter }),
+      reduceMotion,
     );
     const cancelLanding = startUiTimer(LANDED_MS, triggerHeavyHaptic);
 
@@ -114,18 +122,22 @@ export default function CelebrationOverlay({
       cancelAnimation(pop);
       cancelAnimation(draw);
     };
-  }, [backdrop, draw, light, pop]);
+  }, [backdrop, draw, light, pop, reduceMotion, reducedMotion]);
 
   useWhileVisible(() => {
+    if (reducedMotion) return () => {};
     spin.value = withRepeat(
-      withTiming(1, { duration: RAY_TURN_MS, easing: Easing.linear }),
+      withTiming(1, { reduceMotion, duration: RAY_TURN_MS, easing: Easing.linear }),
       -1,
+      false,
+      undefined,
+      reduceMotion,
     );
     return () => {
       cancelAnimation(spin);
       spin.value = 0;
     };
-  }, [spin]);
+  }, [reduceMotion, reducedMotion, spin]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }));
   const raysStyle = useAnimatedStyle(() => ({
@@ -187,9 +199,10 @@ export default function CelebrationOverlay({
           </Animated.View>
         </View>
 
-        <Rise
+        <RiseUnlessReducedMotion
           delay={TITLE_AT_MS}
-                  style={styles.copy}
+          reducedMotion={reducedMotion}
+          style={styles.copy}
         >
           <Text style={styles.title}>{title}</Text>
           {statusMessage ? (
@@ -197,7 +210,7 @@ export default function CelebrationOverlay({
               {statusMessage}
             </Text>
           ) : null}
-        </Rise>
+        </RiseUnlessReducedMotion>
       </View>
     </Animated.View>
   );

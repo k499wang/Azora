@@ -9,6 +9,7 @@ import Svg, {
 } from 'react-native-svg';
 import { StyleSheet, View } from 'react-native';
 import Reanimated, {
+  ReduceMotion,
   type SharedValue,
   useAnimatedProps,
   useAnimatedStyle,
@@ -82,10 +83,25 @@ function origin(point: { x: number; y: number }) {
 
 function swayFromRest(delayMs: number) {
   const swing = (to: number) =>
-    withTiming(to, { duration: SWAY_SWING_MS, easing: easing.breathe });
+    withTiming(to, {
+      reduceMotion: ReduceMotion.Never,
+      duration: SWAY_SWING_MS,
+      easing: easing.breathe,
+    });
   return withDelay(
     delayMs,
-    withSequence(swing(1), withRepeat(withSequence(swing(-1), swing(1)), -1)),
+    withSequence(
+      ReduceMotion.Never,
+      swing(1),
+      withRepeat(
+        withSequence(ReduceMotion.Never, swing(-1), swing(1)),
+        -1,
+        false,
+        undefined,
+        ReduceMotion.Never,
+      ),
+    ),
+    ReduceMotion.Never,
   );
 }
 
@@ -178,29 +194,47 @@ function SeedlingIllustration() {
   useEffect(() => {
     potShown.value = withDelay(
       POT_IN_MS,
-      withTiming(1, { duration: duration.fast }),
+      withTiming(1, { reduceMotion: ReduceMotion.Never, duration: duration.fast }),
+      ReduceMotion.Never,
     );
-    pot.value = withDelay(POT_IN_MS, withSpring(1, spring.settle));
+    pot.value = withDelay(
+      POT_IN_MS,
+      withSpring(1, { ...spring.settle, reduceMotion: ReduceMotion.Never }),
+      ReduceMotion.Never,
+    );
     land.value = withDelay(
       LAND_AT_MS,
       withSequence(
-        withTiming(1, { duration: duration.fast, easing: easing.enter }),
-        withSpring(0, spring.settle),
+        ReduceMotion.Never,
+        withTiming(1, { reduceMotion: ReduceMotion.Never, duration: duration.fast, easing: easing.enter }),
+        withSpring(0, { ...spring.settle, reduceMotion: ReduceMotion.Never }),
       ),
+      ReduceMotion.Never,
     );
     heave.value = withDelay(
       STEM_AT_MS,
       withSequence(
-        withTiming(1, { duration: duration.base, easing: easing.enter }),
-        withSpring(0, spring.settle),
+        ReduceMotion.Never,
+        withTiming(1, { reduceMotion: ReduceMotion.Never, duration: duration.base, easing: easing.enter }),
+        withSpring(0, { ...spring.settle, reduceMotion: ReduceMotion.Never }),
       ),
+      ReduceMotion.Never,
     );
     stem.value = withDelay(
       STEM_AT_MS,
-      withTiming(1, { duration: duration.slower, easing: easing.settle }),
+      withTiming(1, { reduceMotion: ReduceMotion.Never, duration: duration.slower, easing: easing.settle }),
+      ReduceMotion.Never,
     );
-    leftLeaf.value = withDelay(LEAVES_AT_MS, withSpring(1, spring.unfurl));
-    rightLeaf.value = withDelay(RIGHT_LEAF_AT_MS, withSpring(1, spring.unfurl));
+    leftLeaf.value = withDelay(
+      LEAVES_AT_MS,
+      withSpring(1, { ...spring.unfurl, reduceMotion: ReduceMotion.Never }),
+      ReduceMotion.Never,
+    );
+    rightLeaf.value = withDelay(
+      RIGHT_LEAF_AT_MS,
+      withSpring(1, { ...spring.unfurl, reduceMotion: ReduceMotion.Never }),
+      ReduceMotion.Never,
+    );
     sway.value = swayFromRest(SWAY_AT_MS);
     trail.value = swayFromRest(SWAY_AT_MS + LEAF_TRAIL_MS);
     return startUiTimer(LEAVES_AT_MS, triggerSoftHaptic);

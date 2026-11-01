@@ -2,6 +2,7 @@ import { Text } from '../../common/Text';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
+  ReduceMotion,
   Easing,
   useAnimatedStyle,
   useSharedValue,
@@ -24,6 +25,7 @@ export function BaselineSciencePanel() {
 
   useEffect(() => {
     progress.value = withTiming(open ? 1 : 0, {
+      reduceMotion: ReduceMotion.Never,
       duration: open ? 300 : 220,
       easing: Easing.out(Easing.cubic),
     });

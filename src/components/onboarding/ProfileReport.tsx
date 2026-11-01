@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
+  ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -73,7 +74,7 @@ export function PhaseSwap({
 
   useEffect(() => {
     const to = phase === 'plan' ? 1 : 0;
-    shown.value = withTiming(to, { duration: duration.slow, easing: easing.enter });
+    shown.value = withTiming(to, { reduceMotion: ReduceMotion.Never, duration: duration.slow, easing: easing.enter });
   }, [phase, shown]);
 
   const diagnosisStyle = useAnimatedStyle(() => ({ opacity: 1 - shown.value }));

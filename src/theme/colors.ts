@@ -461,6 +461,8 @@ export const colors = {
     light: '#FFFFFFCC',
     dark: '#0F172A66',
     modal: 'rgba(20, 24, 38, 0.58)',
+    // a light dim behind a popup menu, enough to lift white pills off white cards
+    menu: 'rgba(15,23,42,0.24)',
   },
 
   // A control that is present without competing with the cards above it: a

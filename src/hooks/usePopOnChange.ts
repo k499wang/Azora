@@ -1,19 +1,21 @@
 import { useEffect, useRef } from 'react';
 import {
   cancelAnimation,
+  ReduceMotion,
   useSharedValue,
   withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { duration, easing, spring } from '../theme/motion';
-import { useReducedMotionSetting } from './useReducedMotionSetting';
+import { useAnimationReduceMotion, useReducedMotionSetting } from './useReducedMotionSetting';
 
-export function popAnimation(peak: number) {
+export function popAnimation(peak: number, reduceMotion = ReduceMotion.System) {
   'worklet';
   return withSequence(
-    withTiming(peak, { duration: duration.fast / 2, easing: easing.enter }),
-    withSpring(1, spring.bounce),
+    reduceMotion,
+    withTiming(peak, { reduceMotion, duration: duration.fast / 2, easing: easing.enter }),
+    withSpring(1, { ...spring.bounce, reduceMotion }),
   );
 }
 
@@ -29,6 +31,7 @@ export function usePopOnChange(
 ) {
   const scale = useSharedValue(1);
   const reducedMotion = useReducedMotionSetting();
+  const reduceMotion = useAnimationReduceMotion();
   const previous = useRef(trigger);
 
   useEffect(() => {
@@ -41,8 +44,8 @@ export function usePopOnChange(
     }
     if (!changed) return;
     cancelAnimation(scale);
-    scale.value = popAnimation(peak);
-  }, [enabled, peak, reducedMotion, scale, trigger]);
+    scale.value = popAnimation(peak, reduceMotion);
+  }, [enabled, peak, reduceMotion, reducedMotion, scale, trigger]);
 
   useEffect(() => () => cancelAnimation(scale), [scale]);
 

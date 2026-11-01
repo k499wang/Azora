@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Reanimated, {
+  ReduceMotion,
   Extrapolation,
   interpolate,
   runOnJS,
@@ -72,6 +73,7 @@ export default function StatementDeck<Id extends string>({
 
   useEffect(() => {
     answersOpacity.value = withTiming(finalThrow ? 0 : 1, {
+      reduceMotion: ReduceMotion.Never,
       duration: duration.base,
       easing: finalThrow ? easing.exit : easing.enter,
     });
@@ -165,11 +167,11 @@ function StatementCard({ text, size, depth, exitDirection, onGone }: StatementCa
   onGoneRef.current = onGone;
 
   useEffect(() => {
-    appear.value = withTiming(1, { duration: duration.slow, easing: easing.settle });
+    appear.value = withTiming(1, { reduceMotion: ReduceMotion.Never, duration: duration.slow, easing: easing.settle });
   }, [appear]);
 
   useEffect(() => {
-    depthProgress.value = withTiming(depth, { duration: duration.slow, easing: easing.settle });
+    depthProgress.value = withTiming(depth, { reduceMotion: ReduceMotion.Never, duration: duration.slow, easing: easing.settle });
   }, [depth, depthProgress]);
 
   useEffect(() => {
@@ -181,9 +183,9 @@ function StatementCard({ text, size, depth, exitDirection, onGone }: StatementCa
       if (finished) runOnJS(gone)();
     };
     if (exitDirection === 0) {
-      exitY.value = withTiming(-size * 2, config, finish);
+      exitY.value = withTiming(-size * 2, { ...config, reduceMotion: ReduceMotion.Never }, finish);
     } else {
-      exitX.value = withTiming(exitDirection * width * 1.2, config, finish);
+      exitX.value = withTiming(exitDirection * width * 1.2, { ...config, reduceMotion: ReduceMotion.Never }, finish);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- a rotation mid-throw must not restart it
   }, [exitDirection]);

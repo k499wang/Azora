@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import { Children, useEffect, useState, type ReactNode, type Ref } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -283,6 +284,7 @@ function EnteringStatCard({
   const iconX = useSharedValue(0);
   const lead = sparkleRing ? STAT_CARD_SPARKLE_LEAD_MS : 0;
   const clock = useSharedValue(-lead - 1);
+  const reduceMotion = useAnimationReduceMotion();
   const counted = useArrivalCount(countTo, enterAt);
   useCountBuzz(enterAt);
   useStatCardPopSound(clock, POP_AT);
@@ -290,10 +292,11 @@ function EnteringStatCard({
   useEffect(() => {
     clock.value = withDelay(
       Math.max(0, enterAt - lead),
-      withTiming(ENTRANCE_END, { duration: ENTRANCE_END + lead + 1, easing: LINEAR }),
+      withTiming(ENTRANCE_END, { reduceMotion, duration: ENTRANCE_END + lead + 1, easing: LINEAR }),
+      reduceMotion,
     );
     return () => cancelAnimation(clock);
-  }, [clock, enterAt, lead]);
+  }, [clock, enterAt, lead, reduceMotion]);
 
   const width = box?.width ?? 0;
   const height = box?.height ?? 0;

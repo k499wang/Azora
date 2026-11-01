@@ -1,4 +1,5 @@
 /** Preview single onboarding screens without walking the whole flow. */
+import { FullMotion } from '../hooks/useReducedMotionSetting';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -253,25 +254,27 @@ export default function OnboardingLabScreen({ navigation }: OnboardingLabScreenP
     const advance = () => open(previewIndex + 1 < PREVIEWS.length ? previewIndex + 1 : null);
 
     return (
-      <OnboardingSurface>
-        <View key={`${entry.id}-${replayCount}`} style={styles.preview}>
-          {entry.render({
-            stepIndex: STUB_STEP_INDEX,
-            stepCount: STUB_STEP_COUNT,
-            onContinue: advance,
-            onBack: () => open(null),
-            onSkip: advance,
-          })}
-        </View>
-        <GlassIconButton
-          accessibilityLabel="Replay"
-          variant="regular"
-          onPress={() => setReplayCount((count) => count + 1)}
-          style={[styles.replay, { top: insets.top + HEADER_ROW_HEIGHT + spacing.sm }]}
-        >
-          <MaterialCommunityIcons name="replay" size={20} color={colors.text.primary} />
-        </GlassIconButton>
-      </OnboardingSurface>
+      <FullMotion>
+        <OnboardingSurface>
+          <View key={`${entry.id}-${replayCount}`} style={styles.preview}>
+            {entry.render({
+              stepIndex: STUB_STEP_INDEX,
+              stepCount: STUB_STEP_COUNT,
+              onContinue: advance,
+              onBack: () => open(null),
+              onSkip: advance,
+            })}
+          </View>
+          <GlassIconButton
+            accessibilityLabel="Replay"
+            variant="regular"
+            onPress={() => setReplayCount((count) => count + 1)}
+            style={[styles.replay, { top: insets.top + HEADER_ROW_HEIGHT + spacing.sm }]}
+          >
+            <MaterialCommunityIcons name="replay" size={20} color={colors.text.primary} />
+          </GlassIconButton>
+        </OnboardingSurface>
+      </FullMotion>
     );
   }
 

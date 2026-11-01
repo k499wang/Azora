@@ -13,6 +13,7 @@ import Animated, {
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Text } from '../../common/Text';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
+import { useAnimationReduceMotion } from '../../../hooks/useReducedMotionSetting';
 import { colors } from '../../../theme/colors';
 import { spring } from '../../../theme/motion';
 import { fonts, typography } from '../../../theme/typography';
@@ -65,29 +66,34 @@ function wavePulse(t: number, lag: number) {
 }
 
 export function TrialReminderBell() {
+  const reduceMotion = useAnimationReduceMotion();
   const ring = useSharedValue(0);
   const badgePop = useSharedValue(0);
 
   useWhileVisible(() => {
     ring.value = 0;
-    badgePop.value = withDelay(260, withSpring(1, spring.bounce));
+    badgePop.value = withDelay(260, withSpring(1, { ...spring.bounce, reduceMotion }), reduceMotion);
     ring.value = withDelay(
       300,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: RING_MS, easing: Easing.linear }),
-          withDelay(REST_MS, withTiming(0, { duration: 0 })),
+          reduceMotion,
+          withTiming(1, { reduceMotion, duration: RING_MS, easing: Easing.linear }),
+          withDelay(REST_MS, withTiming(0, { reduceMotion, duration: 0 }), reduceMotion),
         ),
         -1,
         false,
+        undefined,
+        reduceMotion,
       ),
+      reduceMotion,
     );
 
     return () => {
       cancelAnimation(ring);
       cancelAnimation(badgePop);
     };
-  }, [ring, badgePop]);
+  }, [ring, badgePop, reduceMotion]);
 
   const bellStyle = useAnimatedStyle(() => {
     const angle = ringAngle(ring.value);

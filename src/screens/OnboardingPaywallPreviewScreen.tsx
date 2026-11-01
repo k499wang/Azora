@@ -1,3 +1,4 @@
+import { FullMotion } from '../hooks/useReducedMotionSetting';
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import type { OnboardingPaywallPreviewScreenProps } from '../app/navigation/types';
@@ -140,42 +141,44 @@ export function OnboardingPaywallPreview({
   const previewOnly = () => Alert.alert('Preview only', 'Purchases are unavailable in this preview.');
 
   return (
-    <View style={styles.screen}>
-      <OnboardingPaywallScreen
-        preview
-        initialStep={initialStep}
-        offering={{
-          ...PREVIEW_OFFERING,
-          paywallLayout: layout,
-          onlyPackageId: onlyPackageId ?? null,
-          packages: plans != null
-            ? PREVIEW_PLAN_SETS[plans]
-            : onlyPackageId === 'annual' ? PREVIEW_PAID_ANNUAL_PACKAGES : PREVIEW_OFFERING.packages,
-        }}
-        planIntent={planIntent}
-        planPreset={onboardingPresetFor(planIntent)}
-        selectedIntents={[planIntent]}
-        goalPhrase={goalPhrase}
-        scores={PREVIEW_SCORES}
-        paywallMode="soft"
-        cleaning={cleaning}
-        name="Alex"
-        selectedPackageId={selectedPackageId}
-        stepIndex={1}
-        stepCount={1}
-        isLoading={false}
-        isPurchasing={false}
-        isRestoring={false}
-        isCompleting={false}
-        errorMessage={null}
-        onSelectPackage={setSelectedPackageId}
-        onPurchase={previewOnly}
-        onOfferPurchased={previewOnly}
-        onRestore={previewOnly}
-        onRetry={previewOnly}
-        onContinueWithoutPro={onClose}
-      />
-    </View>
+    <FullMotion>
+      <View style={styles.screen}>
+        <OnboardingPaywallScreen
+          preview
+          initialStep={initialStep}
+          offering={{
+            ...PREVIEW_OFFERING,
+            paywallLayout: layout,
+            onlyPackageId: onlyPackageId ?? null,
+            packages: plans != null
+              ? PREVIEW_PLAN_SETS[plans]
+              : onlyPackageId === 'annual' ? PREVIEW_PAID_ANNUAL_PACKAGES : PREVIEW_OFFERING.packages,
+          }}
+          planIntent={planIntent}
+          planPreset={onboardingPresetFor(planIntent)}
+          selectedIntents={[planIntent]}
+          goalPhrase={goalPhrase}
+          scores={PREVIEW_SCORES}
+          paywallMode="soft"
+          cleaning={cleaning}
+          name="Alex"
+          selectedPackageId={selectedPackageId}
+          stepIndex={1}
+          stepCount={1}
+          isLoading={false}
+          isPurchasing={false}
+          isRestoring={false}
+          isCompleting={false}
+          errorMessage={null}
+          onSelectPackage={setSelectedPackageId}
+          onPurchase={previewOnly}
+          onOfferPurchased={previewOnly}
+          onRestore={previewOnly}
+          onRetry={previewOnly}
+          onContinueWithoutPro={onClose}
+        />
+      </View>
+    </FullMotion>
   );
 }
 

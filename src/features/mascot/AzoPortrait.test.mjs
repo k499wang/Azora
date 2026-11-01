@@ -102,7 +102,7 @@ function setup() {
         if (name === 'react-native-svg') return { default: 'Svg', Circle: 'Circle', Path: 'Path' };
         if (name.endsWith('/colors')) return { colors: { koala: {} } };
         if (name.endsWith('/motion')) return { duration: {}, easing: {} };
-        if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: reanimated.useReducedMotion };
+        if (name.endsWith('/useReducedMotionSetting')) return { useAnimationReduceMotion: () => 'system', useReducedMotionSetting: reanimated.useReducedMotion };
         if (name.startsWith('.')) return load(new URL(`${name}.ts`, url));
         throw new Error(`Unexpected module ${name}`);
       },

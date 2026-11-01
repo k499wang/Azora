@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import { useEffect, type ReactNode } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import Animated, {
@@ -40,6 +41,7 @@ export function Rise({
   style,
   children,
 }: RevealProps) {
+  const reduceMotion = useAnimationReduceMotion();
   const enter = useSharedValue(0);
 
   useEffect(() => {
@@ -56,7 +58,8 @@ export function Rise({
     const frame = requestAnimationFrame(() => {
       enter.value = withDelay(
         delay,
-        withTiming(1, { duration: durationMs, easing: easing.enter }),
+        withTiming(1, { reduceMotion, duration: durationMs, easing: easing.enter }),
+        reduceMotion,
       );
     });
 
@@ -64,7 +67,7 @@ export function Rise({
       cancelAnimationFrame(frame);
       cancelAnimation(enter);
     };
-  }, [delay, durationMs, enter, when]);
+  }, [delay, durationMs, enter, reduceMotion, when]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: enter.value,
@@ -94,6 +97,7 @@ export function RiseUnlessReducedMotion({
 
 /** Springs in with a small overshoot. For characters, tiles, anything playful. */
 export function Pop({ delay = 0, when = true, style, children }: RevealProps) {
+  const reduceMotion = useAnimationReduceMotion();
   const enter = useSharedValue(0);
 
   useEffect(() => {
@@ -104,14 +108,14 @@ export function Pop({ delay = 0, when = true, style, children }: RevealProps) {
     }
 
     const frame = requestAnimationFrame(() => {
-      enter.value = withDelay(delay, withSpring(1, spring.pop));
+      enter.value = withDelay(delay, withSpring(1, { ...spring.pop, reduceMotion }), reduceMotion);
     });
 
     return () => {
       cancelAnimationFrame(frame);
       cancelAnimation(enter);
     };
-  }, [delay, enter, when]);
+  }, [delay, enter, reduceMotion, when]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: interpolate(enter.value, [0, 0.4], [0, 1], 'clamp'),
@@ -136,6 +140,7 @@ export function Land({
   style,
   children,
 }: RevealProps) {
+  const reduceMotion = useAnimationReduceMotion();
   const enter = useSharedValue(0);
   const offset = useSharedValue<number>(travel.rise);
 
@@ -151,17 +156,21 @@ export function Land({
     const frame = requestAnimationFrame(() => {
       enter.value = withDelay(
         delay,
-        withTiming(1, { duration: durationMs, easing: easing.enter }),
+        withTiming(1, { reduceMotion, duration: durationMs, easing: easing.enter }),
+        reduceMotion,
       );
       offset.value = withDelay(
         delay,
         withSequence(
+          reduceMotion,
           withTiming(-CHUNKY_LIP_DEPTH, {
+            reduceMotion,
             duration: durationMs,
             easing: easing.settle,
           }),
-          withTiming(0, { duration: duration.fast, easing: easing.gravity }),
+          withTiming(0, { reduceMotion, duration: duration.fast, easing: easing.gravity }),
         ),
+        reduceMotion,
       );
     });
 
@@ -170,7 +179,7 @@ export function Land({
       cancelAnimation(enter);
       cancelAnimation(offset);
     };
-  }, [delay, durationMs, enter, offset, when]);
+  }, [delay, durationMs, enter, offset, reduceMotion, when]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: enter.value,

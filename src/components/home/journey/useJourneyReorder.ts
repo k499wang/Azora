@@ -132,6 +132,8 @@ export interface JourneyReorderController {
    * animate at all, and a row that was 3% larger snaps back in one frame.
    */
   lifted: SharedValue<boolean>;
+  /** false until every row has measured itself once; rows place without sliding until then */
+  settled: SharedValue<boolean>;
   /**
    * The rows carry their whole position in a transform, and the box they stand
    * in is this tall. Null for a list that lays its rows out in flow.
@@ -193,6 +195,12 @@ interface JourneyReorderOptions {
    */
   collapsed?: ReadonlySet<string>;
   /**
+   * Extra room below a row, counted in its slot rather than laid out as
+   * padding: a padding change is a re-measure a frame later, which restarts
+   * every row's slide mid-flight. Only for a `positioned` list.
+   */
+  spaceAfter?: ReadonlyMap<string, number>;
+  /**
    * The height a row joining a list already on screen stands in for until it
    * has measured itself — its smallest. Without one, the list makes no room
    * for the row until the frame after it mounts, and everything under the list
@@ -211,6 +219,7 @@ interface JourneyReorderOptions {
 }
 
 const NONE_COLLAPSED: ReadonlySet<string> = new Set();
+const NO_SPACE_AFTER: ReadonlyMap<string, number> = new Map();
 
 /**
  * Drag-to-reorder for one list on Home's journey rail.
@@ -233,6 +242,7 @@ export function useJourneyReorder({
   positioned = false,
   restingTiming = JOURNEY_DRAG_SETTLE,
   collapsed = NONE_COLLAPSED,
+  spaceAfter = NO_SPACE_AFTER,
   estimatedHeight,
   fixedTailId,
   onReorder,
@@ -315,16 +325,26 @@ export function useJourneyReorder({
     });
     return next;
   }, [measuredHeights, ids, estimatedHeight]);
+  // Rows jump, not slide, from their guessed places to their first measured
+  // ones: a list just drawn sliding into shape reads as slow to load.
+  const settled = useSharedValue(false);
+  const allMeasured = journeyRowsMeasured(ids, measuredHeights);
+  useEffect(() => {
+    if (allMeasured) settled.value = true;
+  }, [allMeasured, settled]);
   // A slot of minus the gap cancels the gap after it, so every offset summed
   // past a collapsed row comes out as if the row were already gone.
   const slotHeights = useMemo(() => {
-    if (collapsed.size === 0) return rowHeights;
+    if (collapsed.size === 0 && spaceAfter.size === 0) return rowHeights;
     const next = { ...rowHeights };
+    spaceAfter.forEach((space, id) => {
+      if (next[id] != null) next[id] += space;
+    });
     collapsed.forEach((id) => {
       if (next[id] != null) next[id] = -gap;
     });
     return next;
-  }, [rowHeights, collapsed, gap]);
+  }, [rowHeights, collapsed, spaceAfter, gap]);
 
   /**
    * Sticky, and deliberately so.
@@ -339,10 +359,10 @@ export function useJourneyReorder({
   const contentHeight = useMemo(() => {
     if (!positioned) return null;
     const standing = collapsed.size === 0 ? ids : ids.filter((id) => !collapsed.has(id));
-    const next = journeyContentHeight(standing, rowHeights, gap);
+    const next = journeyContentHeight(standing, slotHeights, gap);
     if (next != null) lastContentHeight.current = next;
     return next ?? lastContentHeight.current;
-  }, [positioned, ids, rowHeights, gap, collapsed]);
+  }, [positioned, ids, slotHeights, gap, collapsed]);
 
   useEffect(() => {
     heights.value = slotHeights;
@@ -408,7 +428,7 @@ export function useJourneyReorder({
     () => ({
       ids,
       gap,
-      enabled: enabled && journeyRowsMeasured(ids, measuredHeights),
+      enabled: enabled && allMeasured,
       fixedTailId: tailId,
       committedKey,
       measuredHeights: slotHeights,
@@ -421,6 +441,7 @@ export function useJourneyReorder({
       pickup,
       dragging,
       lifted,
+      settled,
       measure,
       onLift,
       onDrop,
@@ -430,6 +451,7 @@ export function useJourneyReorder({
       ids,
       gap,
       enabled,
+      allMeasured,
       tailId,
       contentHeight,
       restingTiming,
@@ -443,6 +465,7 @@ export function useJourneyReorder({
       pickup,
       dragging,
       lifted,
+      settled,
       measure,
       onLift,
       onDrop,

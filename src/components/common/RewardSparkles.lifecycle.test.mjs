@@ -50,6 +50,7 @@ function setup() {
       if (name === 'react') return {};
       if (name === 'react/jsx-runtime') return { jsx: () => null, jsxs: () => null };
       if (name === 'react-native') return { StyleSheet: { create: (styles) => styles } };
+      if (name.endsWith('/useReducedMotionSetting')) return { useAnimationReduceMotion: () => 'system' };
       if (name === 'react-native-reanimated') return reanimated;
       if (name === './icons/Icon') return {};
       if (name === '../../theme/motion') return { duration: { slower: 500 }, easing: { breathe: 'breathe' }, spring: { bounce: 'bounce' } };

@@ -20,6 +20,7 @@ import type {
   PaywallStepView,
 } from '../../../services/paywall';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
+import { useAnimationReduceMotion } from '../../../hooks/useReducedMotionSetting';
 import { startUiTimer } from '../../../lib/ui/uiThreadTimer';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
@@ -130,6 +131,7 @@ function TrialDeck({
   /** Shows a back control on the first step that leaves the deck. */
   onExit?: () => void;
 }) {
+  const reduceMotion = useAnimationReduceMotion();
   const insets = useSafeAreaInsets();
   const trialReminder = usePaywallTrialReminder(preview);
 
@@ -508,7 +510,7 @@ function TrialDeck({
               <View style={styles.headerButton} />
             )}
             {isFinal && declineVisible && paywallMode !== 'hard' && onContinueWithoutPro != null ? (
-              <Reanimated.View entering={FadeIn.duration(400)}>
+              <Reanimated.View entering={FadeIn.duration(400).reduceMotion(reduceMotion)}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Continue with limits"
@@ -705,6 +707,7 @@ export default function OnboardingPaywallScreen(
 const TRIAL_SHEET_MS = 320;
 
 function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
+  const reduceMotion = useAnimationReduceMotion();
   const [atTrial, setAtTrial] = useState(false);
 
   return (
@@ -712,8 +715,8 @@ function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
       <NoTrialLongPaywall {...props} onContinue={() => setAtTrial(true)} />
       {atTrial ? (
         <Reanimated.View
-          entering={SlideInDown.duration(TRIAL_SHEET_MS)}
-          exiting={SlideOutDown.duration(TRIAL_SHEET_MS)}
+          entering={SlideInDown.duration(TRIAL_SHEET_MS).reduceMotion(reduceMotion)}
+          exiting={SlideOutDown.duration(TRIAL_SHEET_MS).reduceMotion(reduceMotion)}
           style={StyleSheet.absoluteFill}
         >
           <TrialDeck {...props} initialStep="plan" onExit={() => setAtTrial(false)} />

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  ReduceMotion,
   Easing,
   useAnimatedProps,
   useAnimatedStyle,
@@ -92,15 +93,24 @@ function DrainIllustration() {
   useEffect(() => {
     drawn.value = withDelay(
       300,
-      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.cubic) }),
+      withTiming(1, { reduceMotion: ReduceMotion.Never, duration: 1800, easing: Easing.inOut(Easing.cubic) }),
+      ReduceMotion.Never,
     );
     const bob = { duration: 1600, easing: Easing.inOut(Easing.sin) };
     float.value = withDelay(
       300,
       withRepeat(
-        withSequence(withTiming(-SIZE * 0.015, bob), withTiming(0, bob)),
+        withSequence(
+          ReduceMotion.Never,
+          withTiming(-SIZE * 0.015, { ...bob, reduceMotion: ReduceMotion.Never }),
+          withTiming(0, { ...bob, reduceMotion: ReduceMotion.Never }),
+        ),
         -1,
+        false,
+        undefined,
+        ReduceMotion.Never,
       ),
+      ReduceMotion.Never,
     );
   }, [drawn, float]);
 

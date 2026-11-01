@@ -27,6 +27,21 @@ Relevant files:
 - [src/app/navigation/RootNavigator.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/app/navigation/RootNavigator.tsx:1)
 - [src/components/onboarding/OnboardingFlow.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/components/onboarding/OnboardingFlow.tsx:1)
 
+## Motion policy
+
+Onboarding and its preview content use `FullMotion` from
+`src/hooks/useReducedMotionSetting.tsx`. This context never changes Reanimated's
+global setting, so other mounted screens continue respecting system preferences.
+The policy is available during the first render; no effect needs to run first.
+
+Shared components read `useReducedMotionSetting()` for JS branches and
+`useAnimationReduceMotion()` for Reanimated configs. Apply the latter to each
+timing/spring config, delay/repeat/sequence modifier, and entering/exiting/layout
+builder. Each animation level has its own policy; configuring only an inner
+animation can still let a wrapper skip it. Exclusively onboarding animations
+can specify `ReduceMotion.Never` directly. Keep timekeeping timers independent
+of visual motion, and keep production Pro paywalls outside `FullMotion`.
+
 ## Active Step Sequence
 
 `OnboardingFlow.tsx` owns the internal step state; its union lives in

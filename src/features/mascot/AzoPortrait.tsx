@@ -18,7 +18,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
+import { useAnimationReduceMotion, useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Svg, {
   Circle,
   Ellipse,
@@ -263,6 +263,7 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
     const height = size * AZO_ASPECT;
     const unit = size / STAGE_WIDTH;
     const reducedMotion = useReducedMotionSetting();
+    const reduceMotion = useAnimationReduceMotion();
     const alive = active && !reducedMotion;
 
     const breath = useSharedValue(0);
@@ -365,15 +366,19 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
 
       breath.value = 0;
       breath.value = withRepeat(
-        withTiming(1, { duration: BREATH_MS, easing: easing.breathe }),
+        withTiming(1, { reduceMotion, duration: BREATH_MS, easing: easing.breathe }),
         -1,
         true,
+        undefined,
+        reduceMotion,
       );
       sway.value = -1;
       sway.value = withRepeat(
-        withTiming(1, { duration: SWAY_MS, easing: easing.breathe }),
+        withTiming(1, { reduceMotion, duration: SWAY_MS, easing: easing.breathe }),
         -1,
         true,
+        undefined,
+        reduceMotion,
       );
       physics.setActive(true);
 
@@ -390,28 +395,32 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
         joy.value = 0;
         sparkle.value = 0;
       };
-    }, [alive, breath, flick, joy, physics, sparkle, sway]);
+    }, [alive, breath, flick, joy, physics, reduceMotion, sparkle, sway]);
 
     useImperativeHandle(ref, () => ({
       cheer() {
         if (!alive || !physics.isActive) return;
 
         flick.value = withSequence(
-          withTiming(1, { duration: 110, easing: easing.enter }),
-          withTiming(0, { duration: 190, easing: easing.exit }),
+          reduceMotion,
+          withTiming(1, { reduceMotion, duration: 110, easing: easing.enter }),
+          withTiming(0, { reduceMotion, duration: 190, easing: easing.exit }),
         );
         // The face holds well past the ears, because it is the reaction and they
         // are only the punctuation on it.
         joy.value = withSequence(
-          withTiming(1, { duration: duration.base, easing: easing.enter }),
+          reduceMotion,
+          withTiming(1, { reduceMotion, duration: duration.base, easing: easing.enter }),
           withDelay(
             1000,
-            withTiming(0, { duration: duration.slow, easing: easing.exit }),
+            withTiming(0, { reduceMotion, duration: duration.slow, easing: easing.exit }),
+            reduceMotion,
           ),
         );
         sparkle.value = withSequence(
-          withTiming(1, { duration: duration.fast, easing: easing.enter }),
-          withTiming(0, { duration: duration.slower, easing: easing.burst }),
+          reduceMotion,
+          withTiming(1, { reduceMotion, duration: duration.fast, easing: easing.enter }),
+          withTiming(0, { reduceMotion, duration: duration.slower, easing: easing.burst }),
         );
       },
     }));

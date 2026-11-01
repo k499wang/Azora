@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -67,12 +68,13 @@ interface TwinkleProps {
 
 /** Pops, twinkles once, and is gone. */
 export function FlashTwinkle({ x, y, size, color, delay, lifeMs = 900 }: TwinkleProps & { lifeMs?: number }) {
+  const reduceMotion = useAnimationReduceMotion();
   const life = useSharedValue(0);
 
   useEffect(() => {
-    life.value = withDelay(delay, withTiming(1, { duration: lifeMs, easing: easing.breathe }));
+    life.value = withDelay(delay, withTiming(1, { reduceMotion, duration: lifeMs, easing: easing.breathe }), reduceMotion);
     return () => cancelAnimation(life);
-  }, [delay, life, lifeMs]);
+  }, [delay, life, lifeMs, reduceMotion]);
 
   const style = useAnimatedStyle(() => ({
     opacity: interpolate(life.value, [0, 0.15, 0.75, 1], [0, 1, 1, 0]),
@@ -97,6 +99,7 @@ export function LoopingTwinkle({
   reducedMotion = false,
   shape = 'twinkle',
 }: TwinkleProps & { period: number; active: boolean; reducedMotion?: boolean; shape?: StarShape }) {
+  const reduceMotion = useAnimationReduceMotion();
   const pop = useSharedValue(0);
   const twinkle = useSharedValue(0);
 
@@ -106,17 +109,18 @@ export function LoopingTwinkle({
     pop.value = active && reducedMotion ? 1 : 0;
     twinkle.value = 0;
     if (active && !reducedMotion) {
-      pop.value = withDelay(delay, withSpring(1, spring.bounce));
+      pop.value = withDelay(delay, withSpring(1, { ...spring.bounce, reduceMotion }), reduceMotion);
       twinkle.value = withDelay(
         delay + duration.slower,
-        withRepeat(withTiming(1, { duration: period, easing: easing.breathe }), -1, true),
+        withRepeat(withTiming(1, { reduceMotion, duration: period, easing: easing.breathe }), -1, true, undefined, reduceMotion),
+        reduceMotion,
       );
     }
     return () => {
       cancelAnimation(pop);
       cancelAnimation(twinkle);
     };
-  }, [active, delay, period, pop, reducedMotion, twinkle]);
+  }, [active, delay, period, pop, reduceMotion, reducedMotion, twinkle]);
 
   const style = useAnimatedStyle(() => ({
     opacity: interpolate(pop.value, [0, 0.4], [0, 1], 'clamp') * (1 - 0.35 * twinkle.value),

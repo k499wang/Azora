@@ -16,7 +16,7 @@ function runEntrance() {
     'alone', 'aloneSquish', 'azora', 'azoraSquish', 'badge',
     'rise', 'ALONE_START_MS', 'duration', 'AZORA_START_MS', 'AZORA_RISE_MS',
     'withDelay', 'BADGE_AT_MS', 'withSpring', 'spring', 'startUiTimer',
-    'triggerSuccessHaptic', 'cancelAnimation', effectBody,
+    'triggerSuccessHaptic', 'cancelAnimation', 'ReduceMotion', effectBody,
   )(
     ...values,
     (...args) => rises.push(args), 250, { fill: 500 }, 570, 700,
@@ -27,6 +27,7 @@ function runEntrance() {
     },
     () => { haptics++; },
     (value) => cancelled.push(value),
+    { Never: 'never' },
   );
   return {
     cleanup, values, cancelled, rises,

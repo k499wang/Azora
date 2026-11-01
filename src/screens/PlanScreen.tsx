@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -29,6 +29,8 @@ import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { getActiveSelfCareGoalsQueryOptions } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
+import { getSelfCareGoalsQueryOptions } from '../queries/selfCare/useSelfCareGoalsQuery';
+import { formatLocalDate, parseLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -92,6 +94,16 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
     (day: string) => setPicked({ on: todayLocalDate, day }),
     [todayLocalDate],
   );
+  // This week's days load while the screen is up, so picking one opens on its
+  // to-dos instead of a skeleton waiting on the network.
+  useEffect(() => {
+    if (!isFocused || userId == null) return;
+    const today = parseLocalDate(todayLocalDate);
+    for (let day = 0; day < 7; day += 1) {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + day);
+      void queryClient.prefetchQuery(getSelfCareGoalsQueryOptions(userId, formatLocalDate(date)));
+    }
+  }, [isFocused, userId, todayLocalDate, queryClient]);
   const activityQuery = useDailyActivityRangeQuery(userId, PLAN_WEEK_STRIP_DAYS);
   const viewingPastDay = selectedLocalDate < todayLocalDate;
   const viewingLaterDay = selectedLocalDate > todayLocalDate;
@@ -226,6 +238,7 @@ const styles = StyleSheet.create({
   },
   weekStrip: {
     paddingHorizontal: padding.screen.horizontal,
+    marginTop: -spacing.sm,
   },
   sheet: {
     flex: 1,

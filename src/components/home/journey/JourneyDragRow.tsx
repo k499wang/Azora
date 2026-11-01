@@ -98,6 +98,7 @@ function PositionedRow({
     pickup,
     dragging,
     lifted,
+    settled,
     gap,
     enabled,
     fixedTailId,
@@ -284,7 +285,7 @@ function PositionedRow({
           // movement.
           translateY: held
             ? pickup.value + translation.value - base
-            : dragging.value || positioned
+            : dragging.value || (positioned && settled.value)
               ? withTiming(resting - base, settle)
               : resting - base,
         },

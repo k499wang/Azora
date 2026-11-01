@@ -15,6 +15,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../common/Text';
 import CloseButton from '../common/CloseButton';
 import Icon from '../common/icons/Icon';
@@ -137,6 +138,7 @@ export function NoTrialLongPaywall({
   onContinue,
 }: NoTrialLongPaywallProps) {
   const insets = useSafeAreaInsets();
+  const reduceMotion = useAnimationReduceMotion();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [today] = useState(() => new Date());
   const [isTransformationHeadline] = useState(
@@ -322,7 +324,7 @@ export function NoTrialLongPaywall({
             ) : null}
 
             {/* Moves with the plan reveal instead of jumping. */}
-            <Reanimated.View layout={LinearTransition.duration(PLAN_REVEAL_MS)}>
+            <Reanimated.View layout={LinearTransition.duration(PLAN_REVEAL_MS).reduceMotion(reduceMotion)}>
               {errorMessage ? (
                 <View style={styles.errorBlock}>
                   <Text style={styles.error}>{errorMessage}</Text>

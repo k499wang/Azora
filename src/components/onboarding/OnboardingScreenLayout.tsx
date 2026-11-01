@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleProp, StyleSheet, TextStyle, View } from 'react-native';
 import Reanimated, {
+  ReduceMotion,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
@@ -508,6 +509,7 @@ function ProgressBar({ progress }: { progress: number }) {
 
   useEffect(() => {
     value.value = withTiming(progress, {
+      reduceMotion: ReduceMotion.Never,
       duration: duration.slow,
       easing: motionEasing.settle,
     });

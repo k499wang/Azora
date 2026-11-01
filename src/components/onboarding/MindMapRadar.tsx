@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion, useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -209,6 +210,8 @@ export default function MindMapRadar({
   const today = shapeFor(scores);
   const goal = shapeFor(targetScores);
 
+  const reducedMotion = useReducedMotionSetting();
+  const reduceMotion = useAnimationReduceMotion();
   const cornerCount = scores.length;
   const growTotalMs = (cornerCount - 1) * CORNER_STAGGER_MS + CORNER_SETTLE_MS;
   // Starts where the screen already is, so only a flip while mounted animates.
@@ -221,21 +224,26 @@ export default function MindMapRadar({
   useEffect(() => {
     const flippedOn = showTarget && !wasShowingTarget.current;
     wasShowingTarget.current = showTarget;
+    if (reducedMotion) {
+      clock.value = showTarget ? growTotalMs : 0;
+      kept.value = showTarget ? 1 : 0;
+      return;
+    }
     if (!showTarget) {
-      kept.value = withTiming(0, { duration: GROW_MS, easing: easing.exit });
+      kept.value = withTiming(0, { reduceMotion, duration: GROW_MS, easing: easing.exit });
       return;
     }
     if (!flippedOn) return;
 
     kept.value = 1;
     clock.value = 0;
-    clock.value = withTiming(growTotalMs, { duration: growTotalMs, easing: Easing.linear });
+    clock.value = withTiming(growTotalMs, { reduceMotion, duration: growTotalMs, easing: Easing.linear });
     setReveals((count) => count + 1);
     const cancels = Array.from({ length: cornerCount }, (_, corner) =>
       startUiTimer(corner * CORNER_STAGGER_MS + CORNER_PEAK_MS, triggerTapHaptic),
     );
     return () => cancels.forEach((cancel) => cancel());
-  }, [clock, cornerCount, growTotalMs, kept, showTarget]);
+  }, [clock, cornerCount, growTotalMs, kept, reduceMotion, reducedMotion, showTarget]);
 
   /** how far each corner has grown from today toward the goal */
   const cornerGrowth = useDerivedValue(() =>
@@ -370,7 +378,7 @@ export default function MindMapRadar({
             </View>
           );
         })}
-        {reveals === 0
+        {reveals === 0 || reducedMotion
           ? null
           : goal.map((point, corner) => (
               <FlashTwinkle

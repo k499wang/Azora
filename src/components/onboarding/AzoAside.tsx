@@ -1,3 +1,4 @@
+import { useAnimationReduceMotion, useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Reanimated, {
@@ -82,17 +83,24 @@ export default function AzoAside({
 }: AzoAsideProps) {
   const lead = variant !== 'aside';
   const enter = useSharedValue(0);
+  const reducedMotion = useReducedMotionSetting();
+  const reduceMotion = useAnimationReduceMotion();
 
   useEffect(() => {
+    if (reducedMotion) {
+      enter.value = 1;
+      return;
+    }
     enter.value = 0;
     enter.value = withDelay(
       delayMs,
-      withTiming(1, { duration: entranceTiming.prompt, easing: easing.settle }),
+      withTiming(1, { reduceMotion, duration: entranceTiming.prompt, easing: easing.settle }),
+      reduceMotion,
     );
 
     // The screen unmounts on every step, so the tween goes with it.
     return () => cancelAnimation(enter);
-  }, [delayMs, enter, text]);
+  }, [delayMs, enter, reduceMotion, reducedMotion, text]);
 
   const pillStyle = useAnimatedStyle(() => ({
     opacity: enter.value,

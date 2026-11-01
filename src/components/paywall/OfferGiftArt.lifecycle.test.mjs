@@ -86,7 +86,7 @@ function setup({ reducedMotion = false, focusedInitially = true } = {}) {
         if (name === '@react-navigation/native') return { NavigationContext: {} };
         if (name.endsWith('/motion')) return { easing: { breathe: 'breathe' }, spring: { pop: {} } };
         if (name.endsWith('/tapHaptics')) return { triggerMediumHaptic: () => cues.haptics++ };
-        if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
+        if (name.endsWith('/useReducedMotionSetting')) return { useAnimationReduceMotion: () => 'system', useReducedMotionSetting: () => reducedMotion };
         if (name.endsWith('/useCompletionSound')) return { useCompletionSound: () => () => cues.sounds++ };
         if (name.endsWith('/uiThreadTimer')) return {
           startUiTimer(delay, callback) {
