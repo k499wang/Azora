@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import {
   cancelAnimation,
-  useReducedMotion,
   useSharedValue,
   withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { duration, easing, spring } from '../theme/motion';
+import { useReducedMotionSetting } from './useReducedMotionSetting';
 
 export function popAnimation(peak: number) {
   'worklet';
@@ -28,7 +28,7 @@ export function usePopOnChange(
   { enabled = true }: Options = {},
 ) {
   const scale = useSharedValue(1);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const previous = useRef(trigger);
 
   useEffect(() => {

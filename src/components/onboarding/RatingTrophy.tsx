@@ -1,11 +1,10 @@
 import { StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { stagger } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
-import { RiseUnlessReducedMotion } from '../common/Reveal';
+import { Rise } from '../common/Reveal';
 import { LoopingTwinkle } from '../common/RewardSparkles';
 import { Text } from '../common/Text';
 
@@ -112,7 +111,6 @@ function KoalaCup() {
  * so the SVGs stay sharp.
  */
 export default function RatingTrophy({ value, label, size, enterAt }: Props) {
-  const reducedMotion = useReducedMotion();
   const starsAt = enterAt + stagger.base * 2;
   const unit = size / VIEW_W;
   const height = VIEW_H * unit;
@@ -121,10 +119,9 @@ export default function RatingTrophy({ value, label, size, enterAt }: Props) {
   return (
     <View style={styles.root}>
       <View style={{ width: size, height }}>
-        <RiseUnlessReducedMotion
+        <Rise
           delay={enterAt}
-          reducedMotion={reducedMotion}
-          style={StyleSheet.absoluteFillObject}
+                  style={StyleSheet.absoluteFillObject}
         >
           <Svg width={size} height={height} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
             <Branch />
@@ -132,12 +129,11 @@ export default function RatingTrophy({ value, label, size, enterAt }: Props) {
               <Branch />
             </G>
           </Svg>
-        </RiseUnlessReducedMotion>
+        </Rise>
 
-        <RiseUnlessReducedMotion
+        <Rise
           delay={enterAt + stagger.base}
-          reducedMotion={reducedMotion}
-          style={StyleSheet.absoluteFillObject}
+                  style={StyleSheet.absoluteFillObject}
         >
           <Svg width={size} height={height} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
             <KoalaCup />
@@ -152,7 +148,7 @@ export default function RatingTrophy({ value, label, size, enterAt }: Props) {
               {value}
             </Text>
           </View>
-        </RiseUnlessReducedMotion>
+        </Rise>
 
         {STARS.map((star, i) => (
           <LoopingTwinkle
@@ -165,8 +161,7 @@ export default function RatingTrophy({ value, label, size, enterAt }: Props) {
             delay={starsAt + i * stagger.base}
             period={star.period}
             active
-            reducedMotion={reducedMotion}
-          />
+                    />
         ))}
       </View>
       <Text style={styles.label}>{label}</Text>

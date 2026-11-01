@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { colors } from '../../../theme/colors';
 import { typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
@@ -24,7 +23,6 @@ export default function HabitsFocusScienceScreen({
   onContinue,
   onBack,
 }: HabitsFocusScienceScreenProps) {
-  const reducedMotion = useReducedMotion();
   return (
     <OnboardingScreenLayout
       title=""
@@ -39,7 +37,6 @@ export default function HabitsFocusScienceScreen({
           highlights={highlights}
           highlightStyle={styles.highlight}
           play
-          reducedMotion={reducedMotion}
           textStyle={styles.text}
         />
       </View>

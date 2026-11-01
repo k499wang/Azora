@@ -31,6 +31,9 @@ export type MainTabParamList = {
 /** Shared by every room screen. See `RoomDecorate` below. */
 export type RoomScreenParams = { fromLab?: boolean } | undefined;
 
+/** Sample plan pairs for the dev paywall preview. */
+export type PreviewPlans = 'annualWeekly' | 'monthlyWeekly';
+
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   /** AI-guided first steps for a photographed messy space. */
@@ -146,7 +149,7 @@ export type RootStackParamList = {
   /** dev-only run of the welcome shown after a Pro purchase */
   ProWelcomePreview: { trialDays: number | null };
   /** dev-only preview of the personalized scrolling paywall */
-  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean; onlyPackageId?: PaywallPackageId };
+  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean; onlyPackageId?: PaywallPackageId; plans?: PreviewPlans };
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;

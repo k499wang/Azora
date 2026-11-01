@@ -5,7 +5,6 @@ import {
   type StyleProp,
   type TextStyle,
 } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
 import { Text } from '../common/Text';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
@@ -40,12 +39,11 @@ export default function TypedText({
   delay = 0,
   highlights = [],
 }: TypedTextProps) {
-  const reducedMotion = useReducedMotion();
-  const [count, setCount] = useState(reducedMotion ? text.length : 0);
+  const [count, setCount] = useState(0);
 
   useWhileVisible((cameIntoView) => {
     // Returning to a headline should leave it readable, rather than replay it.
-    if (reducedMotion || cameIntoView) {
+    if (cameIntoView) {
       setCount(text.length);
       return () => {};
     }
@@ -69,7 +67,7 @@ export default function TypedText({
       clearTimeout(start);
       if (interval != null) clearInterval(interval);
     };
-  }, [delay, reducedMotion, speed, text]);
+  }, [delay, speed, text]);
 
   const renderText = (visibleCount: number): ReactNode => {
     const visibleText = text.slice(0, visibleCount);

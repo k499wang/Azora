@@ -6,7 +6,6 @@ import ts from 'typescript';
 
 function mount(relativePath, props) {
   const hooks = [], effects = [], interpolations = [], timings = [], advanceTimers = [];
-  let reducedMotion = false;
   let cursor = 0;
   const sameDeps = (a, b) => a?.length === b?.length && a.every((value, i) => Object.is(value, b[i]));
   const react = {
@@ -69,7 +68,6 @@ function mount(relativePath, props) {
       useAnimatedStyle: callback => react.useMemo(() => new Proxy({}, {
         get: (_, property) => callback()[property],
       }), []),
-      useReducedMotion: () => reducedMotion,
       useSharedValue: initial => react.useRef({ value: initial }).current,
     },
     '../../hooks/usePopOnChange': { usePopOnChange: () => ({ value: 1 }) },
@@ -105,7 +103,6 @@ function mount(relativePath, props) {
   let component = exports.default;
   return {
     interpolations, timings,
-    setReducedMotion(value) { reducedMotion = value; },
     pendingAdvanceCount() { return advanceTimers.filter(timer => !timer.cancelled).length; },
     flushAdvanceTimers() {
       advanceTimers.splice(0).forEach(timer => { if (!timer.cancelled) timer.callback(); });
@@ -173,20 +170,6 @@ test('single-select advances once after settling and repeated question visits ca
     h.flushAdvanceTimers();
     assert.deepEqual(advanced, ['calm'], 'Back or Skip unmount must cancel auto-advance');
   }
-});
-
-test('reduced-motion single-select advances immediately without pending timers', () => {
-  const selected = [], advanced = [];
-  const h = mount('./OnboardingOptionList.tsx', {
-    options, selectedIds: [],
-    onSelect: id => selected.push(id), onAdvance: id => advanced.push(id),
-  });
-  h.setReducedMotion(true);
-  rows(h.render())[1].props.children.props.onPress();
-  assert.deepEqual(selected, ['sleep']);
-  assert.deepEqual(advanced, ['sleep']);
-  assert.equal(h.pendingAdvanceCount(), 0);
-  h.unmount();
 });
 
 test('answer selection and repeated taps keep stable entrance animation node identities', () => {

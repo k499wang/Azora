@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { Animated, Easing } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { triggerMessageHaptic, triggerNotificationHaptic } from '../../native/tapHaptics';
@@ -61,7 +60,6 @@ const LAST_STAGE = STAGES.length;
  */
 export function useAzoMessageEntrance(started = true) {
   const [phase, setPhase] = useState<AzoMessageEntrancePhase>('title');
-  const reducedMotion = useReducedMotion();
   const progress = useRef(new Animated.Value(0)).current;
   // The jolt the card makes the moment it lands, kept apart from `progress`
   // because it plays after the drop has finished, on the buzz's beat.
@@ -83,25 +81,23 @@ export function useAzoMessageEntrance(started = true) {
     let jolt: Animated.CompositeAnimation | undefined;
 
     // A buzz as a line arrives, so the words are felt as they land rather than
-    // only seen. Reduced motion never animates a line in, so it stays quiet.
+    // only seen.
     const buzzLineArrival = () => {
-      if (stopped || reducedMotion) return;
+      if (stopped) return;
       triggerMessageHaptic();
     };
 
     // The buzz belongs to the banner *arriving*, not to it having landed, so it
-    // plays as the slide-in starts. Reduced motion never drops the card in, so
-    // there it simply sits there from the moment it arrives.
+    // plays as the slide-in starts.
     const announceArrival = () => {
       if (stopped || notificationArrived.current) return;
       notificationArrived.current = true;
       triggerNotificationHaptic();
-      if (reducedMotion) arrival.setValue(1);
     };
 
     // The recoil the card takes as it lands, after the fall it made on the buzz.
     const joltOnLanding = () => {
-      if (stopped || reducedMotion) return;
+      if (stopped) return;
       arrival.setValue(0);
       jolt = Animated.timing(arrival, {
         toValue: 1,
@@ -141,19 +137,6 @@ export function useAzoMessageEntrance(started = true) {
       });
     };
 
-    const deliverInvitation = () => {
-      if (stopped || completedStage.current === LAST_STAGE) return;
-      if (reducedMotion) {
-        announceArrival();
-        completedStage.current = LAST_STAGE;
-        pausedProgress.current = LAST_STAGE;
-        progress.setValue(LAST_STAGE);
-        setPhase('ready');
-      } else {
-        animateNextStage();
-      }
-    };
-
     const resume = () => {
       if (stopped || completedStage.current === LAST_STAGE) return;
       if (!greetingArrived.current) {
@@ -166,10 +149,10 @@ export function useAzoMessageEntrance(started = true) {
           cancelReading = undefined;
           if (stopped) return;
           readingTimeLeft.current = 0;
-          deliverInvitation();
+          animateNextStage();
         });
       } else {
-        deliverInvitation();
+        animateNextStage();
       }
     };
 
@@ -203,7 +186,7 @@ export function useAzoMessageEntrance(started = true) {
         });
       }
     };
-  }, [progress, arrival, reducedMotion, started]);
+  }, [progress, arrival, started]);
 
   return { progress, arrival, phase, ready: phase === 'ready' };
 }

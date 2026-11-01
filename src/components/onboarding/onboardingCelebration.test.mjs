@@ -81,7 +81,7 @@ test('celebration preserves the backdrop fade, badge pop, check draw and title r
   assert.match(overlay, /pop\.value = withDelay\(\s*POP_AT_MS/);
   assert.match(overlay, /draw\.value = withDelay\(\s*DRAW_AT_MS/);
   assert.match(overlay, /strokeDashoffset: CHECK_LENGTH \* \(1 - draw\.value\)/);
-  assert.match(overlay, /<RiseUnlessReducedMotion\s+delay=\{TITLE_AT_MS\}/);
+  assert.match(overlay, /<Rise\s+delay=\{TITLE_AT_MS\}/);
 });
 
 test('completion uses the cleanup-owned frame timer and slow saves keep an explicit status', () => {

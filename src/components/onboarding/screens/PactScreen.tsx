@@ -5,7 +5,6 @@ import * as Haptics from 'expo-haptics';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -212,11 +211,9 @@ export default function PactScreen({
 
 /** a soft disc behind the empty seal that breathes, asking to be pressed */
 function SealTarget() {
-  const reduceMotion = useReducedMotion();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
-    if (reduceMotion) return undefined;
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, { duration: SEAL_PULSE_MS / 2 }),
@@ -226,7 +223,7 @@ function SealTarget() {
       false,
     );
     return () => cancelAnimation(pulse);
-  }, [pulse, reduceMotion]);
+  }, [pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 0.92 + pulse.value * 0.1 }],

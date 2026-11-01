@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { colors } from '../../theme/colors';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const CONFETTI_COLORS = [
@@ -124,7 +124,7 @@ export default function ConfettiFall({
   spread = 0.7,
   startTop = '15%',
 }: ConfettiFallProps) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const pieces = useMemo(() => buildConfetti(count, spread, durationMs), [count, spread, durationMs]);
 
   if (reducedMotion) return null;

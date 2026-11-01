@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import HarvardLogo from '../../../assets/logos/harvard.svg';
@@ -79,7 +79,7 @@ interface Props {
 export default function ProWelcome({ goalPhrase, intent, isContinuing, errorMessage, onContinue }: Props) {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const headlineGoal = (intent == null ? undefined : PLAN_GOALS[intent]) ?? goalPhrase;
   useCompletionHaptic('activity', true);
 

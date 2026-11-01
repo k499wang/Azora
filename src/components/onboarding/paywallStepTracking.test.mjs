@@ -352,6 +352,55 @@ test('annual paid-trial-only offerings show the paid intro and buy annual', () =
   deck.unmount();
 });
 
+test('every offering shape shows the right cards, timeline, reminder, reviews, and button', () => {
+  const plan = (id, title, billingPeriod, priceString, introOffer) => ({
+    ...annual, id, title, billingPeriod, priceString, trialLabel: null, trialDays: null, introOffer,
+  });
+  const paidAnnual = plan('annual', 'Annual', 'year', '$29.99', { days: 30, priceString: '$4.99' });
+  const paidWeekly = plan('monthly', 'Weekly', 'week', '$9.99', { days: 7, priceString: '$0.99' });
+  const firstMonthly = plan('annual', 'Monthly', 'month', '$9.99', { days: 30, priceString: '$4.99' });
+  const fullAnnual = plan('annual', 'Annual', 'year', '$29.99', null);
+  const fullWeekly = plan('monthly', 'Weekly', 'week', '$9.99', null);
+  const shapes = [
+    { name: 'annual + weekly paid trials', packages: [paidAnnual, paidWeekly], cards: true,
+      picks: [['annual', 'Redeem 30 days for $4.99', '$29.99/year'], ['monthly', 'Redeem 7 days for $0.99', '$9.99/week']] },
+    { name: 'monthly + weekly paid trials', packages: [firstMonthly, paidWeekly], cards: true,
+      picks: [['annual', 'Redeem 30 days for $4.99', '$9.99/month'], ['monthly', 'Redeem 7 days for $0.99', '$9.99/week']] },
+    { name: 'annual paid trial only', packages: [paidAnnual, paidWeekly], only: 'annual',
+      picks: [['annual', 'Redeem 30 days for $4.99', '$29.99/year']] },
+    { name: 'monthly paid trial only', packages: [firstMonthly, paidWeekly], only: 'annual',
+      picks: [['annual', 'Redeem 30 days for $4.99', '$9.99/month']] },
+    { name: 'weekly paid trial only', packages: [paidAnnual, paidWeekly], only: 'monthly',
+      picks: [['monthly', 'Redeem 7 days for $0.99', '$9.99/week']] },
+    { name: 'annual only, intro used up', packages: [fullAnnual, fullWeekly], only: 'annual',
+      picks: [['annual', 'Subscribe yearly', null]] },
+    { name: 'weekly only, intro used up', packages: [fullAnnual, fullWeekly], only: 'monthly',
+      picks: [['monthly', 'Continue with weekly', null]] },
+    { name: 'monthly first, intro used up', packages: [plan('annual', 'Monthly', 'month', '$9.99', null), fullWeekly], cards: true,
+      picks: [['annual', 'Continue with monthly', null]] },
+  ];
+  for (const shape of shapes) {
+    for (const [selectedPackageId, label, renewal] of shape.picks) {
+      const purchases = [];
+      const deck = deckHarness({
+        offering: { ...offering, onlyPackageId: shape.only ?? null, packages: shape.packages },
+        initialStep: 'plan', selectedPackageId, onPurchase: id => purchases.push(id),
+      });
+      const where = `${shape.name} (${selectedPackageId})`;
+      const timeline = deck.component('PaywallTrialStep').props;
+      assert.equal(deck.component('PaywallChoosePlanStep') != null, shape.cards === true, `${where}: cards`);
+      assert.equal(deck.component('ReviewCardRow') != null, shape.cards !== true, `${where}: reviews`);
+      assert.equal(deck.component('PaywallTrialReminderControl') != null, renewal != null, `${where}: reminder`);
+      assert.equal(timeline.onlyOption, shape.cards !== true, `${where}: one plan`);
+      assert.equal(timeline.paidTrial?.renewalPrice ?? null, renewal, `${where}: renewal`);
+      assert.equal(deck.component('Button').props.label, label, `${where}: button`);
+      deck.pressNext();
+      assert.deepEqual(purchases, [shape.only ?? selectedPackageId], `${where}: purchase`);
+      deck.unmount();
+    }
+  }
+});
+
 test('purchase saves a valid reminder for the selected shorter intro and blocks on save failure', async () => {
   for (const saveSucceeds of [true, false]) {
     const saved = [], purchases = [];

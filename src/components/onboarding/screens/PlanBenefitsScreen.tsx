@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { onboardingPlanBenefits } from '../../../lib/onboardingPlanBenefits';
 import type { OnboardingPreset } from '../../../lib/onboardingPreset';
 import { colors } from '../../../theme/colors';
@@ -46,7 +45,6 @@ export default function PlanBenefitsScreen({
   onBack,
 }: PlanBenefitsScreenProps) {
   const benefits = onboardingPlanBenefits(preset, intent, goalPhrase, triedEcho);
-  const reducedMotion = useReducedMotion();
   // The goal phrase is authored to read inside a sentence — "here to declutter my
   // closet" — so it starts lowercase; this screen opens a sentence with it.
   const goalSentence = `${benefits.goal.charAt(0).toUpperCase()}${benefits.goal.slice(1)}`;
@@ -75,7 +73,6 @@ export default function PlanBenefitsScreen({
           highlights={highlights}
           highlightStyle={styles.highlight}
           play
-          reducedMotion={reducedMotion}
           textStyle={styles.headline}
         />
       </View>

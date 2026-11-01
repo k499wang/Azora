@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
+import { FullMotion } from '../../hooks/useReducedMotionSetting';
 import { GREETING_ANIMATION } from './greetingAnimation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getProgramEnrollmentQueryKey } from '../../queries/program/useProgramEnrollmentQuery';
@@ -3198,20 +3199,22 @@ export default function OnboardingFlow(props: OnboardingFlowProps) {
   useAppStoreRatingQuery();
 
   return (
-    <OnboardingProgressProvider>
-      {/* Decode with the same WebP codec before the greeting step shows it. */}
-      <Image
-        source={GREETING_ANIMATION}
-        style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
-        pointerEvents="none"
-        accessible={false}
-        autoplay={false}
-        allowDownscaling={false}
-        cachePolicy="memory"
-        useAppleWebpCodec={false}
-      />
-      <OnboardingFlowSteps {...props} />
-    </OnboardingProgressProvider>
+    <FullMotion>
+      <OnboardingProgressProvider>
+        {/* Decode with the same WebP codec before the greeting step shows it. */}
+        <Image
+          source={GREETING_ANIMATION}
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+          pointerEvents="none"
+          accessible={false}
+          autoplay={false}
+          allowDownscaling={false}
+          cachePolicy="memory"
+          useAppleWebpCodec={false}
+        />
+        <OnboardingFlowSteps {...props} />
+      </OnboardingProgressProvider>
+    </FullMotion>
   );
 }
 

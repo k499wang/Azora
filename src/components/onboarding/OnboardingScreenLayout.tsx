@@ -5,7 +5,6 @@ import {
 import Reanimated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -506,14 +505,8 @@ function ProgressBar({ progress }: { progress: number }) {
   // A screen rendered outside the flow still gets a bar; it just starts at rest.
   const fallback = useSharedValue(progress);
   const value = shared ?? fallback;
-  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reducedMotion) {
-      value.value = progress;
-      return undefined;
-    }
-
     value.value = withTiming(progress, {
       duration: duration.slow,
       easing: motionEasing.settle,
@@ -522,7 +515,7 @@ function ProgressBar({ progress }: { progress: number }) {
     // Stops the tween when this screen goes away. The next screen picks the
     // value up where this one left it, so nothing is left running behind it.
     return () => cancelAnimation(value);
-  }, [progress, reducedMotion, value]);
+  }, [progress, value]);
 
   const fillStyle = useAnimatedStyle(() => ({
     width: `${value.value * 100}%`,

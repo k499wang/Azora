@@ -77,7 +77,6 @@ export default function AzoChatScreen({
   const asksName = turns[conversation.answers.length]?.asksName === true;
   const canSendName = name.trim().length > 0;
   const delivery = useAzoChatDelivery(conversation, onContinue);
-  const { reducedMotion } = delivery;
   const ready = useRef(delivery.ready);
   ready.current = delivery.ready;
   const latestAnswers = useRef(conversation.answers);
@@ -100,7 +99,7 @@ export default function AzoChatScreen({
     const anchor = currentTurnAnchor(answerCount);
     const y = anchorPositions.current.get(anchor);
     if (y !== undefined) {
-      scroll.current?.scrollTo({ y: Math.max(0, y - spacing.md), animated: !reducedMotion });
+      scroll.current?.scrollTo({ y: Math.max(0, y - spacing.md), animated: true });
       pendingAnchor.current = undefined;
     } else {
       pendingAnchor.current = anchor;
@@ -154,7 +153,7 @@ export default function AzoChatScreen({
       return true;
     });
     return () => subscription.remove();
-  }, [onAnswersChange, onBack, reducedMotion]);
+  }, [onAnswersChange, onBack]);
 
   // The keyboard covers the home indicator, so the composer drops its safe-area
   // padding while it is up and sits just above the keys.
@@ -224,7 +223,7 @@ export default function AzoChatScreen({
             return;
           }
           if (!atEnd.current) return;
-          scroll.current?.scrollToEnd({ animated: !reducedMotion });
+          scroll.current?.scrollToEnd({ animated: true });
         }}
       >
         {delivery.messages.map((message, index) => {
@@ -236,7 +235,6 @@ export default function AzoChatScreen({
               side={isReply ? 'reply' : 'azo'}
               animate={index >= delivery.animateFrom}
               active={delivery.active}
-              reducedMotion={reducedMotion}
               onLayout={({ nativeEvent }) => {
                 anchorPositions.current.set(message.id, nativeEvent.layout.y);
                 if (pendingAnchor.current !== message.id) return;
@@ -282,7 +280,7 @@ export default function AzoChatScreen({
 
         {!delivery.ready ? (
           <View style={[styles.bubble, styles.typing]} accessible accessibilityLabel="Azo is typing">
-            <AzoTypingDots reducedMotion={reducedMotion} />
+            <AzoTypingDots reducedMotion={false} />
           </View>
         ) : null}
 

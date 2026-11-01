@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useReducedMotion } from 'react-native-reanimated';
 import { Text } from '../../common/Text';
 import Icon from '../../common/icons/Icon';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
@@ -42,7 +41,6 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const entered = useRef(false);
-  const reducedMotion = useReducedMotion();
   const enter = useRef(new Animated.Value(0)).current;
   const arrow = useRef(new Animated.Value(0)).current;
   const [greetingHeight, setGreetingHeight] = useState(0);
@@ -91,10 +89,6 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
 
   useEffect(() => {
     if (!artworkSettled) return;
-    if (reducedMotion) {
-      enter.setValue(1);
-      return;
-    }
     const rise = Animated.timing(enter, {
       toValue: 1,
       duration: duration.slow,
@@ -104,7 +98,7 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
     });
     rise.start();
     return () => rise.stop();
-  }, [artworkSettled, enter, reducedMotion]);
+  }, [artworkSettled, enter]);
 
   // The hint breathes while it waits for the tap — but only once the entrance
   // has settled, since a loop that starts while the prompt is still rising puts
@@ -112,7 +106,7 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
   useWhileVisible(
     () => {
       arrow.setValue(0);
-      if (!settled || reducedMotion) return () => {};
+      if (!settled) return () => {};
       const bob = Animated.loop(
         Animated.sequence([
           Animated.timing(arrow, {
@@ -134,7 +128,7 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
       bob.start();
       return () => bob.stop();
     },
-    [arrow, settled, reducedMotion],
+    [arrow, settled],
   );
 
   const enterRise = enter.interpolate({ inputRange: [0, 1], outputRange: [travel.rise, 0] });
@@ -148,17 +142,12 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
   const promptOpacity = progress.interpolate({ inputRange: [0, 5, 6], outputRange: [0, 0, 1], extrapolate: 'clamp' });
   const promptTranslate = progress.interpolate({ inputRange: [0, 5, 6], outputRange: [travel.rise, travel.rise, 0], extrapolate: 'clamp' });
   // The greeting hands over to the headline, and the headline hands the screen
-  // to the prompt. Reduced motion plays neither handover, so the line that names
-  // what this is stays rather than leaving unread.
+  // to the prompt.
   const greetingOpacity = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' });
   const greetingExit = progress.interpolate({ inputRange: [0, 1], outputRange: [0, -travel.rise], extrapolate: 'clamp' });
   // The headline's words pop in on their own; this only carries it out again.
-  const headlineOpacity = reducedMotion
-    ? 1
-    : progress.interpolate({ inputRange: [0, 4, 5], outputRange: [1, 1, 0], extrapolate: 'clamp' });
-  const headlineExit = reducedMotion
-    ? 0
-    : progress.interpolate({ inputRange: [0, 4, 5], outputRange: [0, 0, -travel.rise], extrapolate: 'clamp' });
+  const headlineOpacity = progress.interpolate({ inputRange: [0, 4, 5], outputRange: [1, 1, 0], extrapolate: 'clamp' });
+  const headlineExit = progress.interpolate({ inputRange: [0, 4, 5], outputRange: [0, 0, -travel.rise], extrapolate: 'clamp' });
   // The recoil the card takes as it lands, after the fall it made on the buzz: a
   // small overshoot in size and a quick side-to-side settle.
   const arrivalScale = arrival.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0.95, 1.02, 1], extrapolate: 'clamp' });
@@ -221,7 +210,6 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
             <PopInWords
               text={GREETING_LINE}
               play={artworkSettled}
-              reducedMotion={reducedMotion}
               textStyle={[styles.lineText, compact && styles.compactLine]}
             />
           </Animated.View>
@@ -233,7 +221,6 @@ export default function AzoMessageScreen({ onContinue }: AzoMessageScreenProps) 
               text={HEADLINE_LINE}
               accessibilityRole="header"
               play={phase !== 'title'}
-              reducedMotion={reducedMotion}
               textStyle={[styles.lineText, compact && styles.compactLine]}
             />
           </Animated.View>

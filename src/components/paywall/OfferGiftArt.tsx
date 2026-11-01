@@ -6,7 +6,6 @@ import Animated, {
   Easing,
   interpolate,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -18,6 +17,7 @@ import { easing, spring } from '../../theme/motion';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { triggerMediumHaptic } from '../../native/tapHaptics';
 import { useCompletionSound } from '../../hooks/useCompletionSound';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { GIFT_BOX_VIEWBOX, GiftBoxBody, GiftBoxLid, type GiftBoxPalette, type GiftBoxRibbonPalette } from '../common/GiftBoxArt';
 
@@ -63,7 +63,7 @@ interface Props {
 export default function OfferGiftArt({ size, delay }: Props) {
   const gradientId = useId().replace(/:/g, '');
   const fill = (name: string) => `url(#${gradientId}-${name})`;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionSetting();
   const open = useSharedValue(reducedMotion ? 1 : 0);
   const rotation = useSharedValue(0);
   const pulse = useSharedValue(0);

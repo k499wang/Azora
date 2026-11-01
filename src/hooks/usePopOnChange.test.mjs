@@ -46,6 +46,7 @@ function setup() {
         withSpring: (to, config) => ({ kind: 'spring', to, config }),
         withSequence: (...steps) => ({ steps }),
       };
+      if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
       if (name.endsWith('/motion')) return {
         duration: { fast: 180 },
         easing: { enter: 'enter' },

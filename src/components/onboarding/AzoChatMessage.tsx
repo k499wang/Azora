@@ -18,7 +18,6 @@ interface AzoChatMessageProps {
   side: 'azo' | 'reply';
   animate: boolean;
   active: boolean;
-  reducedMotion: boolean;
   style: StyleProp<ViewStyle>;
   onLayout: (event: LayoutChangeEvent) => void;
 }
@@ -36,11 +35,10 @@ export default function AzoChatMessage({
   side,
   animate,
   active,
-  reducedMotion,
   style,
   onLayout,
 }: AzoChatMessageProps) {
-  const entered = useRef(!animate || reducedMotion);
+  const entered = useRef(!animate);
   const arrival = useRef(new Animated.Value(entered.current ? 1 : 0)).current;
 
   useEffect(() => {
@@ -49,8 +47,7 @@ export default function AzoChatMessage({
       if (entered.current) arrival.setValue(1);
       return;
     }
-    if (entered.current || reducedMotion) {
-      entered.current = true;
+    if (entered.current) {
       arrival.setValue(1);
       return;
     }
@@ -68,7 +65,7 @@ export default function AzoChatMessage({
       pop.stop();
       arrival.setValue(1);
     };
-  }, [active, arrival, reducedMotion]);
+  }, [active, arrival]);
 
   // A reply rises further, from where the choices sat under the transcript.
   const rise = side === 'reply' ? travel.drop : travel.rise;

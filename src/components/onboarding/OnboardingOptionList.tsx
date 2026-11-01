@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
-  useReducedMotion,
 } from 'react-native-reanimated';
 import { usePopOnChange } from '../../hooks/usePopOnChange';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
@@ -137,7 +136,6 @@ export default function OnboardingOptionList<Id extends string>({
     renderGlyph != null ||
     options.some((option) => option.icon != null);
 
-  const reducedMotion = useReducedMotion();
   const cancelAdvance = useRef<(() => void) | null>(null);
   const onAdvanceRef = useRef(onAdvance);
   onAdvanceRef.current = onAdvance;
@@ -156,10 +154,6 @@ export default function OnboardingOptionList<Id extends string>({
     }
     onSelect(id);
     if (multiSelect || !onAdvance) return;
-    if (reducedMotion) {
-      onAdvance(id);
-      return;
-    }
     cancelAdvance.current = startUiTimer(duration.beat, () => {
       cancelAdvance.current = null;
       onAdvanceRef.current?.(id);

@@ -47,7 +47,7 @@ function render({ answers = [], visibleCount, width = 375, onAnswersChange = () 
         useAzoChatDelivery: (conversation) => ({
           messages: conversation.messages.slice(0, visibleCount),
           ready: visibleCount >= conversation.messages.length,
-          animateFrom: 0, active: true, reducedMotion: false,
+          animateFrom: 0, active: true,
           finish() {}, cancel() {},
         }),
       };

@@ -3,7 +3,6 @@ import { StyleSheet, View } from 'react-native';
 import Reanimated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withTiming,
@@ -83,14 +82,8 @@ export default function AzoAside({
 }: AzoAsideProps) {
   const lead = variant !== 'aside';
   const enter = useSharedValue(0);
-  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reducedMotion) {
-      enter.value = 1;
-      return undefined;
-    }
-
     enter.value = 0;
     enter.value = withDelay(
       delayMs,
@@ -99,7 +92,7 @@ export default function AzoAside({
 
     // The screen unmounts on every step, so the tween goes with it.
     return () => cancelAnimation(enter);
-  }, [delayMs, enter, reducedMotion, text]);
+  }, [delayMs, enter, text]);
 
   const pillStyle = useAnimatedStyle(() => ({
     opacity: enter.value,

@@ -12,7 +12,6 @@ interface PopInWordsProps {
   accessibilityRole?: 'header' | 'text';
   /** Holds every word back until the screen it plays over has painted. */
   play: boolean;
-  reducedMotion: boolean;
   textStyle: StyleProp<TextStyle>;
 }
 
@@ -37,7 +36,6 @@ interface WordProps {
   runs: readonly WordRun[];
   index: number;
   play: boolean;
-  reducedMotion: boolean;
   textStyle: StyleProp<TextStyle>;
   highlightStyle: StyleProp<TextStyle>;
 }
@@ -69,14 +67,10 @@ function splitWords(text: string, highlights: readonly string[]): WordRun[][] {
 // Core Animated rather than Reanimated: the screen re-renders on every entrance
 // phase, and with the sync-UI-props flags a Reanimated view is handed its
 // first-render style again — opacity 0 — which blanked a line already read.
-function Word({ runs, index, play, reducedMotion, textStyle, highlightStyle }: WordProps) {
-  const arrival = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
+function Word({ runs, index, play, textStyle, highlightStyle }: WordProps) {
+  const arrival = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (reducedMotion) {
-      arrival.setValue(1);
-      return;
-    }
     if (!play) return;
     const pop = Animated.sequence([
       Animated.delay(duration.fast + index * stagger.base),
@@ -87,7 +81,7 @@ function Word({ runs, index, play, reducedMotion, textStyle, highlightStyle }: W
       pop.stop();
       arrival.setValue(1);
     };
-  }, [arrival, index, play, reducedMotion]);
+  }, [arrival, index, play]);
 
   const tilt = index % 2 === 0 ? -WORD_TILT : WORD_TILT;
   const style = useMemo(
@@ -120,7 +114,6 @@ export default function PopInWords({
   highlightStyle,
   accessibilityRole = 'text',
   play,
-  reducedMotion,
   textStyle,
 }: PopInWordsProps) {
   // A line break starts a new row rather than sitting inside one word, which
@@ -141,7 +134,6 @@ export default function PopInWords({
               runs={runs}
               index={index}
               play={play}
-              reducedMotion={reducedMotion}
               textStyle={textStyle}
               highlightStyle={highlightStyle}
             />

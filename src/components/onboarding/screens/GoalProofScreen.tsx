@@ -5,7 +5,6 @@ import Reanimated, {
   Extrapolation,
   interpolate,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
@@ -96,7 +95,6 @@ export default function GoalProofScreen({
 }: GoalProofScreenProps) {
   const { height } = useWindowDimensions();
   const compact = isShortScreen(height);
-  const reducedMotion = useReducedMotion();
   const alone = useSharedValue(0);
   const aloneSquish = useSharedValue(0);
   const azora = useSharedValue(0);
@@ -104,12 +102,6 @@ export default function GoalProofScreen({
   const badge = useSharedValue(0);
 
   useEffect(() => {
-    if (reducedMotion) {
-      alone.value = 1;
-      azora.value = 1;
-      badge.value = 1;
-      return undefined;
-    }
     rise(alone, aloneSquish, ALONE_START_MS, duration.fill);
     rise(azora, azoraSquish, AZORA_START_MS, AZORA_RISE_MS);
     badge.value = withDelay(BADGE_AT_MS, withSpring(1, spring.pop));
@@ -118,7 +110,7 @@ export default function GoalProofScreen({
       stopHapticTimer();
       [alone, aloneSquish, azora, azoraSquish, badge].forEach(cancelAnimation);
     };
-  }, [alone, aloneSquish, azora, azoraSquish, badge, reducedMotion]);
+  }, [alone, aloneSquish, azora, azoraSquish, badge]);
 
   return (
     <OnboardingScreenLayout

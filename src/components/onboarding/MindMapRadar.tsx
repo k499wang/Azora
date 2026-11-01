@@ -4,7 +4,6 @@ import Animated, {
   Easing,
   useAnimatedProps,
   useDerivedValue,
-  useReducedMotion,
   useSharedValue,
   withTiming,
   type SharedValue,
@@ -210,7 +209,6 @@ export default function MindMapRadar({
   const today = shapeFor(scores);
   const goal = shapeFor(targetScores);
 
-  const reducedMotion = useReducedMotion();
   const cornerCount = scores.length;
   const growTotalMs = (cornerCount - 1) * CORNER_STAGGER_MS + CORNER_SETTLE_MS;
   // Starts where the screen already is, so only a flip while mounted animates.
@@ -223,11 +221,6 @@ export default function MindMapRadar({
   useEffect(() => {
     const flippedOn = showTarget && !wasShowingTarget.current;
     wasShowingTarget.current = showTarget;
-    if (reducedMotion) {
-      clock.value = showTarget ? growTotalMs : 0;
-      kept.value = showTarget ? 1 : 0;
-      return;
-    }
     if (!showTarget) {
       kept.value = withTiming(0, { duration: GROW_MS, easing: easing.exit });
       return;
@@ -242,7 +235,7 @@ export default function MindMapRadar({
       startUiTimer(corner * CORNER_STAGGER_MS + CORNER_PEAK_MS, triggerTapHaptic),
     );
     return () => cancels.forEach((cancel) => cancel());
-  }, [clock, cornerCount, growTotalMs, kept, reducedMotion, showTarget]);
+  }, [clock, cornerCount, growTotalMs, kept, showTarget]);
 
   /** how far each corner has grown from today toward the goal */
   const cornerGrowth = useDerivedValue(() =>
@@ -377,7 +370,7 @@ export default function MindMapRadar({
             </View>
           );
         })}
-        {reveals === 0 || reducedMotion
+        {reveals === 0
           ? null
           : goal.map((point, corner) => (
               <FlashTwinkle

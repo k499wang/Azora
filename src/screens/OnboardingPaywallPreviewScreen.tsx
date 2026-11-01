@@ -5,7 +5,8 @@ import OnboardingPaywallScreen from '../components/onboarding/screens/Onboarding
 import { onboardingPresetFor } from '../lib/onboardingPreset';
 import { computeMindMap } from '../lib/onboardingScores';
 import { colors } from '../theme/colors';
-import type { PaywallLayout, PaywallOffering, PaywallPackageId } from '../services/paywall';
+import type { PaywallLayout, PaywallOffering, PaywallPackageId, PaywallPackageOption } from '../services/paywall';
+import type { PreviewPlans } from '../app/navigation/types';
 import type { OnboardingIntent } from '../components/onboarding/types';
 
 const PREVIEW_OFFERING: PaywallOffering = {
@@ -67,6 +68,31 @@ const PREVIEW_PAID_ANNUAL_PACKAGES = PREVIEW_OFFERING.packages.map((pkg) =>
     : pkg,
 );
 
+const PREVIEW_PAID_WEEKLY: PaywallPackageOption = {
+  ...PREVIEW_OFFERING.packages[1],
+  packageIdentifier: 'preview_weekly',
+  productIdentifier: 'preview_weekly',
+  title: 'Weekly',
+  priceString: '$9.99',
+  priceCents: 999,
+  pricePerMonthString: null,
+  subscriptionPeriod: 'P1W',
+  billingPeriod: 'week',
+  introOffer: { priceString: '$0.99', days: 7 },
+};
+
+const PREVIEW_PLAN_SETS: Record<PreviewPlans, PaywallPackageOption[]> = {
+  annualWeekly: [PREVIEW_PAID_ANNUAL_PACKAGES[0], PREVIEW_PAID_WEEKLY],
+  monthlyWeekly: [
+    {
+      ...PREVIEW_OFFERING.packages[1],
+      id: 'annual',
+      introOffer: { priceString: '$4.99', days: 30 },
+    },
+    PREVIEW_PAID_WEEKLY,
+  ],
+};
+
 const PREVIEW_SCORES = computeMindMap({
   stressLevel: 7,
   sleepQuality: 4,
@@ -81,6 +107,7 @@ export default function OnboardingPaywallPreviewScreen({ navigation, route }: On
       initialStep={route.params.initialStep}
       cleaning={route.params.cleaning}
       onlyPackageId={route.params.onlyPackageId}
+      plans={route.params.plans}
       planIntent={route.params.cleaning ? 'cleaning' : 'stress_relief'}
       goalPhrase="feel calmer on the hard days"
       onClose={() => navigation.goBack()}
@@ -93,6 +120,7 @@ interface OnboardingPaywallPreviewProps {
   initialStep?: 'plan';
   cleaning?: boolean;
   onlyPackageId?: PaywallPackageId;
+  plans?: PreviewPlans;
   planIntent: OnboardingIntent;
   goalPhrase: string;
   onClose: () => void;
@@ -103,6 +131,7 @@ export function OnboardingPaywallPreview({
   initialStep,
   cleaning,
   onlyPackageId,
+  plans,
   planIntent,
   goalPhrase,
   onClose,
@@ -119,7 +148,9 @@ export function OnboardingPaywallPreview({
           ...PREVIEW_OFFERING,
           paywallLayout: layout,
           onlyPackageId: onlyPackageId ?? null,
-          packages: onlyPackageId === 'annual' ? PREVIEW_PAID_ANNUAL_PACKAGES : PREVIEW_OFFERING.packages,
+          packages: plans != null
+            ? PREVIEW_PLAN_SETS[plans]
+            : onlyPackageId === 'annual' ? PREVIEW_PAID_ANNUAL_PACKAGES : PREVIEW_OFFERING.packages,
         }}
         planIntent={planIntent}
         planPreset={onboardingPresetFor(planIntent)}

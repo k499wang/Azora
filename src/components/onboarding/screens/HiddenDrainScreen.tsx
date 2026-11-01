@@ -4,7 +4,6 @@ import Animated, {
   Easing,
   useAnimatedProps,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -87,12 +86,10 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /** Azo, glum, with a knot of worry scribbling itself above his head. */
 function DrainIllustration() {
-  const reduceMotion = useReducedMotion();
-  const drawn = useSharedValue(reduceMotion ? 1 : 0);
+  const drawn = useSharedValue(0);
   const float = useSharedValue(0);
 
   useEffect(() => {
-    if (reduceMotion) return;
     drawn.value = withDelay(
       300,
       withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.cubic) }),
@@ -105,7 +102,7 @@ function DrainIllustration() {
         -1,
       ),
     );
-  }, [drawn, float, reduceMotion]);
+  }, [drawn, float]);
 
   const floatStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: float.value }],

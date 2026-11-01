@@ -91,6 +91,7 @@ function setup({ reducedMotion = false, focusedInitially = true, random = Math.r
         };
         if (name === 'react-native-reanimated') return { useReducedMotion: () => reducedMotion };
         if (name === '@react-navigation/native') return { NavigationContext: {} };
+        if (name.endsWith('/useReducedMotionSetting')) return { useReducedMotionSetting: () => reducedMotion };
         if (name.endsWith('/colors')) return { colors: { primary: {}, success: {}, orange: {} } };
         if (name.startsWith('.')) return load(new URL(`${name}.ts`, url));
         throw new Error(`Unexpected module ${name}`);

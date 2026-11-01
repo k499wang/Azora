@@ -12,13 +12,13 @@ import Animated, {
   useAnimatedStyle,
   useDerivedValue,
   useFrameCallback,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import Svg, {
   Circle,
   Ellipse,
@@ -262,7 +262,7 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
     const width = size;
     const height = size * AZO_ASPECT;
     const unit = size / STAGE_WIDTH;
-    const reducedMotion = useReducedMotion();
+    const reducedMotion = useReducedMotionSetting();
     const alive = active && !reducedMotion;
 
     const breath = useSharedValue(0);

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import Svg, {
   Circle,
   Defs,
@@ -82,7 +81,6 @@ function Seal() {
  * confirm the stamp comes down onto the page, tilted like a hand stamp.
  */
 export default function PactSeal({ size, stamped, onLand }: Props) {
-  const reduceMotion = useReducedMotion();
   const press = useRef(new Animated.Value(0)).current;
   const onLandRef = useRef(onLand);
   onLandRef.current = onLand;
@@ -90,11 +88,6 @@ export default function PactSeal({ size, stamped, onLand }: Props) {
   useEffect(() => {
     if (!stamped) {
       press.setValue(0);
-      return undefined;
-    }
-    if (reduceMotion) {
-      press.setValue(1);
-      onLandRef.current?.();
       return undefined;
     }
     const animation = Animated.timing(press, {
@@ -107,7 +100,7 @@ export default function PactSeal({ size, stamped, onLand }: Props) {
       if (finished) onLandRef.current?.();
     });
     return () => animation.stop();
-  }, [press, reduceMotion, stamped]);
+  }, [press, stamped]);
 
   const stampStyle = {
     opacity: press.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 1, 1] }),

@@ -6,7 +6,6 @@ import Animated, {
   Easing,
   useAnimatedProps,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -23,7 +22,7 @@ import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerHeavyHaptic } from '../../native/tapHaptics';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import { RiseUnlessReducedMotion } from '../common/Reveal';
+import { Rise } from '../common/Reveal';
 import { CHUNKY_TONE } from '../common/ChunkyButton';
 import { scaleVisual } from './onboardingVisualScale';
 
@@ -79,12 +78,11 @@ export default function CelebrationOverlay({
   statusMessage,
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
-  const backdrop = useSharedValue(reducedMotion ? 1 : 0);
-  const light = useSharedValue(reducedMotion ? 1 : 0);
+  const backdrop = useSharedValue(0);
+  const light = useSharedValue(0);
   const spin = useSharedValue(0);
-  const pop = useSharedValue(reducedMotion ? 1 : 0);
-  const draw = useSharedValue(reducedMotion ? 1 : 0);
+  const pop = useSharedValue(0);
+  const draw = useSharedValue(0);
   const onFinishedRef = useRef(onFinished);
   onFinishedRef.current = onFinished;
 
@@ -94,8 +92,6 @@ export default function CelebrationOverlay({
     if (isHapticsEnabled()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
-    if (reducedMotion) return;
-
     backdrop.value = withTiming(1, { duration: duration.base, easing: easing.enter });
     pop.value = withDelay(
       POP_AT_MS,
@@ -118,10 +114,9 @@ export default function CelebrationOverlay({
       cancelAnimation(pop);
       cancelAnimation(draw);
     };
-  }, [backdrop, draw, light, pop, reducedMotion]);
+  }, [backdrop, draw, light, pop]);
 
   useWhileVisible(() => {
-    if (reducedMotion) return () => {};
     spin.value = withRepeat(
       withTiming(1, { duration: RAY_TURN_MS, easing: Easing.linear }),
       -1,
@@ -130,7 +125,7 @@ export default function CelebrationOverlay({
       cancelAnimation(spin);
       spin.value = 0;
     };
-  }, [reducedMotion, spin]);
+  }, [spin]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }));
   const raysStyle = useAnimatedStyle(() => ({
@@ -192,10 +187,9 @@ export default function CelebrationOverlay({
           </Animated.View>
         </View>
 
-        <RiseUnlessReducedMotion
+        <Rise
           delay={TITLE_AT_MS}
-          reducedMotion={reducedMotion}
-          style={styles.copy}
+                  style={styles.copy}
         >
           <Text style={styles.title}>{title}</Text>
           {statusMessage ? (
@@ -203,7 +197,7 @@ export default function CelebrationOverlay({
               {statusMessage}
             </Text>
           ) : null}
-        </RiseUnlessReducedMotion>
+        </Rise>
       </View>
     </Animated.View>
   );

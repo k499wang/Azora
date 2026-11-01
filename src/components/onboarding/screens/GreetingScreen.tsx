@@ -8,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -66,7 +65,6 @@ export default function GreetingScreen({
   }, [name]);
 
   const { width } = useWindowDimensions();
-  const reducedMotion = useReducedMotion();
   const headingSize = headingSizeFor(width);
 
   const entranceProgress = useRef(new Animated.Value(0)).current;
@@ -77,7 +75,7 @@ export default function GreetingScreen({
     if (!imageDisplayed || entranceFinished.current) return () => {};
     const entrance = Animated.timing(entranceProgress, {
       toValue: 1,
-      duration: reducedMotion ? 0 : entranceTiming.visual,
+      duration: entranceTiming.visual,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     });
@@ -89,7 +87,7 @@ export default function GreetingScreen({
     });
 
     return () => entrance.stop();
-  }, [imageDisplayed, entranceProgress, reducedMotion]);
+  }, [imageDisplayed, entranceProgress]);
 
   const contentTranslate = entranceProgress.interpolate({
     inputRange: [0, 1],

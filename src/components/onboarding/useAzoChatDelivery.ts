@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { duration } from '../../theme/motion';
 import type { AzoConversationState } from './data/azoConversation';
 import { getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
 
 export function useAzoChatDelivery(conversation: AzoConversationState, onContinue: () => void) {
-  const reducedMotion = useReducedMotion();
   const [delivery, setDelivery] = useState(() => getAzoDeliveryState(conversation));
   const [active, setActive] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -76,7 +74,6 @@ export function useAzoChatDelivery(conversation: AzoConversationState, onContinu
     ready: current.visibleCount === current.messageCount,
     animateFrom: current.animateFrom,
     active,
-    reducedMotion,
     finish,
     cancel,
   };

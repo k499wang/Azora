@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
 import { useAnimatedImagePlayback } from '../../hooks/useAnimatedImagePlayback';
 import { GREETING_ANIMATION } from './greetingAnimation';
 
@@ -11,8 +10,7 @@ interface AzoGreetingProps {
 
 /** The same waving greeting on the message invitation and personalized hello. */
 export default function AzoGreeting({ width, onReady }: AzoGreetingProps) {
-  const reducedMotion = useReducedMotion();
-  const playback = useAnimatedImagePlayback(GREETING_ANIMATION, !reducedMotion);
+  const playback = useAnimatedImagePlayback(GREETING_ANIMATION);
   const size = { width, height: width * (578 / 600) };
 
   return (

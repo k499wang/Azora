@@ -135,3 +135,18 @@ test('weekly + monthly offerings put monthly first and can show either alone', a
     assert.equal(only.offering.onlyPackageId, expected);
   }
 });
+
+test('annual + weekly paid-trial offerings use their own weekly and the annual paid intro', async () => {
+  const paidAnnual = packageWithOffer('ANNUAL', 'paid-annual', {
+    price: 4.99, priceString: '$4.99', periodUnit: 'MONTH', periodNumberOfUnits: 1,
+  });
+  const paidWeekly = packageWithOffer('WEEKLY', 'paid-weekly', {
+    price: 0.99, priceString: '$0.99', periodUnit: 'WEEK', periodNumberOfUnits: 1,
+  });
+  const placementOffering = { identifier: 'pair', metadata: {}, annual: paidAnnual, availablePackages: [paidWeekly, paidAnnual] };
+  const result = await setup([trialMonthly], { placementOffering }).exports.getPaywallOffering('onboarding_complete');
+  const [first, second] = result.offering.packages;
+  assert.equal(`${first.billingPeriod} ${first.trialLabel} ${first.introOffer.days} ${first.introOffer.priceString}`, 'year null 30 $4.99');
+  assert.equal(`${second.billingPeriod} ${second.introOffer.days} ${second.introOffer.priceString}`, 'week 7 $0.99');
+  assert.equal(result.revenueCatPackages.monthly, paidWeekly);
+});

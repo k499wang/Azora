@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function setup({ reducedMotion = false, deferredSnapshots = false, started = true } = {}) {
+function setup({ deferredSnapshots = false, started = true } = {}) {
   const slots = [];
   const effects = [];
   const listeners = new Map();
@@ -16,7 +16,6 @@ function setup({ reducedMotion = false, deferredSnapshots = false, started = tru
   let now = 0;
   let nextTimer = 0;
   let focused = true;
-  let reduced = reducedMotion;
   let armed = started;
   let stateUpdates = 0;
   let buzzes = 0;
@@ -136,7 +135,7 @@ function setup({ reducedMotion = false, deferredSnapshots = false, started = tru
       require(name) {
         if (name === 'react') return react;
         if (name === 'react-native') return { Animated, Easing: easing, AppState: appState };
-        if (name === 'react-native-reanimated') return { useReducedMotion: () => reduced, Easing: easing };
+        if (name === 'react-native-reanimated') return { Easing: easing };
         if (name === '@react-navigation/native') return { NavigationContext: {} };
         if (name.endsWith('/tapHaptics')) {
           const buzz = () => { buzzes += 1; };
@@ -205,7 +204,6 @@ function setup({ reducedMotion = false, deferredSnapshots = false, started = tru
       focused = value;
       listeners.get(value ? 'focus' : 'blur')?.forEach((callback) => callback());
     },
-    setReducedMotion(value) { reduced = value; this.render(); },
     setStarted(value) { armed = value; this.render(); },
     flushSnapshots() { snapshots.splice(0).forEach((callback) => callback()); },
     unmount() { slots.forEach((slot) => slot?.cleanup?.()); },
@@ -389,39 +387,6 @@ test('blur resumes an unfinished stage from its stopped native value without rep
   assert.equal(h.render().ready, true);
   assert.equal(opening.progress.read(), 6);
   assert.equal(h.buzzes(), 1);
-  h.unmount();
-});
-
-test('reduced motion retains title reading and then reveals a still invitation', () => {
-  const h = setup({ reducedMotion: true });
-  const opening = h.render();
-  h.advance(h.read - 1);
-  assert.equal(h.render().phase, 'title');
-  assert.equal(h.render().ready, false);
-  assert.equal(h.buzzes(), 0);
-  h.advance(1);
-  assert.equal(h.render().ready, true);
-  assert.equal(h.render().progress.read(), 6);
-  assert.equal(opening.arrival.read(), 1);
-  // nothing animates in, so nothing buzzes
-  assert.equal(h.lineBuzzes(), 0);
-  assert.equal(h.buzzes(), 1);
-  assert.equal(h.nativeWork.size, 0);
-  assert.equal(h.timers.size, 0);
-  h.unmount();
-});
-
-test('enabling reduced motion after the notification lands never repeats its buzz', () => {
-  const h = setup();
-  h.render();
-  h.advance(h.read + h.headline + h.headlineRead + h.notification + 100);
-  assert.equal(h.buzzes(), 1);
-  h.setReducedMotion(true);
-  assert.equal(h.render().ready, true);
-  assert.equal(h.render().progress.read(), 6);
-  assert.equal(h.buzzes(), 1);
-  assert.equal(h.nativeWork.size, 0);
-  assert.equal(h.timers.size, 0);
   h.unmount();
 });
 
