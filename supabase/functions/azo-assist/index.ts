@@ -631,6 +631,25 @@ Deno.serve(async (req) => {
       console.error('Gemini azo assist response was unusable', { mode: request.mode });
       return json({ error: 'Azo couldn’t answer right now. Try again.' }, 502);
     }
+    if (request.mode === 'chat') {
+      // Keeping the chat must never cost them the answer.
+      try {
+        const answer = result as { reply: string; todos: SuggestedTodo[]; changes?: TodoChange[] };
+        const { error: storeError } = await supabase.from('azo_chat_messages').insert([
+          { user_id: userData.user.id, role: 'user', text: request.messages[request.messages.length - 1].text },
+          {
+            user_id: userData.user.id,
+            role: 'azo',
+            text: answer.reply,
+            todos: answer.todos,
+            changes: answer.changes ?? null,
+          },
+        ]);
+        if (storeError != null) console.error('azo chat store failed', storeError);
+      } catch (storeError) {
+        console.error('azo chat store failed', storeError);
+      }
+    }
     if (isPro) return json(result);
     // A voice note only fills the text box; the answer it leads to is what counts.
     if (request.mode === 'transcribe') {

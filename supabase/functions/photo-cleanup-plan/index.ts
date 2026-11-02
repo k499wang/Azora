@@ -281,6 +281,23 @@ Rules:
       return json({ error: 'Could not make a cleaning plan right now.' }, 502);
     }
     console.log('Photo cleanup plan response', { plan });
+    // Keeping the photo must never cost them the plan.
+    try {
+      const storagePath = `${userData.user.id}/${crypto.randomUUID()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('room-photos')
+        .upload(storagePath, Uint8Array.from(atob(imageBase64), (char) => char.charCodeAt(0)), { contentType: 'image/jpeg' });
+      if (uploadError != null) {
+        console.error('room photo upload failed', uploadError);
+      } else {
+        const { error: photoError } = await supabase
+          .from('photo_cleanup_photos')
+          .insert({ user_id: userData.user.id, storage_path: storagePath, plan });
+        if (photoError != null) console.error('room photo record failed', photoError);
+      }
+    } catch (photoError) {
+      console.error('room photo store failed', photoError);
+    }
     if (!isPro) {
       const { error: recordError } = await supabase
         .from('photo_cleanup_free_uses')

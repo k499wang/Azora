@@ -63,8 +63,8 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * One owner for the sensitive image and its generated object order. The photo stays
- * in component memory only, and replay is paused for the complete flow so a
+ * One owner for the sensitive image and its generated object order. The server keeps
+ * the photo in a private bucket, and replay is paused for the complete flow so a
  * room image is never captured by analytics session replay.
  */
 export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupScreenProps) {

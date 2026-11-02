@@ -33,6 +33,21 @@ Deno.serve(async (req) => {
     return new Response('unauthorized', { status: 401 });
   }
 
+  // Storage objects don't cascade with the user, so room photos go first.
+  try {
+    const { data: roomPhotos } = await adminClient.storage
+      .from('room-photos')
+      .list(user.id, { limit: 1000 });
+    if (roomPhotos != null && roomPhotos.length > 0) {
+      const { error: photoError } = await adminClient.storage
+        .from('room-photos')
+        .remove(roomPhotos.map((photo) => `${user.id}/${photo.name}`));
+      if (photoError) console.error('room photo delete failed', photoError);
+    }
+  } catch (photoError) {
+    console.error('room photo delete failed', photoError);
+  }
+
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
   if (deleteError) {
