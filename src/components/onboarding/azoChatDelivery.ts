@@ -4,10 +4,15 @@ const READING_BASE_DELAY_MS = 1500;
 const READING_WORD_DELAY_MS = 275;
 const MAX_READING_DELAY_MS = 10000;
 
+/** Reads the `azo_chat_pace` variant payload as a delay multiplier; anything but a positive number reads at 1x. */
+export function azoChatPaceFrom(payload: unknown): number {
+  return typeof payload === 'number' && Number.isFinite(payload) && payload > 0 ? payload : 1;
+}
+
 /** Give the visible message, Azo's or the user's reply, time to be read before delivering the next one. */
-export function getAzoMessageReadDelay(message?: AzoConversationMessage): number {
+export function getAzoMessageReadDelay(message?: AzoConversationMessage, pace = 1): number {
   const wordCount = (message?.text ?? '').replace(/\*\*/g, '').trim().split(/\s+/).filter(Boolean).length;
-  return Math.min(MAX_READING_DELAY_MS, READING_BASE_DELAY_MS + wordCount * READING_WORD_DELAY_MS);
+  return Math.round(pace * Math.min(MAX_READING_DELAY_MS, READING_BASE_DELAY_MS + wordCount * READING_WORD_DELAY_MS));
 }
 
 export interface AzoDeliveryState {

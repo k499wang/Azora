@@ -9,3 +9,6 @@ export const SKIP_AZO_CHAT_FLAG = 'skip_azo_chat';
 export function onboardingModeFrom(flagValue: unknown): OnboardingMode {
   return flagValue === true ? 'cleaning_mode' : 'standard';
 }
+
+/** The PostHog multivariate flag whose variant payload (a number) scales the onboarding Azo chat's reading delays. */
+export const AZO_CHAT_PACE_FLAG = 'azo_chat_pace';

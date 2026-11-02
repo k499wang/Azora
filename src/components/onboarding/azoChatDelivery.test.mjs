@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
+import { azoChatPaceFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
 import { AZO_CONVERSATION, chooseAzoReply, getAzoConversation } from './data/azoConversation';
 import { runWhileVisible } from '../../lib/ui/runWhileVisible';
 
@@ -33,6 +33,16 @@ test('the first message after a reply waits the same reading time as any other',
   assert.equal(getAzoMessageReadDelay(), 1500);
 });
 
+test('the chat pace flag scales reading delays and defaults to 1x', () => {
+  assert.equal(azoChatPaceFrom(0.7), 0.7);
+  assert.equal(azoChatPaceFrom(1.3), 1.3);
+  assert.equal(azoChatPaceFrom(undefined), 1);
+  assert.equal(azoChatPaceFrom('0.7'), 1);
+  assert.equal(azoChatPaceFrom(0), 1);
+  assert.equal(azoChatPaceFrom(-1), 1);
+  assert.equal(getAzoMessageReadDelay({ id: 'reply', kind: 'reply', text: 'Of course.' }, 0.7), 1435);
+});
+
 test('the delivery hook schedules each next message from the latest visible message length', () => {
   const source = ts.transpileModule(
     readFileSync(new URL('./useAzoChatDelivery.ts', import.meta.url), 'utf8'),
@@ -58,9 +68,11 @@ test('the delivery hook schedules each next message from the latest visible mess
         useEffect: () => {},
       };
       if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+      if (name === '../../config/posthog') return { posthog: { getFeatureFlagPayload: () => undefined } };
+      if (name === '../../lib/onboardingMode') return { AZO_CHAT_PACE_FLAG: 'azo_chat_pace' };
       if (name === '../../hooks/useWhileVisible') return { useWhileVisible: (start) => start() };
       if (name === '../../theme/motion') return { duration: { beat: 300 } };
-      if (name === './azoChatDelivery') return { getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery };
+      if (name === './azoChatDelivery') return { azoChatPaceFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery };
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
