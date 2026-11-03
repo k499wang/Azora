@@ -10,7 +10,7 @@ interface Props {
   pkg: PaywallPackageOption;
 }
 
-/** "Redeem 7 days free, then $39.99/year ($3.33/mo)." under the purchase button. */
+/** "Redeem 7 days free, then $39.99/year ($3.33/mo)." */
 export function PlanPriceTerms({ pkg }: Props) {
   const perMonth = pkg.billingPeriod === 'year' ? computePerMonth(pkg) : null;
   const trial = pkg.trialLabel != null

@@ -183,6 +183,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     ['../paywall/PaywallBenefitsStep', 'PaywallBenefitsStep'],
     ['../../paywall/PaywallFooterLinks', 'PaywallFooterLinks'],
     ['../../paywall/PlanPriceTerms', 'PlanPriceTerms'],
+    ['../../paywall/PaywallCheckLine', 'PaywallCheckLine'],
     ['../../paywall/NoTrialLongPaywall', 'NoTrialLongPaywall'],
     ['../../paywall/PaywallTrialReminderToggle', 'PaywallTrialReminderControl'],
     ['../paywall/PaywallTrialStep', 'PaywallTrialStep'],

@@ -10,6 +10,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
 import { PlanCard } from '../../paywall/PlanCard';
+import { PaywallCheckLine } from '../../paywall/PaywallCheckLine';
 import { computePerMonth } from '../../../lib/paywall/planPrice';
 import { trialDaysFromLabel } from '../../../lib/paywall/trialReminder';
 import { paywallStepStyles as styles } from './paywallStepStyles';
@@ -94,6 +95,7 @@ export function PaywallChoosePlanStep({
               />
             ))}
           </View>
+          <PaywallCheckLine label="No commitment, cancel anytime" />
         </View>
       )}
     </View>
@@ -142,7 +144,7 @@ const CHECK_OVERHANG = 8;
 
 const local = StyleSheet.create({
   block: {
-    gap: spacing.lg,
+    gap: spacing.sm,
   },
   row: {
     flexDirection: 'row',

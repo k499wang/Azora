@@ -27,7 +27,6 @@ import { dashboardContentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, scaleType, typography } from '../../../theme/typography';
 import { scaleControl } from '../onboardingVisualScale';
-import Icon from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
@@ -35,6 +34,7 @@ import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderC
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import { PlanPriceTerms } from '../../paywall/PlanPriceTerms';
+import { PaywallCheckLine } from '../../paywall/PaywallCheckLine';
 import { NoTrialLongPaywall } from '../../paywall/NoTrialLongPaywall';
 import { PaywallTrialReminderControl } from '../../paywall/PaywallTrialReminderToggle';
 import { usePaywallTrialReminder } from '../../../hooks/usePaywallTrialReminder';
@@ -47,7 +47,6 @@ import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 // ── Shared constants ──────────────────────────────────────────────────
 const HEADER_BUTTON_SIZE = scaleControl(36);
-const NO_PAYMENT_ICON_SIZE = scaleControl(18);
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const DECLINE_DELAY_MS = 5000;
 
@@ -431,6 +430,7 @@ function TrialDeck({
   }, [isBusy, paywallMode, onContinueWithoutPro]);
 
   const isAnnualSelected = selectedPackage?.billingPeriod === 'year';
+  const sideBySide = !isOnlyOption && offering?.planPicker === 'side_by_side';
   // Set by what the offering includes, not the selected plan, so it never changes on a tap.
   const planStepTitle = isOnlyOption
     ? undefined
@@ -638,14 +638,7 @@ function TrialDeck({
             {!isFinal ? (
               <>
                 {activeStep !== 'benefits' ? (
-                  <View style={styles.noPaymentRow}>
-                    <Icon
-                      name="check"
-                      size={NO_PAYMENT_ICON_SIZE}
-                      color={colors.text.primary}
-                    />
-                    <Text style={styles.noPaymentText}>No Payment Due Now</Text>
-                  </View>
+                  <PaywallCheckLine label="No Payment Due Now" />
                 ) : null}
                 <OnboardingPrimaryButton
                   label="Continue"
@@ -655,14 +648,11 @@ function TrialDeck({
               </>
             ) : (
               <>
-                <View style={styles.noPaymentRow}>
-                  <Icon
-                    name="check"
-                    size={NO_PAYMENT_ICON_SIZE}
-                    color={colors.text.primary}
-                  />
-                  <Text style={styles.noPaymentText}>No commitment, cancel anytime</Text>
-                </View>
+                {sideBySide ? (
+                  selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null
+                ) : (
+                  <PaywallCheckLine label="No commitment, cancel anytime" />
+                )}
                 <OnboardingPrimaryButton
                   label={ctaLabel}
                   labelSize="xlarge"
@@ -670,7 +660,7 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
+                {!sideBySide && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}
@@ -835,17 +825,6 @@ const styles = StyleSheet.create({
   },
   finalStepContent: {
     gap: spacing.sm,
-  },
-  noPaymentRow: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  noPaymentText: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   previewNote: {
     ...typography.caption.caption1,
