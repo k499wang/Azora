@@ -16,6 +16,7 @@ const PREVIEW_OFFERING: PaywallOffering = {
   experimentVariant: null,
   paywallMode: 'soft',
   paywallLayout: 'long',
+  planPicker: 'stacked',
   benefitsTitle: null,
   onlyPackageId: null,
   trialTitle: null,

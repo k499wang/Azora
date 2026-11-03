@@ -204,7 +204,7 @@ export function PaywallTrialStep({
       ];
 
   const onlyOptionHeading = paidTrial != null || hasAnnualTrial
-    ? (onlyOptionTitle?.trim() || 'How your {days}-day trial works').replaceAll('{days}', String(trialDays))
+    ? (onlyOptionTitle?.trim() || (hasAnnualTrial ? 'How your {days}-day free trial works' : 'How your {days}-day trial works')).replaceAll('{days}', String(trialDays))
     : 'Unlock your Personalized Plan';
 
   if (layout === 'section') {
@@ -220,7 +220,7 @@ export function PaywallTrialStep({
       <View style={styles.trialDesignHeader}>
         <Text style={styles.trialDesignTitle}>{title ?? (onlyOption
           ? onlyOptionHeading
-          : hasAnnualTrial || paidTrial != null ? 'Design your trial experience' : 'Choose your plan')}</Text>
+          : hasAnnualTrial || paidTrial != null ? 'Design Your Free Trial Experience' : 'Choose your plan')}</Text>
       </View>
       <Timeline steps={reminderAvailable ? steps : steps.filter((step) => step.icon !== 'bell')} showTrialTail={hasAnnualTrial} layout="step" />
     </View>

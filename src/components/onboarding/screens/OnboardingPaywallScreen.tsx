@@ -22,7 +22,6 @@ import type {
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { useAnimationReduceMotion } from '../../../hooks/useReducedMotionSetting';
 import { startUiTimer } from '../../../lib/ui/uiThreadTimer';
-import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { dashboardContentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
@@ -35,9 +34,8 @@ import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
+import { PlanPriceTerms } from '../../paywall/PlanPriceTerms';
 import { NoTrialLongPaywall } from '../../paywall/NoTrialLongPaywall';
-import ReviewCardRow from '../ReviewCardRow';
-import { CLEANING_COMMUNITY_REVIEWS, COMMUNITY_REVIEWS } from '../../../data/paywallTestimonials';
 import { PaywallTrialReminderControl } from '../../paywall/PaywallTrialReminderToggle';
 import { usePaywallTrialReminder } from '../../../hooks/usePaywallTrialReminder';
 import { availableTrialReminderDays, trialDaysFromLabel } from '../../../lib/paywall/trialReminder';
@@ -109,7 +107,6 @@ function TrialDeck({
   offering,
   planIntent,
   stakesBenefit,
-  cleaning = false,
   paywallMode,
   selectedPackageId: chosenPackageId,
   isLoading,
@@ -151,13 +148,12 @@ function TrialDeck({
   const annualTrialDays = annualPackage?.trialDays ?? trialDaysFromLabel(annualPackage?.trialLabel);
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const showFreeTrialIntro = hasAnnualTrial;
-  const isPaywallBusy = isLoading || isPurchasing || isRestoring || isCompleting;
-  const isBusy = isPaywallBusy || trialReminder.busy;
-
   const savingsPercent = useMemo(
     () => computeAnnualSavings(annualPackage, monthlyPackage),
     [annualPackage, monthlyPackage],
   );
+  const isPaywallBusy = isLoading || isPurchasing || isRestoring || isCompleting;
+  const isBusy = isPaywallBusy || trialReminder.busy;
 
   // Step state
   const [step, setStep] = useState(0);
@@ -435,6 +431,14 @@ function TrialDeck({
   }, [isBusy, paywallMode, onContinueWithoutPro]);
 
   const isAnnualSelected = selectedPackage?.billingPeriod === 'year';
+  // Set by what the offering includes, not the selected plan, so it never changes on a tap.
+  const planStepTitle = isOnlyOption
+    ? undefined
+    : hasAnnualTrial
+      ? 'Design Your Free Trial Experience'
+      : (annualPackage?.introOffer ?? monthlyPackage?.introOffer) != null
+        ? 'Design Your Trial Experience'
+        : 'Choose your plan';
   const selectedIntro = selectedPackage?.introOffer ?? null;
   const paidTrial = selectedIntro != null && selectedPackage != null
     ? {
@@ -574,6 +578,7 @@ function TrialDeck({
                   <View style={styles.finalStepContent}>
                     <PaywallTrialStep
                       hasAnnualTrial={selectedPackageHasTrial}
+                      title={planStepTitle}
                       reminderDaysBeforeEnd={finalReminder.daysBeforeEnd}
                       reminderEnabled={finalReminder.enabled}
                       trialDays={selectedTrialDays}
@@ -590,9 +595,6 @@ function TrialDeck({
                         />
                       </View>
                     ) : null}
-                    {isOnlyOption ? (
-                      <ReviewCardRow reviews={cleaning ? CLEANING_COMMUNITY_REVIEWS : COMMUNITY_REVIEWS} />
-                    ) : null}
                     {annualPackage != null && monthlyPackage != null ? (
                       <PaywallChoosePlanStep
                         isLoading={isLoading}
@@ -601,6 +603,7 @@ function TrialDeck({
                         selectedPackageId={selectedPackageId}
                         onSelectPackage={(packageId) => { if (!isBusy) onSelectPackage(packageId); }}
                         savingsPercent={savingsPercent}
+                        planPicker={offering?.planPicker ?? 'stacked'}
                         followsReminder={hasAnnualTrial || paidTrial != null}
                       />
                     ) : null}
@@ -662,23 +665,12 @@ function TrialDeck({
                 </View>
                 <OnboardingPrimaryButton
                   label={ctaLabel}
+                  labelSize="xlarge"
                   onPress={() => { void handlePurchase(); }}
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {isOnlyOption && selectedPackage != null ? (
-                  <Text style={styles.billedPrice}>
-                    {selectedPackageHasTrial
-                      ? `${selectedTrialDays}-day free trial, then `
-                      : selectedIntro != null
-                        ? `${selectedIntro.priceString} for ${selectedIntro.days} days, then `
-                        : ''}
-                    <Text style={styles.billedPriceBold}>
-                      {`${selectedPackage.priceString}/${selectedPackage.billingPeriod}`}
-                    </Text>
-                    . Cancel anytime.
-                  </Text>
-                ) : null}
+                {selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}
@@ -855,15 +847,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  billedPrice: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  billedPriceBold: {
-    fontFamily: fonts.heavy,
-    color: colors.text.primary,
-  },
   previewNote: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
@@ -893,12 +876,9 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
   footerBar: {
-    ...card.trayShadow,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
     backgroundColor: colors.background.canvas,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.subtle,
   },
   footerInner: {
     ...dashboardContentColumn,

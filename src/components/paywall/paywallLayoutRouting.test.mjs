@@ -52,3 +52,9 @@ test('the long page switches to trial copy only when the package has a trial', (
     /selectedPackage\?\.trialLabel != null\s*\? 'Start my free trial'\s*: 'Continue'/,
   );
 });
+
+test('the plan picker is read from offering metadata and defaults to stacked', () => {
+  assert.match(service, /planPicker: toPlanPicker\(getMetadataString\(offering\.metadata, 'plan_picker'\)\)/);
+  assert.match(service, /value === 'side_by_side' \? value : 'stacked'/);
+  assert.match(paywallScreen, /planPicker=\{offering\?\.planPicker \?\? 'stacked'\}/);
+});

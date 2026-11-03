@@ -182,6 +182,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     ['../paywall/PaywallTrialReminderChoiceStep', 'PaywallTrialReminderChoiceStep'],
     ['../paywall/PaywallBenefitsStep', 'PaywallBenefitsStep'],
     ['../../paywall/PaywallFooterLinks', 'PaywallFooterLinks'],
+    ['../../paywall/PlanPriceTerms', 'PlanPriceTerms'],
     ['../../paywall/NoTrialLongPaywall', 'NoTrialLongPaywall'],
     ['../../paywall/PaywallTrialReminderToggle', 'PaywallTrialReminderControl'],
     ['../paywall/PaywallTrialStep', 'PaywallTrialStep'],
@@ -333,7 +334,6 @@ test('paid-trial-only offerings check out the short plan without a plan card', (
   assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
   assert.equal(deck.component('Button').props.label, 'Redeem 3 days for $0.99');
   assert.equal(deck.component('PaywallTrialStep').props.onlyOption, true);
-  assert.deepEqual(deck.component('ReviewCardRow').props.reviews, ['standard']);
   deck.pressNext();
   assert.deepEqual(purchases, ['monthly']);
   deck.unmount();
@@ -390,7 +390,7 @@ test('every offering shape shows the right cards, timeline, reminder, reviews, a
       const where = `${shape.name} (${selectedPackageId})`;
       const timeline = deck.component('PaywallTrialStep').props;
       assert.equal(deck.component('PaywallChoosePlanStep') != null, shape.cards === true, `${where}: cards`);
-      assert.equal(deck.component('ReviewCardRow') != null, shape.cards !== true, `${where}: reviews`);
+      assert.equal(deck.component('ReviewCardRow'), undefined, `${where}: no reviews`);
       assert.equal(deck.component('PaywallTrialReminderControl') != null, renewal != null, `${where}: reminder`);
       assert.equal(timeline.onlyOption, shape.cards !== true, `${where}: one plan`);
       assert.equal(timeline.paidTrial?.renewalPrice ?? null, renewal, `${where}: renewal`);

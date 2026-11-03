@@ -20,6 +20,7 @@ import { PaywallPlacement, type PaywallPlacementValue } from './paywallPlacement
 import type {
   PaywallBillingPeriod,
   PaywallLayout,
+  PaywallPlanPicker,
   PaywallOffering,
   PaywallPackageId,
   PaywallPackageOption,
@@ -152,6 +153,7 @@ export async function getPaywallOffering(
           ? 'hard'
           : 'soft',
       paywallLayout: toPaywallLayout(getMetadataString(offering.metadata, 'paywall_layout')),
+      planPicker: toPlanPicker(getMetadataString(offering.metadata, 'plan_picker')),
       benefitsTitle: getMetadataString(offering.metadata, 'benefits_title'),
       onlyPackageId: toOnlyPackageId(
         getMetadataString(offering.metadata, 'trial_package'),
@@ -340,6 +342,10 @@ function toOnlyPackageId(
     return match?.id ?? (period === 'year' ? 'annual' : 'monthly');
   }
   return trialOptions === 'paid_only' ? 'monthly' : null;
+}
+
+function toPlanPicker(value: string | null): PaywallPlanPicker {
+  return value === 'side_by_side' ? value : 'stacked';
 }
 
 function toPaywallLayout(value: string | null): PaywallLayout {

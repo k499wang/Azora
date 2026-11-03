@@ -312,6 +312,7 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.md,
   },
   trialDesignTitle: {
     ...typography.title.title1,

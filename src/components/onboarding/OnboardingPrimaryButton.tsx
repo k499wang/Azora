@@ -6,6 +6,7 @@ interface OnboardingPrimaryButtonProps {
   disabled?: boolean;
   loading?: boolean;
   enableHaptics?: boolean;
+  labelSize?: 'large' | 'xlarge';
 }
 
 /**
@@ -19,6 +20,7 @@ export default function OnboardingPrimaryButton({
   disabled = false,
   loading = false,
   enableHaptics = true,
+  labelSize,
 }: OnboardingPrimaryButtonProps) {
   return (
     <ChunkyButton
@@ -27,6 +29,7 @@ export default function OnboardingPrimaryButton({
       disabled={disabled}
       loading={loading}
       haptic={enableHaptics ? 'medium' : 'none'}
+      labelSize={labelSize}
     />
   );
 }

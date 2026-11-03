@@ -34,12 +34,17 @@ export type PaywallMode = 'hard' | 'soft';
 // its Continue to the deck's trial step; anything else keeps the step deck.
 export type PaywallLayout = 'long' | 'long_then_trial' | 'deck';
 
+// Remote-controlled via `plan_picker` metadata: 'side_by_side' shows the two
+// plans as compact cards in a row; anything else keeps the stacked cards.
+export type PaywallPlanPicker = 'stacked' | 'side_by_side';
+
 export interface PaywallOffering {
   offeringIdentifier: string;
   experimentId: string | null;
   experimentVariant: string | null;
   paywallMode: PaywallMode;
   paywallLayout: PaywallLayout;
+  planPicker: PaywallPlanPicker;
   // Remote-controlled via `benefits_title` metadata; `{plan}` becomes the goal noun.
   benefitsTitle: string | null;
   // Remote-controlled via `trial_package` metadata ("annual" or "weekly"/"monthly");
