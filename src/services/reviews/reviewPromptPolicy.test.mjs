@@ -10,7 +10,6 @@ import {
   PAYWALL_COOLDOWN_MS,
   ReviewPromptBlock,
   ReviewPromptKind,
-  evaluateOnboardingPrompt,
   evaluateReviewPrompt,
   normalizeReviewPromptState,
   recordCompletedSession,
@@ -97,7 +96,6 @@ test('never asks more than the annual prompt budget', () => {
     lastPromptAt: NOW - 365 * DAY_MS,
   };
   assert.equal(allows(state, NOW), false);
-  assert.equal(evaluateOnboardingPrompt(state), ReviewPromptBlock.BudgetExhausted);
 });
 
 test('a device clock that moves backwards does not unlock a prompt', () => {
@@ -109,14 +107,6 @@ test('a device clock that moves backwards does not unlock a prompt', () => {
 
   const dismissed = recordPaywallDismissed(ENGAGED, NOW);
   assert.equal(allows(dismissed, NOW - DAY_MS), false);
-});
-
-test('onboarding only asks someone never asked before', () => {
-  assert.equal(evaluateOnboardingPrompt(EMPTY_REVIEW_PROMPT_STATE), null);
-  assert.equal(
-    evaluateOnboardingPrompt(onboardingAsked(EMPTY_REVIEW_PROMPT_STATE, NOW)),
-    ReviewPromptBlock.AlreadyPrompted,
-  );
 });
 
 test('corrupt stored state falls back to an empty state', () => {

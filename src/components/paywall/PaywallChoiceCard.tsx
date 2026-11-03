@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../common/Text';
 import { card } from '../../theme/card';
@@ -7,7 +8,7 @@ import { fonts, typography } from '../../theme/typography';
 
 interface Props {
   title: string;
-  detail: string;
+  detail: ReactNode;
   selected: boolean;
   showRadio?: boolean;
   disabled?: boolean;

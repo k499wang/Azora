@@ -22,16 +22,8 @@ function stepBlock(step) {
   return ONBOARDING_FLOW.slice(start, end === -1 ? undefined : end);
 }
 
-test('onboarding asks once, after the plan preview, through its own policy', () => {
-  const calls = ONBOARDING_FLOW.match(/maybeRequestOnboardingReview\(/g) ?? [];
-  assert.equal(calls.length, 1);
-  assert.match(stepBlock('planDays'), /onContinue=\{continueFromStarterPlan\}/);
-  const handler = ONBOARDING_FLOW.slice(
-    ONBOARDING_FLOW.indexOf('const continueFromStarterPlan'),
-    ONBOARDING_FLOW.indexOf('const buildOnboardingResult'),
-  );
-  assert.match(handler, /maybeRequestOnboardingReview\(\)/);
-  assert.doesNotMatch(ONBOARDING_FLOW, /requestStoreReview\(/);
+test('onboarding never asks for a rating (App Review guideline 5.6.3)', () => {
+  assert.doesNotMatch(ONBOARDING_FLOW, /requestStoreReview|maybeRequest\w*Review|StoreReview/);
 });
 
 test('the permission steps never chase a system dialog with the review sheet', () => {

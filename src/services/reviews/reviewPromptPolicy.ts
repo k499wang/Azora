@@ -71,7 +71,6 @@ export function normalizeReviewPromptState(value: unknown): ReviewPromptState {
  */
 export const ReviewPromptBlock = {
   BudgetExhausted: 'budget_exhausted',
-  AlreadyPrompted: 'already_prompted',
   TooFewSessions: 'too_few_sessions',
   PaywallCooldown: 'paywall_cooldown',
   TooSoonAfterOnboarding: 'too_soon_after_onboarding',
@@ -88,14 +87,6 @@ export type ReviewPromptBlockValue =
  */
 export function hasPromptBudget(state: ReviewPromptState): boolean {
   return state.promptCount < MAX_PROMPTS;
-}
-
-/** Onboarding only asks someone never asked, so stepping back and forth is safe. */
-export function evaluateOnboardingPrompt(
-  state: ReviewPromptState,
-): ReviewPromptBlockValue | null {
-  if (!hasPromptBudget(state)) return ReviewPromptBlock.BudgetExhausted;
-  return state.promptCount > 0 ? ReviewPromptBlock.AlreadyPrompted : null;
 }
 
 /** Returns the rule that blocked the prompt, or null when it may be shown. */

@@ -191,9 +191,16 @@ export function PlanCard({
     return (
       <PaywallChoiceCard
         title={headline}
-        detail={planDetail ?? intro?.priceString ?? (isAnnual
-          ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
-          : `${pkg.priceString}/${pkg.billingPeriod}`)}
+        detail={
+          <>
+            {planDetail != null
+              ? `${planDetail}, then `
+              : intro != null
+                ? `${intro.priceString}, then `
+                : ''}
+            <Text style={styles.choicePrice}>{`${pkg.priceString}/${pkg.billingPeriod}`}</Text>
+          </>
+        }
         selected={isSelected}
         onPress={() => onSelect(pkg.id)}
       />
@@ -261,6 +268,9 @@ export function UrgencyBanner({ percent }: { percent: number }) {
 }
 
 const styles = StyleSheet.create({
+  choicePrice: {
+    fontFamily: fonts.heavy,
+  },
   planCard: {
     ...card.base,
     ...card.shadow,

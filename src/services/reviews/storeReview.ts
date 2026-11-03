@@ -7,7 +7,6 @@ import {
 import {
   ReviewPromptBlock,
   ReviewPromptKind,
-  evaluateOnboardingPrompt,
   evaluateReviewPrompt,
   hasPromptBudget,
   type ReviewPromptBlockValue,
@@ -20,7 +19,6 @@ import {
 } from './reviewPromptState';
 
 export const ReviewTrigger = {
-  OnboardingPlan: 'onboarding_plan',
   GuidedBreathing: 'guided_breathing',
   HeartRate: 'heart_rate',
 } as const;
@@ -37,10 +35,7 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Shows the native sheet, subject to the two conditions that hold for every
- * trigger — onboarding included, which otherwise skips the session policy.
- */
+/** Shows the native sheet, subject to the two conditions that hold for every trigger. */
 export async function requestStoreReview(
   trigger: ReviewTriggerValue,
 ): Promise<void> {
@@ -59,11 +54,7 @@ export async function requestStoreReview(
     if (AppState.currentState !== 'active') return;
 
     await StoreReview.requestReview();
-    const state = await markPromptShown(
-      trigger === ReviewTrigger.OnboardingPlan
-        ? ReviewPromptKind.Onboarding
-        : ReviewPromptKind.Session,
-    );
+    const state = await markPromptShown(ReviewPromptKind.Session);
     trackReviewPromptRequested({
       trigger,
       promptCount: state.promptCount,
@@ -97,14 +88,4 @@ export async function maybeRequestSessionReview(
     return;
   }
   await requestStoreReview(trigger);
-}
-
-export async function maybeRequestOnboardingReview(): Promise<void> {
-  const state = await readReviewPromptState();
-  const blockedBy = evaluateOnboardingPrompt(state);
-  if (blockedBy != null) {
-    trackSuppressed(ReviewTrigger.OnboardingPlan, blockedBy, state);
-    return;
-  }
-  await requestStoreReview(ReviewTrigger.OnboardingPlan);
 }

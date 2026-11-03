@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../../components/common/Text';
+import Icon from '../../components/common/icons/Icon';
 import { startUiTimer } from '../../lib/ui/uiThreadTimer';
 import {
   triggerMissHaptic,
@@ -47,7 +48,10 @@ const ENTRANCE_MS = 400;
 const ENTRANCE_RISE = 20;
 /** Long enough after a line lands that the marker reads as a second beat. */
 const HIGHLIGHT_DELAY_MS = 350;
-const BOX_SIZE = 40;
+const RADIO_SIZE = 26;
+const RADIO_CHECK = 16;
+const ANSWER_MIN_HEIGHT = 60;
+const REVEAL_ICON_SIZE = 20;
 const LIP = 4;
 const LIP_PRESSED = 2;
 const SHAKE_OFFSET = 8;
@@ -157,7 +161,10 @@ interface ChoiceRowProps {
   onPress: () => void;
 }
 
-/** A Stories answer: a lip checkbox and its label. Picked once, for good. */
+/**
+ * An answer: the whole row is one lip card, so it reads as a button before it
+ * is read as text. Picked once, for good.
+ */
 export function ChoiceRow({ label, state, onPress }: ChoiceRowProps) {
   const picked = state === 'picked';
   const disabled = state === 'disabled';
@@ -168,39 +175,53 @@ export function ChoiceRow({ label, state, onPress }: ChoiceRowProps) {
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: picked, disabled }}
-      style={styles.choiceRow}
     >
       {({ pressed }) => (
-        <>
-          <View style={styles.boxSlot}>
-            <View
-              style={[
-                styles.box,
-                (pressed || state !== 'idle') && styles.boxDown,
-                picked && styles.boxPicked,
-                disabled && styles.boxDisabled,
-              ]}
-            >
-              {picked ? (
-                <Svg width={22} height={22} viewBox="0 0 22 22">
-                  <Path
-                    d="M5.5 11.5l4 4 7-8"
-                    stroke={colors.text.inverse}
-                    strokeWidth={3}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                  />
-                </Svg>
-              ) : null}
-            </View>
+        <View
+          style={[
+            styles.answer,
+            (pressed || state !== 'idle') && styles.answerDown,
+            picked && styles.answerPicked,
+            disabled && styles.answerDisabled,
+          ]}
+        >
+          <View style={[styles.radio, picked && styles.radioPicked]}>
+            {picked ? (
+              <Svg width={RADIO_CHECK} height={RADIO_CHECK} viewBox="0 0 22 22">
+                <Path
+                  d="M5.5 11.5l4 4 7-8"
+                  stroke={colors.text.inverse}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </Svg>
+            ) : null}
           </View>
           <Text style={[styles.choiceLabel, picked && styles.choiceLabelPicked, disabled && styles.choiceLabelDisabled]}>
             {label}
           </Text>
-        </>
+        </View>
       )}
     </Pressable>
+  );
+}
+
+interface QuestionProps {
+  eyebrow: string;
+  prompt: string;
+  hint?: string;
+}
+
+/** Marks a line as something to answer, not something to read past. */
+function Question({ eyebrow, prompt, hint }: QuestionProps) {
+  return (
+    <View style={styles.question}>
+      <Text style={styles.eyebrow}>{eyebrow}</Text>
+      <Prose text={prompt} style={styles.prompt} />
+      {hint != null ? <Text style={styles.hint}>{hint}</Text> : null}
+    </View>
   );
 }
 
@@ -240,8 +261,7 @@ function TodayAction({ text, response, onRespond }: TodayActionProps) {
   const feedback = response == null ? null : TODAY_RESPONSES[response]?.feedback;
   return (
     <View style={styles.activity}>
-      <Text style={styles.eyebrow}>For today</Text>
-      <Prose text={text} />
+      <Question eyebrow="For today" prompt={text} />
       <ChoiceRows labels={TODAY_RESPONSES.map(({ label }) => label)} selected={response} onSelect={onRespond} />
       {feedback != null ? <FeedbackLine text={feedback} /> : null}
     </View>
@@ -257,7 +277,7 @@ function RevealActivity({ block, onComplete }: RevealActivityProps) {
   const [open, setOpen] = useState<number[]>([]);
   return (
     <View style={styles.activity}>
-      <Prose text={block.prompt} style={styles.prompt} />
+      <Question eyebrow="Tap to uncover" prompt={block.prompt} hint={`${open.length} of ${block.items.length} opened`} />
       <View style={styles.rows}>
         {block.items.map((item, index) => {
           const isOpen = open.includes(index);
@@ -281,16 +301,21 @@ function RevealActivity({ block, onComplete }: RevealActivityProps) {
             >
               {({ pressed }) => (
                 <View style={[styles.lipRow, (pressed || isOpen) && styles.lipRowDown, isOpen && styles.lipRowOpen]}>
-                  <Text style={[styles.lipRowLabel, isOpen && styles.lipRowLabelOpen]}>{item.label}</Text>
+                  <View style={styles.revealHead}>
+                    <Text style={[styles.lipRowLabel, isOpen && styles.lipRowLabelOpen]}>{item.label}</Text>
+                    {isOpen ? null : <Icon bold name="plus" size={REVEAL_ICON_SIZE} color={colors.primary.blue500} />}
+                  </View>
+                  {isOpen ? (
+                    <FeedEntrance>
+                      <Prose text={item.detail} style={styles.revealDetail} />
+                    </FeedEntrance>
+                  ) : null}
                 </View>
               )}
             </Pressable>
           );
         })}
       </View>
-      {open.map((index) => (
-        <FeedbackLine key={index} text={`**${block.items[index].label}.** ${block.items[index].detail}`} />
-      ))}
     </View>
   );
 }
@@ -307,7 +332,7 @@ function ArrangeActivity({ block, onComplete }: ArrangeActivityProps) {
   const done = placed === block.steps.length;
   return (
     <View style={styles.activity}>
-      <Prose text={block.prompt} style={styles.prompt} />
+      <Question eyebrow="Put in order" prompt={block.prompt} hint="Tap the steps below, first to last." />
       <View style={styles.slots}>
         {block.steps.map((step, index) => (
           <View key={step} style={styles.slot}>
@@ -463,7 +488,7 @@ export default function LessonBlockView({
       const feedback = activityFeedback(block, selectedOption);
       return (
         <View style={styles.activity}>
-          <Prose text={block.prompt} style={styles.prompt} />
+          <Question eyebrow="Your turn" prompt={block.prompt} hint="Pick one." />
           <ChoiceRows
             labels={block.options.map((option) => option.label)}
             selected={selectedOption}
@@ -541,6 +566,7 @@ const styles = StyleSheet.create({
     lineHeight: LIST_TEXT_LINE_HEIGHT,
   },
   activity: { gap: spacing.md },
+  question: { gap: spacing.xs },
   eyebrow: {
     ...typography.overline,
     fontFamily: fonts.semibold,
@@ -548,28 +574,29 @@ const styles = StyleSheet.create({
     lineHeight: EYEBROW_LINE_HEIGHT,
     color: colors.primary.blue500,
   },
+  hint: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+  },
   rows: { gap: spacing.sm },
   feedback: {
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary.blue500,
-    paddingLeft: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: radius.medium,
+    backgroundColor: colors.surface.selected,
   },
   feedbackText: {
     ...typography.body.medium,
-    color: colors.text.secondary,
+    color: colors.text.primary,
   },
-  choiceRow: {
+  answer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: BOX_SIZE + spacing.sm,
-  },
-  boxSlot: { width: BOX_SIZE, height: BOX_SIZE },
-  box: {
-    height: BOX_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.small,
+    minHeight: ANSWER_MIN_HEIGHT,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.medium,
     borderWidth: 2,
     borderBottomWidth: LIP,
     borderColor: colors.border.subtle,
@@ -577,31 +604,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
   },
   // The lip gives up what the face drops, so the row's height never changes.
-  boxDown: {
+  answerDown: {
     marginTop: LIP - LIP_PRESSED,
-    height: BOX_SIZE - (LIP - LIP_PRESSED),
+    minHeight: ANSWER_MIN_HEIGHT - (LIP - LIP_PRESSED),
     borderBottomWidth: LIP_PRESSED,
   },
-  boxPicked: {
-    backgroundColor: colors.primary.blue500,
+  answerPicked: {
+    backgroundColor: colors.surface.selected,
     borderColor: colors.primary.blue500,
     borderBottomColor: colors.primary.blue700,
   },
-  boxDisabled: {
+  answerDisabled: {
     backgroundColor: colors.neutral[100],
+    borderColor: colors.neutral[100],
     borderBottomColor: colors.border.subtle,
+  },
+  radio: {
+    width: RADIO_SIZE,
+    height: RADIO_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIO_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.border.default,
+  },
+  radioPicked: {
+    backgroundColor: colors.primary.blue500,
+    borderColor: colors.primary.blue500,
   },
   choiceLabel: {
     ...typography.body.medium,
     flex: 1,
     color: colors.text.primary,
   },
-  choiceLabelPicked: { fontFamily: fonts.semibold },
+  choiceLabelPicked: { fontFamily: fonts.semibold, color: colors.primary.blue700 },
   choiceLabelDisabled: { color: colors.text.tertiary },
   lipRow: {
     minHeight: 56,
-    alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.medium,
@@ -621,13 +662,22 @@ const styles = StyleSheet.create({
     borderColor: colors.primary.blue500,
     borderBottomColor: colors.primary.blue500,
   },
+  revealHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   lipRowLabel: {
     ...typography.body.medium,
+    flex: 1,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    textAlign: 'center',
   },
-  lipRowLabelOpen: { color: colors.primary.blue500 },
+  lipRowLabelOpen: { color: colors.primary.blue700 },
+  revealDetail: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+  },
   slots: { gap: spacing.sm },
   slot: {
     flexDirection: 'row',
