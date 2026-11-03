@@ -666,6 +666,19 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
+                {isOnlyOption && selectedPackage != null ? (
+                  <Text style={styles.billedPrice}>
+                    {selectedPackageHasTrial
+                      ? `${selectedTrialDays}-day free trial, then `
+                      : selectedIntro != null
+                        ? `${selectedIntro.priceString} for ${selectedIntro.days} days, then `
+                        : ''}
+                    <Text style={styles.billedPriceBold}>
+                      {`${selectedPackage.priceString}/${selectedPackage.billingPeriod}`}
+                    </Text>
+                    . Cancel anytime.
+                  </Text>
+                ) : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}
@@ -840,6 +853,15 @@ const styles = StyleSheet.create({
   noPaymentText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  billedPrice: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  billedPriceBold: {
+    fontFamily: fonts.heavy,
     color: colors.text.primary,
   },
   previewNote: {
