@@ -1,17 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { RoutineLibraryEntry, RoutineLibraryId } from '../../data/routineLibrary';
+import type { RoutineLibraryEntry } from '../../data/routineLibrary';
 import {
   getRoutineLibraryImageSource,
   type RoutineCoverId,
 } from '../../services/images/routineLibraryImageCache';
-import Icon from '../common/icons/Icon';
-import { Text } from '../common/Text';
+import TaskIllustration from '../common/icons/TaskIllustration';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/card';
-import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
 
 const TONES = {
   sky: colors.playful.sky,
@@ -21,31 +18,18 @@ const TONES = {
   coral: colors.playful.coral,
 } as const;
 
-const TEMPLATE_COVER_IDS = new Set<RoutineCoverId>([
-  'morning-reset',
-  'focus-reset',
-  'evening-wind-down',
-  'bedtime-routine',
-  'weekly-home-reset',
-  'small-clean',
-]);
-
-function isRoutineCoverId(id: RoutineLibraryId): id is RoutineCoverId {
-  return TEMPLATE_COVER_IDS.has(id as RoutineCoverId);
-}
-
 interface RoutineLibraryArtProps {
   entry: RoutineLibraryEntry;
   size: 'card' | 'hero' | 'poster';
 }
 
-/** A visible photo placeholder until the library receives its own cover art. */
+/** The routine's poster, or an illustration on a tinted ground for a guide with none. */
 export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProps) {
   const tone = TONES[entry.tone];
   const hero = size === 'hero';
   const sizeStyle = styles[size];
-  const cover = entry.kind === 'template' && isRoutineCoverId(entry.id)
-    ? getRoutineLibraryImageSource(entry.id)
+  const cover = entry.kind === 'template'
+    ? getRoutineLibraryImageSource(entry.id as RoutineCoverId)
     : null;
 
   if (cover != null) {
@@ -68,10 +52,7 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
       style={[styles.art, sizeStyle]}
     >
       <View style={[styles.glow, { backgroundColor: tone.base }]} />
-      <View style={styles.placeholder}>
-        <Icon name={entry.icon} size={hero ? 58 : 38} color={tone.ink} />
-        <Text style={[styles.placeholderLabel, { color: tone.ink }]}>Photo placeholder</Text>
-      </View>
+      <TaskIllustration name={entry.icon} size={hero ? 160 : 96} />
     </LinearGradient>
   );
 }
@@ -82,6 +63,4 @@ const styles = StyleSheet.create({
   hero: { height: 280 },
   poster: { width: '100%', aspectRatio: 2 / 3 },
   glow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, opacity: 0.18, right: -74, bottom: -112 },
-  placeholder: { alignItems: 'center', gap: spacing.xs, padding: spacing.md, borderRadius: radius.medium, backgroundColor: colors.background.card },
-  placeholderLabel: { ...typography.label.small, fontFamily: fonts.semibold },
 });

@@ -15,8 +15,10 @@ import type { PaywallLayout, PaywallPackageId, PaywallPlacementValue, PaywallPla
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
 import type { RoutineLibraryId } from '../../data/routineLibrary';
+import type { RoutineShelfId } from '../../data/routineShelves';
 import type { LessonId } from '../../features/lessons/domain/lessonCatalogue';
 import type { ExitOfferVariant } from '../../components/paywall/ExitOfferContent';
+import type { CleanupRoomId } from '../../features/photoCleanup/domain/roomCleanupPlans';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -37,7 +39,9 @@ export type PreviewPlans = 'annualWeekly' | 'monthlyWeekly';
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   /** AI-guided first steps for a photographed messy space. */
-  PhotoCleanup: { preview?: boolean } | undefined;
+  PhotoCleanup: { preview?: boolean; roomId?: CleanupRoomId } | undefined;
+  /** Ready-made cleaning plans, one per room. */
+  CleanupRooms: undefined;
   /** Chat with Azo, who can suggest to-dos for today. */
   AzoChat: { opener?: 'plan' } | undefined;
   /** Plan with Azo: a spoken or typed brain dump becomes today's to-dos, no chat. */
@@ -47,6 +51,8 @@ export type RootStackParamList = {
   ExerciseSearch: { browse?: boolean } | undefined;
   /** Curated starting points for personal routine to-dos. */
   RoutineBrowser: undefined;
+  /** Every routine in one group, with chips to move between groups. */
+  RoutineShelf: { shelfId: RoutineShelfId };
   MyRoutine: undefined;
   RoutineCategory: { categoryId: string };
   RoutineLibraryDetail: { libraryId: RoutineLibraryId };
@@ -188,11 +194,13 @@ export type InsightsScreenProps = MainTabScreenProps<'Insights'>;
 
 export type HeartScreenProps = RootStackScreenProps<'Heart'>;
 export type PhotoCleanupScreenProps = RootStackScreenProps<'PhotoCleanup'>;
+export type CleanupRoomsScreenProps = RootStackScreenProps<'CleanupRooms'>;
 export type AzoChatScreenProps = RootStackScreenProps<'AzoChat'>;
 export type AzoPlanScreenProps = RootStackScreenProps<'AzoPlan'>;
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type RoutineBrowserScreenProps = RootStackScreenProps<'RoutineBrowser'>;
+export type RoutineShelfScreenProps = RootStackScreenProps<'RoutineShelf'>;
 export type MyRoutineScreenProps = RootStackScreenProps<'MyRoutine'>;
 export type RoutineCategoryScreenProps = RootStackScreenProps<'RoutineCategory'>;
 export type RoutineLibraryDetailScreenProps = RootStackScreenProps<'RoutineLibraryDetail'>;

@@ -36,9 +36,11 @@ import NextRoomScreen from '../../screens/NextRoomScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import RoutineBrowserScreen from '../../screens/RoutineBrowserScreen';
+import RoutineShelfScreen from '../../screens/RoutineShelfScreen';
 import MyRoutineScreen from '../../screens/MyRoutineScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
 import PhotoCleanupScreen from '../../features/photoCleanup/PhotoCleanupScreen';
+import CleanupRoomsScreen from '../../features/photoCleanup/CleanupRoomsScreen';
 import AzoChatScreen from '../../features/azoAssist/AzoChatScreen';
 import AzoPlanScreen from '../../features/azoAssist/AzoPlanScreen';
 import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
@@ -175,7 +177,17 @@ function AppStack({ showBootPaywall, tourEnabled, initialTab }: AppStackProps) {
       <Stack.Screen
         name="PhotoCleanup"
         component={PhotoCleanupScreen}
-        options={SLIDE_UP_SCREEN_OPTIONS}
+        options={({ route }) => (route.params?.roomId == null
+          ? SLIDE_UP_SCREEN_OPTIONS
+          : { presentation: 'card', animation: 'slide_from_right' })}
+      />
+      <Stack.Screen
+        name="CleanupRooms"
+        component={CleanupRoomsScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="AzoChat"
@@ -193,6 +205,14 @@ function AppStack({ showBootPaywall, tourEnabled, initialTab }: AppStackProps) {
       <Stack.Screen
         name="RoutineBrowser"
         component={RoutineBrowserScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="RoutineShelf"
+        component={RoutineShelfScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

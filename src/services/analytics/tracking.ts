@@ -269,6 +269,14 @@ export function trackAzoAssistRequested(props: {
   });
 }
 
+export function trackRoutinePresetAdded(props: { routine: string; tasks: number }) {
+  posthog.capture(AnalyticsEvent.RoutinePresetAdded, { routine: props.routine, tasks: props.tasks });
+}
+
+export function trackCleanupRoomPicked(props: { room: string }) {
+  posthog.capture(AnalyticsEvent.CleanupRoomPicked, { room: props.room });
+}
+
 export function trackAzoAssistTodosAdded(props: {
   surface: 'chat' | 'sparkle' | 'voice_plan';
   count: number;

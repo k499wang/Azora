@@ -47,6 +47,7 @@ import { triggerActivityCompleteHaptic, triggerSoftHaptic } from '../../native/t
 import { DEFAULT_ITEM_MINUTES, type CleanupItem, type CleanupPlan } from './domain/cleanupPlan';
 import { PHOTO_CLEANUP_PREVIEW_PLAN } from './domain/cleanupPlanPreview';
 import CleanupPlanOverview from './CleanupPlanOverview';
+import { CLEANUP_ROOMS } from './domain/roomCleanupPlans';
 import CleanupItemSheet, { type CleanupItemEdit } from './CleanupItemSheet';
 import { addItem, moveItem, removeItem, replaceItem } from './domain/cleanupPlanEdits';
 import { cleanupItemIcon } from './domain/cleanupItemIcon';
@@ -71,8 +72,9 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const preview = __DEV__ && route.params?.preview === true;
-  const [stage, setStage] = useState<Stage>(preview ? 'ready' : 'capture');
-  const [plan, setPlan] = useState<CleanupPlan | null>(preview ? PHOTO_CLEANUP_PREVIEW_PLAN : null);
+  const roomPlan = CLEANUP_ROOMS.find((room) => room.id === route.params?.roomId)?.plan ?? null;
+  const [stage, setStage] = useState<Stage>(preview || roomPlan != null ? 'ready' : 'capture');
+  const [plan, setPlan] = useState<CleanupPlan | null>(preview ? PHOTO_CLEANUP_PREVIEW_PLAN : roomPlan);
   const [completedObjectCount, setCompletedObjectCount] = useState(0);
   const [rearranging, setRearranging] = useState(false);
   const [slideKey, setSlideKey] = useState(0);
@@ -314,6 +316,10 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   }, [plan]);
 
   const startAnotherSpot = useCallback(() => {
+    if (roomPlan != null) {
+      navigation.goBack();
+      return;
+    }
     setPhotoUri(null);
     setStartedAt(null);
     setElapsedMinutes(null);
@@ -322,7 +328,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     setSlideKey(0);
     setError(null);
     setStage('capture');
-  }, []);
+  }, [navigation, roomPlan]);
 
   const activeObject = plan?.objects[0] ?? null;
   const nextObject = plan?.objects[1] ?? null;
@@ -468,7 +474,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
         <ScreenContent width="grouped" style={[styles.slideshowFooter, { paddingBottom: insets.bottom + spacing.xl }]}>
           <View style={styles.actions}>
             <ChunkyButton shape="card" label="Start cleaning" disabled={plan.objects.length === 0} onPress={startCleanup} icon={<Icon name="timer" size={22} color={colors.text.inverse} />} />
-            <ChunkyButton shape="card" label="Use a different photo" tone={SECONDARY_TONE} onPress={startAnotherSpot} />
+            <ChunkyButton shape="card" label={roomPlan != null ? 'Choose a different room' : 'Use a different photo'} tone={SECONDARY_TONE} onPress={startAnotherSpot} />
           </View>
         </ScreenContent>
       ) : null}

@@ -1,0 +1,130 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "filename": "inbox-clear",
+      "path": "routines/inbox-clear",
+      "type": "poster",
+      "title": "Inbox Clear",
+      "style": "N",
+      "color": "sky",
+      "labels": [
+        "Urgent",
+        "Archive",
+        "Follow-Ups"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE N: Editorial notebook collage: pale grid paper lightly tinted with the main colour, a textured torn-paper note containing the title, a few tiny hearts or sparkles, one medium-large realistic glossy still-life object overlapping the TOP EDGE OF THE NOTE, safely within the canvas. In the lower portion, small-to-medium realistic glossy 3D objects sit on delicate ruled lines with their exact small neat labels BELOW. Objects have adult product-photography realism, believable materials and controlled studio highlights, not clay or toys. Three labels use three spacious rows; four labels use a 2x2 layout. Pale colours, tidy hierarchy and abundant breathing room.\nMain colour: sky.\nExact title: \"Inbox Clear\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: three cream envelopes in a slim sky-blue letter tray.\nExact labels, in order: [\"Urgent\",\"Archive\",\"Follow-Ups\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-921c17b9-8e4c-4d30-80f3-7153cf177ad9.png",
+      "revisionPrompt": "Make ONE targeted addition to this poster, preserving everything else exactly: add a small realistic glossy sky-blue letter tray holding three blank cream envelopes, overlapping the TOP EDGE of the torn-paper title note. The added tray should be approximately300px wide and170px tall, centred horizontally, with its top at y=110 and bottom at y=280. It must not cover any title letters. This restores the notebook layout hero. Keep title \"Inbox Clear\" and the existing three object rows and exact labels \"Urgent\", \"Archive\", \"Follow-Ups\" completely unchanged. Keep grid, paper, colour, margins, typography and negative space unchanged. No extra words anywhere. Output1024x1536.",
+      "textReview": "Manually read every title and label in final revision; checked exact supplied wording.",
+      "export": {
+        "file": "assets/explore-art/final/routines/inbox-clear.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 58810
+      }
+    },
+    {
+      "filename": "phone-down",
+      "path": "routines/phone-down",
+      "type": "poster",
+      "title": "Phone Down",
+      "style": "F",
+      "color": "violet",
+      "labels": [
+        "Charge Away",
+        "Set Alarm",
+        "Read"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE F: Flat editorial vector illustration with subtle paper grain on warm cream #FDF6F0. Bold organic colour shapes run off the outer corners. Title top-left and one detailed but medium-sized hero illustration top-right, a fine navy divider below the heading, then a neat grid of small-to-medium illustrated objects with their exact labels BELOW. Three labels use three spacious rows; four labels use a 2x2 grid; five labels use two columns with the last item centered. Deliberate negative space, sophisticated print design, restrained fine detail.\nMain colour: violet.\nExact title: \"Phone Down\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: a closed book beside a small analog alarm clock and a charging phone with blank screen.\nExact labels, in order: [\"Charge Away\",\"Set Alarm\",\"Read\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-a0b7088a-d628-4569-8aed-f26b3d368ea0.png",
+      "revisionPrompt": "Edit ONLY safe margins. Preserve the EXACT current composition, object-label associations and all artwork. Output1024x1536. Gently scale the ENTIRE foreground design inward about10%, retaining relative positions, and extend the warm cream grained background to all edges. Keep title at top-left and hero still life at top-right. Keep first illustrated row the charging phone directly above \"Charge Away\"; second row the alarm clock directly above \"Set Alarm\"; third row the open book directly above \"Read\". No objects added or removed, no rows rearranged, no duplicates. All letters and important objects should fit x=80..944,y=110..1400. Exact title \"Phone Down\", exact labels \"Charge Away\", \"Set Alarm\", \"Read\", and no other text. Preserve the flat editorial illustration style and violet accents.",
+      "textReview": "Manually read every title and label in final revision; checked exact supplied wording.",
+      "export": {
+        "file": "assets/explore-art/final/routines/phone-down.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 66278
+      }
+    },
+    {
+      "filename": "tomorrow-setup",
+      "path": "routines/tomorrow-setup",
+      "type": "poster",
+      "title": "Tomorrow Setup",
+      "style": "N",
+      "color": "sky",
+      "labels": [
+        "Clothes",
+        "Bag",
+        "Top Task",
+        "Lunch"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE N: Editorial notebook collage: pale grid paper lightly tinted with the main colour, a textured torn-paper note containing the title, a few tiny hearts or sparkles, one medium-large realistic glossy still-life object overlapping the TOP EDGE OF THE NOTE, safely within the canvas. In the lower portion, small-to-medium realistic glossy 3D objects sit on delicate ruled lines with their exact small neat labels BELOW. Objects have adult product-photography realism, believable materials and controlled studio highlights, not clay or toys. Three labels use three spacious rows; four labels use a 2x2 layout. Pale colours, tidy hierarchy and abundant breathing room.\nMain colour: sky.\nExact title: \"Tomorrow Setup\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: a neatly packed canvas bag beside folded clothes.\nExact labels, in order: [\"Clothes\",\"Bag\",\"Top Task\",\"Lunch\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-2ea4f040-5d93-4bda-ae53-859f96452702.png",
+      "revisionPrompt": "Edit ONLY sizing and margins of this notebook poster. Output1024x1536. Keep ALL exact text, artwork, object-label associations, realistic materials, torn note and blue grid. The top bag and folded clothes are too close to the top edge. Gently shrink the entire main foreground composition by about12%, centred in the canvas, so ALL silhouettes and lettering lie within x=80..944,y=110..1410. Extend existing pale grid paper across the empty outer area. Important: retain the top bag and folded clothes overlapping the torn title note's TOP edge; do not remove the hero. Exact title \"Tomorrow Setup\". Exact labels \"Clothes\", \"Bag\", \"Top Task\", \"Lunch\". No words added, removed or changed.",
+      "textReview": "Manually read every title and label in final revision; checked exact supplied wording.",
+      "export": {
+        "file": "assets/explore-art/final/routines/tomorrow-setup.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 94611
+      }
+    },
+    {
+      "filename": "overwhelmed-reset",
+      "path": "routines/overwhelmed-reset",
+      "type": "poster",
+      "title": "Overwhelmed Reset",
+      "style": "N",
+      "color": "sky",
+      "labels": [
+        "Write It Down",
+        "Pick One",
+        "10 Minutes"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE N: Editorial notebook collage: pale grid paper lightly tinted with the main colour, a textured torn-paper note containing the title, a few tiny hearts or sparkles, one medium-large realistic glossy still-life object overlapping the TOP EDGE OF THE NOTE, safely within the canvas. In the lower portion, small-to-medium realistic glossy 3D objects sit on delicate ruled lines with their exact small neat labels BELOW. Objects have adult product-photography realism, believable materials and controlled studio highlights, not clay or toys. Three labels use three spacious rows; four labels use a 2x2 layout. Pale colours, tidy hierarchy and abundant breathing room.\nMain colour: sky.\nExact title: \"Overwhelmed Reset\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: a closed pale blue notebook with a pencil.\nExact labels, in order: [\"Write It Down\",\"Pick One\",\"10 Minutes\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels. Support routine: especially gentle soft colour, no dramatic imagery, no sad figures, no urgency.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-98f3ad3f-3432-4798-9ffe-9b7e8ca6c69f.png",
+      "revisionPrompt": "Edit this notebook poster's layout only. Output1024x1536. Preserve the exact title \"Overwhelmed Reset\" and labels \"Write It Down\", \"Pick One\", \"10 Minutes\", navy lettering, pale blue grid paper, realistic materials and gentle mood. Keep the closed blue notebook and pencil as a modest top hero overlapping the torn title note, its full silhouette at least110px from top edge. Below the header use THREE vertically stacked rows. Row1: a small spiral notebook with label \"Write It Down\" BELOW it. Row2: a small mug with label \"Pick One\" BELOW it. Row3: a small unnumbered analog clock with label \"10 Minutes\" BELOW it. Every object and label must fit inside x=80..944,y=110..1400. Clear breathing room. Do not remove the top notebook hero. No words added, removed or altered.",
+      "textReview": "Manually read every title and label in final revision; checked exact supplied wording.",
+      "export": {
+        "file": "assets/explore-art/final/routines/overwhelmed-reset.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 78603
+      }
+    }
+  ]
+}

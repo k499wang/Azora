@@ -1,0 +1,154 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "filename": "small-clean",
+      "path": "routines/small-clean",
+      "type": "poster",
+      "title": "Little Clean",
+      "style": "N",
+      "color": "coral",
+      "labels": [
+        "Dishes",
+        "Put Away 5",
+        "Wipe a Surface"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE N: Editorial notebook collage: pale grid paper lightly tinted with the main colour, a textured torn-paper note containing the title, a few tiny hearts or sparkles, one medium-large realistic glossy still-life object overlapping the TOP EDGE OF THE NOTE, safely within the canvas. In the lower portion, small-to-medium realistic glossy 3D objects sit on delicate ruled lines with their exact small neat labels BELOW. Objects have adult product-photography realism, believable materials and controlled studio highlights, not clay or toys. Three labels use three spacious rows; four labels use a 2x2 layout. Pale colours, tidy hierarchy and abundant breathing room.\nMain colour: coral.\nExact title: \"Little Clean\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: a coral folded cleaning cloth.\nExact labels, in order: [\"Dishes\",\"Put Away 5\",\"Wipe a Surface\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-94a87d64-1479-45f7-b04c-3b03511fe8a1.png",
+      "revisionPrompt": "Edit this poster only to refine layout. Keep all existing words EXACTLY: title Little Clean; labels Dishes, Put Away 5, Wipe a Surface. Keep realistic objects, notebook grid, coral palette, torn paper and original art direction. Output1024x1536. Scale and reposition the cloth at the top so its ENTIRE silhouette fits below y=105 and within x=80..944. Move all main objects, labels and lettering at least 80px from left/right and 105px from top/bottom. Use three neat rows with a SMALLER object centered in each row and its label BELOW it, rather than beside it. The header title must take at most 25% of height. Keep negative space and restrained typography. Nothing else.",
+      "textReview": "Manually checked title and all listed labels against supplied specification.",
+      "export": {
+        "file": "assets/explore-art/final/routines/small-clean.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 75160
+      }
+    },
+    {
+      "filename": "weekly-home-reset",
+      "path": "routines/weekly-home-reset",
+      "type": "poster",
+      "title": "Weekly Home Reset",
+      "style": "T",
+      "color": "teal",
+      "labels": [
+        "Pick a Room",
+        "One Load",
+        "Plan the Week"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE T: Editorial tile-grid poster. One bright solid main-colour background with a strongly contrasting cream or deep navy title at the top. Below, rows of alternating pale cream, blush, sky or lavender rectangular tiles. Each tile has its exact small bold label ABOVE one small refined flat illustrated object. Four labels use a 2x2 grid; three labels use three spacious horizontal tiles; five labels use two columns with a last centered tile. Tiles have generous internal whitespace, thin rules and light paper grain. Sophisticated graphic design.\nMain colour: teal.\nExact title: \"Weekly Home Reset\". Break over 2 or 3 lines as needed without changing words or hyphens.\nExact labels, in order: [\"Pick a Room\",\"One Load\",\"Plan the Week\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-6816038f-852a-4b14-ab18-894133c933b8.png",
+      "textReview": "Manually checked title and all listed labels against supplied specification.",
+      "export": {
+        "file": "assets/explore-art/final/routines/weekly-home-reset.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 99405
+      }
+    },
+    {
+      "filename": "bathroom-wipe-down",
+      "path": "routines/bathroom-wipe-down",
+      "type": "poster",
+      "title": "Bathroom Wipe-Down",
+      "style": "F",
+      "color": "blush",
+      "labels": [
+        "Mirror",
+        "Sink",
+        "Toilet",
+        "Towel"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE F: Flat editorial vector illustration with subtle paper grain on warm cream #FDF6F0. Bold organic colour shapes run off the outer corners. Title top-left and one detailed but medium-sized hero illustration top-right, a fine navy divider below the heading, then a neat grid of small-to-medium illustrated objects with their exact labels BELOW. Three labels use three spacious rows; four labels use a 2x2 grid; five labels use two columns with the last item centered. Deliberate negative space, sophisticated print design, restrained fine detail.\nMain colour: blush.\nExact title: \"Bathroom Wipe-Down\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: an elegant bathroom mirror and a linen towel.\nExact labels, in order: [\"Mirror\",\"Sink\",\"Toilet\",\"Towel\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-bc6f2a77-fbc8-4df2-83db-f1900d708d95.png",
+      "textReview": "Manually checked title and all listed labels against supplied specification.",
+      "export": {
+        "file": "assets/explore-art/final/routines/bathroom-wipe-down.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 85662
+      }
+    },
+    {
+      "filename": "morning-reset",
+      "path": "routines/morning-reset",
+      "type": "poster",
+      "title": "Morning Reset",
+      "style": "P",
+      "color": "amber",
+      "labels": [],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE P: Rich painted gouache editorial illustration covering the WHOLE poster. Warm saturated main colour, diagonal light, visible hand-painted brush texture, sophisticated perspective and a lived-in adult home. Exactly ONE adult seen from behind or the side, quietly doing the activity. Medium-large bold title in WHITE in a calm uncluttered area at top-left. TITLE ONLY, absolutely no object labels or other words. A beautiful original lifestyle magazine cover with a warm calm grown-up mood.\nMain colour: amber.\nExact title: \"Morning Reset\". Break over 2 or 3 lines as needed without changing words or hyphens.\nPainted scene: an adult seen from behind drawing open cream curtains beside a neatly made bed, warm diagonal morning sun filling the room.\nNo labels. Only the exact title may appear.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-e87c33cb-77bd-45fa-be57-3e60307e0c9c.png",
+      "textReview": "Manually checked title and all listed labels against supplied specification.",
+      "export": {
+        "file": "assets/explore-art/final/routines/morning-reset.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 131875
+      }
+    },
+    {
+      "filename": "slow-morning",
+      "path": "routines/slow-morning",
+      "type": "poster",
+      "title": "Slow Morning",
+      "style": "F",
+      "color": "amber",
+      "labels": [
+        "Curtains",
+        "Water",
+        "Warm Drink",
+        "Today's Plan"
+      ],
+      "prompt": "Create ONE original routine poster for Azora, a warm, calm, grown-up home and routine app. Portrait image EXACTLY 1024x1536 pixels, 2:3. Editorial craftsmanship and variety, NOT children's art, app icons, clay toys, or a mobile interface. Palette: warm cream #FDF6F0, deep navy, sky blue, teal, amber, violet, coral and blush. Keep important text and complete objects within x=75..949 and y=105..1425 (at least 6% inside all edges). Only decorative corner shapes may crop off the edges. Title bold and medium-large, using at most 25% of the total image height. All non-checklist titles use the same clean contemporary bold sans-serif family; labels use a neat clear sans-serif, approximately 46-50px, legible at 188pt poster width. Objects small to medium with clear space around each. Add restrained finishing details: cropped corner shapes, thin dividers, tiny sparkles or paper grain appropriate to the style. Original artwork, no logos, app UI, phone frames, watermark, signature or extra words. Every text string must be perfectly spelled and rendered verbatim with exact capitalization and punctuation. Objects such as books, phones, notes and calendars must be unlettered; the supplied text is the ONLY permitted writing.\nSTYLE F: Flat editorial vector illustration with subtle paper grain on warm cream #FDF6F0. Bold organic colour shapes run off the outer corners. Title top-left and one detailed but medium-sized hero illustration top-right, a fine navy divider below the heading, then a neat grid of small-to-medium illustrated objects with their exact labels BELOW. Three labels use three spacious rows; four labels use a 2x2 grid; five labels use two columns with the last item centered. Deliberate negative space, sophisticated print design, restrained fine detail.\nMain colour: amber.\nExact title: \"Slow Morning\". Break over 2 or 3 lines as needed without changing words or hyphens.\nHero still life: an amber ceramic mug beside gently flowing curtains.\nExact labels, in order: [\"Curtains\",\"Water\",\"Warm Drink\",\"Today's Plan\"]. Illustrate one distinct recognisable object or small still life corresponding to each label. Do not repeat or add labels.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-9ccbcc58-ae5f-4685-b8aa-b1c2032a1bb0.png",
+      "textReview": "Manually checked title and all listed labels against supplied specification.",
+      "export": {
+        "file": "assets/explore-art/final/routines/slow-morning.jpg",
+        "dimensions": [
+          666,
+          999
+        ],
+        "sourceDimensions": [
+          1024,
+          1536
+        ],
+        "format": "JPEG",
+        "mode": "RGB",
+        "bytes": 86060
+      }
+    }
+  ]
+}

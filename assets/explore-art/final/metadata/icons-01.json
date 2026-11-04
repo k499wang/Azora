@@ -1,0 +1,89 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "path": "icons/ai-cleaning-helper",
+      "subject": "a refined sky-blue camera with a small warm amber sparkle",
+      "type": "icon",
+      "prompt": "Use case: stylized-concept. Create one original editorial category icon for Azora, a warm calm grown-up home and routine app. Square 1024x1024 pixels, genuinely transparent alpha background. Subject: a refined sky-blue camera with a small warm amber sparkle. One centered cohesive object/group filling approximately 75% of the canvas, generous transparent margins. Matching set art direction: refined glossy 3D product illustration, softly rounded believable proportions, porcelain, coated metal or glass-like materials as appropriate, controlled satin-gloss highlights, soft studio lighting from upper left, subtle three-quarter perspective, navy/sky/teal/amber/coral/blush palette on the object only. Elegant restrained detail, mature rather than children's art or clay toys. No text, letters, numbers, logos, characters, ground shadow, floor, background shape, backdrop, watermark or signature. Empty pixels must be transparent.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-21a1b360-7fe7-4dc1-a54f-baa8b4404586.png",
+      "export": {
+        "file": "assets/explore-art/final/icons/ai-cleaning-helper.png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "sourceDimensions": [
+          1254,
+          1254
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 236023
+      }
+    },
+    {
+      "path": "icons/clean-room",
+      "subject": "a yellow cleaning sponge with a few translucent soap bubbles",
+      "type": "icon",
+      "prompt": "Use case: stylized-concept. Create one original editorial category icon for Azora, a warm calm grown-up home and routine app. Square 1024x1024 pixels, genuinely transparent alpha background. Subject: a yellow cleaning sponge with a few translucent soap bubbles. One centered cohesive object/group filling approximately 75% of the canvas, generous transparent margins. Matching set art direction: refined glossy 3D product illustration, softly rounded believable proportions, porcelain, coated metal or glass-like materials as appropriate, controlled satin-gloss highlights, soft studio lighting from upper left, subtle three-quarter perspective, navy/sky/teal/amber/coral/blush palette on the object only. Elegant restrained detail, mature rather than children's art or clay toys. No text, letters, numbers, logos, characters, ground shadow, floor, background shape, backdrop, watermark or signature. Empty pixels must be transparent.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-328920e0-b67a-4888-b8f2-3a5c0c067334.png",
+      "export": {
+        "file": "assets/explore-art/final/icons/clean-room.png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "sourceDimensions": [
+          1254,
+          1254
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 254552
+      }
+    },
+    {
+      "path": "icons/ask-azo",
+      "subject": "a rounded sky-blue speech bubble with a small coral heart",
+      "type": "icon",
+      "prompt": "Use case: stylized-concept. Create one original editorial category icon for Azora, a warm calm grown-up home and routine app. Square 1024x1024 pixels, genuinely transparent alpha background. Subject: a rounded sky-blue speech bubble with a small coral heart. One centered cohesive object/group filling approximately 75% of the canvas, generous transparent margins. Matching set art direction: refined glossy 3D product illustration, softly rounded believable proportions, porcelain, coated metal or glass-like materials as appropriate, controlled satin-gloss highlights, soft studio lighting from upper left, subtle three-quarter perspective, navy/sky/teal/amber/coral/blush palette on the object only. Elegant restrained detail, mature rather than children's art or clay toys. No text, letters, numbers, logos, characters, ground shadow, floor, background shape, backdrop, watermark or signature. Empty pixels must be transparent.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-863fdfbb-14ed-44c4-8b32-05063ee193b4.png",
+      "export": {
+        "file": "assets/explore-art/final/icons/ask-azo.png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "sourceDimensions": [
+          1254,
+          1254
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 122028
+      }
+    },
+    {
+      "path": "icons/routines",
+      "subject": "a cream calendar page with a teal check mark; absolutely no letters or numerals",
+      "type": "icon",
+      "prompt": "Use case: stylized-concept. Create one original editorial category icon for Azora, a warm calm grown-up home and routine app. Square 1024x1024 pixels, genuinely transparent alpha background. Subject: a cream calendar page with a teal check mark; absolutely no letters or numerals. One centered cohesive object/group filling approximately 75% of the canvas, generous transparent margins. Matching set art direction: refined glossy 3D product illustration, softly rounded believable proportions, porcelain, coated metal or glass-like materials as appropriate, controlled satin-gloss highlights, soft studio lighting from upper left, subtle three-quarter perspective, navy/sky/teal/amber/coral/blush palette on the object only. Elegant restrained detail, mature rather than children's art or clay toys. No text, letters, numbers, logos, characters, ground shadow, floor, background shape, backdrop, watermark or signature. Empty pixels must be transparent.",
+      "source": "/Users/k3vinwvng/.codex/generated_images/01a1a40f-a598-7c30-9fd5-39c2afca619f/exec-f180f83f-7a5c-414e-adce-062b3634245b.png",
+      "export": {
+        "file": "assets/explore-art/final/icons/routines.png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "sourceDimensions": [
+          1254,
+          1254
+        ],
+        "format": "PNG",
+        "mode": "RGBA",
+        "bytes": 178352
+      }
+    }
+  ]
+}

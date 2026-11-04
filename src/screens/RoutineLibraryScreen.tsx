@@ -40,6 +40,17 @@ export default function RoutineLibraryScreen({ navigation }: ExploreScreenProps)
         </View>
         <View style={styles.tile}>
           <ExploreActionCard
+            title="Clean a Room"
+            subtitle="Ready-made room plans"
+            hue={colors.playful.teal}
+            illustration="todo-broom"
+            accessibilityLabel="Clean a Room"
+            accessibilityHint="Opens ready-made cleaning plans for each room"
+            onPress={() => navigation.navigate('CleanupRooms')}
+          />
+        </View>
+        <View style={styles.tile}>
+          <ExploreActionCard
             title="Ask Azo"
             subtitle="Talk it through"
             hue={colors.playful.blush}

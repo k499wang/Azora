@@ -1,0 +1,45 @@
+{
+  "tool": "Built-in image_gen",
+  "prompts": {
+    "kitchen": "Use case: stylized-concept. Asset type: original illustrated lifestyle template gallery poster for a mobile app, readable at 176pt wide.\nGenerate ONE full-bleed portrait image exactly 1024x1536 pixels (2:3).\nStyle A: beautifully crafted soft 3D clay objects, pastel amber yellow background, one large white rounded inset panel below the heading. Bright, collectible, playful yet tidy. Palette accents sky blue, teal, coral and blush on warm cream #FDF6F0, deep navy lettering. No characters.\nComposition: safe margin of at least 6% at every edge. Big bold title at TOP LEFT on exactly two lines: \"Kitchen\" then \"Clean\". Large hero object at TOP RIGHT: a yellow cleaning sponge with a few bubbles. Leave clear separation between hero and title.\nBelow the heading, a neat TWO-COLUMN by THREE-ROW grid of six large isolated clay objects on the white rounded panel, with a large short label UNDER each corresponding object. Row 1: a stack of dishes labelled \"Dishes\"; a kitchen counter segment labelled \"Counters\". Row 2: a stovetop labelled \"Stovetop\"; a microwave labelled \"Microwave\". Row 3: a sink and faucet labelled \"Sink\"; a mop and small floor patch labelled \"Floor\".\nTypography: ONE clean rounded bold sans-serif family for all text, deep navy. Title approximately 112px; labels approximately 48px, legible and widely spaced. Keep all text exact, clear, correctly spelled, and inside margins. Label each object only once. No body copy.\nThe ONLY text in the image, verbatim: \"Kitchen\" \"Clean\" \"Dishes\" \"Counters\" \"Stovetop\" \"Microwave\" \"Sink\" \"Floor\".\nKeep objects large and uncluttered, consistent soft clay material with gentle studio lighting and restrained shading. Do not add tiny decorations. No logos, branding, app UI, phone frame, watermark or signature. Original artwork.",
+    "kitchenClose": "Use case: stylized-concept. Asset type: original illustrated lifestyle template gallery poster for a mobile app, readable at 176pt wide.\nGenerate ONE full-bleed portrait image exactly 1024x1536 pixels (2:3).\nStyle A: beautifully crafted soft 3D clay objects, pastel teal mint background, one large white rounded inset panel below the heading. Bright, collectible, playful yet tidy. Accent palette amber yellow, sky blue, coral and blush on warm cream #FDF6F0, deep navy lettering. No characters.\nComposition: safe margin of at least 6% at every edge. Big bold title at TOP LEFT on exactly two lines: \"Kitchen\" then \"Close\". Large hero object at TOP RIGHT: a clean shiny sink and curved faucet in teal and cream. Leave clear separation between hero and title.\nBelow the heading, a neat TWO-COLUMN by TWO-ROW grid of four large isolated clay objects on the white rounded panel, with a large short label UNDER each corresponding object. Row 1: a stack of dishes labelled \"Dishes\"; a kitchen counter segment with a folded cloth labelled \"Counters\". Row 2: a sparkling sink and faucet labelled \"Shine the Sink\"; a compact lidded waste bin labelled \"Trash\".\nTypography: ONE clean rounded bold sans-serif family for all text, deep navy, matching a friendly modern lifestyle poster family. Title approximately 112px; labels approximately 48px, legible and widely spaced. Keep \"Shine the Sink\" large, on a single line if it fits comfortably, otherwise two lines. Keep all text exact, clear, correctly spelled, and inside margins. Label each object only once. No body copy.\nThe ONLY text in the image, verbatim: \"Kitchen\" \"Close\" \"Dishes\" \"Counters\" \"Shine the Sink\" \"Trash\".\nKeep objects large and uncluttered, consistent soft clay material with gentle studio lighting and restrained shading. Do not add tiny decorations. No logos, branding, app UI, phone frame, watermark or signature. Original artwork.",
+    "icon": "Use case: stylized-concept. Asset type: original explore category icon for a bright home and routine mobile app.\nGenerate ONE image exactly 1024x1024 pixels, with a genuinely transparent alpha background.\nSubject: one yellow cleaning sponge with a few pearly translucent soap bubbles attached around its upper edge. One coherent, centred object filling approximately 75% of the square canvas. Soft rounded rectangular sponge with gently visible sponge pores, pastel amber-yellow top and a subtle teal scrub layer underneath. Glossy soft 3D clay style, high-quality rounded forms, soft studio lighting. Simple silhouette legible at small icon size, cheerful and tactile, matching a collectible lifestyle illustration family. Camera slightly above, subtle three-quarter perspective.\nNo text, letters, numbers, logos, mascot, signature or watermark. No ground shadow or cast shadow outside the object, no pedestal, floor, background shape, scenery, coloured backdrop, or border. All empty pixels must be transparent. Original artwork."
+  },
+  "posterMarginEdit": "Edit only the layout margins of this poster. Preserve the artwork, colour palette, soft clay style, exact lettering, typeface, grid and all objects. Keep output exactly 1024x1536 pixels. All important content including every letter and the complete top-right hero object MUST fit within this safe rectangle: x=80 through 944, y=105 through 1420. The current version has objects and/or lettering too close to the edges. Gently reduce and reposition the full composition as needed so that top hero, title, side objects and bottom labels are all well inside the safe rectangle. Extend the same pastel background to the outer edges; keep the white rounded panel below the heading. Keep labels large and legible. Do not add any words. Preserve exact current text, spelling and capitalization. No other changes.",
+  "notes": [
+    "Step 1 only: two posters and one icon. No code modified.",
+    "Poster text manually reviewed against the requested titles and labels.",
+    "Poster sources: 1024x1536. Icon generator returned 1254x1254 despite the 1024x1024 request; final transparent PNG exported at the required 512x512.",
+    "Final poster JPEGs: 666x999, quality 80, optimized, under 250 KB each.",
+    "Contact sheet contains only the two Step 1 posters. Remaining assets await user approval."
+  ],
+  "exports": {
+    "assets/explore-art/rooms/kitchen.jpg": {
+      "dimensions": [
+        666,
+        999
+      ],
+      "format": "JPEG",
+      "bytes": 73569,
+      "mode": "RGB"
+    },
+    "assets/explore-art/routines/kitchen-close.jpg": {
+      "dimensions": [
+        666,
+        999
+      ],
+      "format": "JPEG",
+      "bytes": 62455,
+      "mode": "RGB"
+    },
+    "assets/explore-art/icons/clean-room.png": {
+      "dimensions": [
+        512,
+        512
+      ],
+      "format": "PNG",
+      "bytes": 223075,
+      "mode": "RGBA"
+    }
+  }
+}

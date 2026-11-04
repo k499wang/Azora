@@ -27,6 +27,7 @@ import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
 import { useSelfCareGoalsQuery } from '../queries/selfCare/useSelfCareGoalsQuery';
+import { trackRoutinePresetAdded } from '../services/analytics/tracking';
 import { shareHouseCleaningPdf, previewHouseCleaningPdf } from '../services/routineLibrary/houseCleaningPdf';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
@@ -48,6 +49,10 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
   const selection = useRoutineSelection(entry.tasks.map((task) => task.id),
     userId != null && goalsQuery.isSuccess, createGoals.isPending, true);
   const { selectedIds, allSelected } = selection;
+  const [savedGoalIds, setSavedGoalIds] = useState<string[] | null>(null);
+  const startableGoalIds = (goalsQuery.data ?? [])
+    .filter((goal) => !goal.completedToday && savedGoalIds?.includes(goal.id))
+    .map((goal) => goal.id);
   const selectedTasks = useMemo(
     () => entry.tasks.filter((task) => selectedIds.includes(task.id)),
     [entry.tasks, selectedIds],
@@ -64,8 +69,9 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
     sourceScreen: 'RoutineLibraryDetail',
     onAllowed: () => {
     void selection.submit(async () => {
-      await createGoals.mutateAsync(routineTemplateDrafts(selectedTasks));
-      if (navigation.isFocused()) navigation.goBack();
+      const saved = await createGoals.mutateAsync(routineTemplateDrafts(selectedTasks));
+      setSavedGoalIds(saved.map((goal) => goal.id));
+      trackRoutinePresetAdded({ routine: entry.id, tasks: selectedTasks.length });
     });
     },
   });
@@ -81,7 +87,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
           <View style={styles.tasksHeader}>
             <SectionHeader
               title="Choose tasks"
-              right={(
+              right={savedGoalIds != null ? undefined : (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={allSelected ? 'Clear all tasks' : 'Add all tasks'}
@@ -99,8 +105,8 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
           {goalsQuery.isError ? <Text style={styles.error}>{errorMessage(goalsQuery.error)}</Text> : null}
           <View style={styles.rows}>
             {entry.tasks.map((task) => {
-              const selected = selectedIds.includes(task.id);
-              const disabled = selection.locked;
+              const selected = savedGoalIds != null || selectedIds.includes(task.id);
+              const disabled = savedGoalIds != null || selection.locked;
               return (
                 <Pressable
                   key={task.id}
@@ -109,7 +115,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
                   accessibilityLabel={`${task.title}, worth ${selfCareGoalCoins(task.recurrence)} coins`}
                   disabled={disabled}
                   onPress={() => toggle(task.id)}
-                  style={({ pressed }) => [card.base, card.shadow, styles.row, pressed && pressable.surface, disabled && styles.disabled]}
+                  style={({ pressed }) => [card.base, card.shadow, styles.row, pressed && pressable.surface, disabled && savedGoalIds == null && styles.disabled]}
                 >
                   <RoutineTaskIcon name={task.icon} />
                   <View style={styles.rowCopy}>
@@ -129,14 +135,33 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
         </ScreenContent>
       </ScrollView>
       <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
-        <ScreenContent width="grouped">
-          <ChunkyButton
-            shape="card"
-            label={selectedTasks.length === 0 ? 'Add to My Routine' : `Add ${selectedTasks.length} to My Routine`}
-            disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
-            loading={createGoals.isPending}
-            onPress={addToRoutine}
-          />
+        <ScreenContent width="grouped" style={styles.trayActions}>
+          {savedGoalIds == null ? (
+            <ChunkyButton
+              shape="card"
+              label={selectedTasks.length === 0 ? 'Add to My Routine' : `Add ${selectedTasks.length} to My Routine`}
+              disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
+              loading={createGoals.isPending}
+              onPress={addToRoutine}
+            />
+          ) : (
+            <>
+              <Text style={styles.added}>Added to your to-dos</Text>
+              {startableGoalIds.length === 0 ? null : (
+                <ChunkyButton
+                  shape="card"
+                  label="Start now"
+                  onPress={() => navigation.replace('RoutinePlayer', { goalIds: startableGoalIds })}
+                />
+              )}
+              <ChunkyButton
+                shape="card"
+                tone={CHUNKY_TONE_QUIET}
+                label="Done"
+                onPress={() => navigation.goBack()}
+              />
+            </>
+          )}
           {createGoals.isError ? <Text style={styles.error}>{errorMessage(createGoals.error)}</Text> : null}
         </ScreenContent>
       </View>
@@ -200,6 +225,8 @@ const styles = StyleSheet.create({
   rowMetaLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.sm },
   rowMeta: { ...typography.label.detail, color: colors.text.tertiary },
   tray: { ...card.trayShadow, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle, backgroundColor: colors.background.canvas },
+  trayActions: { gap: spacing.sm },
+  added: { ...typography.body.medium, fontFamily: fonts.semibold, textAlign: 'center', color: colors.text.primary },
   disabled: { opacity: 0.45 },
   error: { ...typography.label.medium, color: colors.error[700], textAlign: 'center', paddingTop: spacing.sm },
   pdfMeta: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.tertiary, paddingTop: spacing.md },
