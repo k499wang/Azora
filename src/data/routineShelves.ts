@@ -1,4 +1,4 @@
-import type { SelfCareGoal } from '../features/selfCare/domain/selfCareGoal';
+import { selfCareGoalCoins, selfCareGoalRecurrenceLabel, type SelfCareGoal } from '../features/selfCare/domain/selfCareGoal';
 import { ROUTINE_TEMPLATES, type RoutineLibraryId, type RoutineTemplate } from './routineLibrary';
 
 export type RoutineShelfId = 'home' | 'morning' | 'work' | 'evening' | 'support';
@@ -52,6 +52,23 @@ export const ROUTINE_SHELVES: readonly RoutineShelf[] = [
 
 export function routineShelfTemplates(shelf: RoutineShelf): RoutineTemplate[] {
   return shelf.routineIds.flatMap((id) => ROUTINE_TEMPLATES.filter((entry) => entry.id === id));
+}
+
+/** "4 steps · 21 min · Daily": what someone is signing up for, before they open it. */
+export function routineSummary(routine: Pick<RoutineTemplate, 'tasks'>): string {
+  const { steps, minutes, repeat } = routineFacts(routine);
+  return `${steps} · ${minutes} · ${repeat}`;
+}
+
+export function routineFacts(routine: Pick<RoutineTemplate, 'tasks'>) {
+  const count = routine.tasks.length;
+  const total = routine.tasks.reduce((sum, task) => sum + task.durationMinutes, 0);
+  return {
+    steps: `${count} ${count === 1 ? 'step' : 'steps'}`,
+    minutes: `${total} min`,
+    repeat: selfCareGoalRecurrenceLabel(routine.tasks[0].recurrence),
+    coins: routine.tasks.reduce((sum, task) => sum + selfCareGoalCoins(task.recurrence), 0),
+  };
 }
 
 /** A routine counts as added once every one of its tasks is on the person's list. */

@@ -61,6 +61,7 @@ import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSe
 import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import {
   currentSelfCareGoalDaypart,
+  selfCareGoalDaypartTime,
   selfCareGoalCoins,
   selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
@@ -151,8 +152,11 @@ const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
   color: i % 2 === 0 ? colors.reward.gold : colors.primary.blue300,
 }));
 const EMPTY_DAY_ICON_SIZE = 40;
-const DAYPART_START_ICON_SIZE = 12;
 const DAYPART_CHEVRON_SIZE = 16;
+/** The title's line height, so the icons fill the row without making it taller. */
+const DAYPART_ICON_SIZE = 20;
+/** The triangle fills its box where the plus is mostly margin; this draws them the same size. */
+const DAYPART_PLAY_SIZE = 14;
 const FEATURED_STAR_SIZE = 12;
 const CHECK_MARK_SIZE = 15;
 const GOAL_CHECK_SIZE = 24;
@@ -242,6 +246,8 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   upcoming?: boolean;
   /** Opens the add sheet. */
   onAddHabit: () => void;
+  /** Opens the add sheet already set to a part of the day; null is Anytime. */
+  onAddAt: (scheduledTime: string | null) => void;
   /** Opens the curated routine starting points. */
   onBrowseRoutines: () => void;
   /** Marks the routine list for the post-onboarding app tour. */
@@ -594,6 +600,7 @@ function DaypartHeader({
   openCount,
   onToggleFold,
   onStart,
+  onAdd,
 }: {
   label: string;
   icon: IconName;
@@ -604,6 +611,8 @@ function DaypartHeader({
   onToggleFold: () => void;
   /** plays the part of the day's open to-dos one at a time; left out when there is nothing to play */
   onStart?: () => void;
+  /** adds a to-do to this part of the day; left out on days that take none */
+  onAdd?: () => void;
 }) {
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: withTiming(`${folded ? -90 : 0}deg`, FOLD_TIMING) }],
@@ -621,7 +630,7 @@ function DaypartHeader({
         }}
         style={({ pressed }) => [styles.daypartHeader, pressed && pressable.control]}
       >
-        <Icon name={icon} size={DAYPART_CHEVRON_SIZE} color={colors.text.tertiary} />
+        <Icon name={icon} size={DAYPART_ICON_SIZE} color={colors.text.tertiary} />
         <Text style={styles.daypartLabel} numberOfLines={1}>{label}</Text>
         <Animated.View style={chevronStyle}>
           <Icon bold name="chevron-down" size={DAYPART_CHEVRON_SIZE} color={colors.text.tertiary} />
@@ -629,21 +638,36 @@ function DaypartHeader({
         {folded && openCount > 0 ? <Text style={[styles.daypartLabel, styles.daypartCount]}>{openCount}</Text> : null}
         {now ? <Text style={styles.daypartNow}>Now</Text> : null}
       </Pressable>
-      {onStart == null ? null : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Start ${label}`}
-          hitSlop={spacing.sm}
-          onPress={() => {
-            triggerTapHaptic();
-            onStart();
-          }}
-          style={({ pressed }) => [styles.daypartStart, pressed && pressable.control]}
-        >
-          <Icon name="play-triangle" size={DAYPART_START_ICON_SIZE} color={colors.text.brand} />
-          <Text style={styles.daypartNow}>Start</Text>
-        </Pressable>
-      )}
+      <View style={styles.daypartActions}>
+        {onStart == null ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Start ${label}`}
+            hitSlop={{ top: spacing.md, bottom: spacing.md, left: spacing.md, right: spacing.sm }}
+            onPress={() => {
+              triggerTapHaptic();
+              onStart();
+            }}
+            style={({ pressed }) => pressed && pressable.control}
+          >
+            <Icon name="play-triangle" size={DAYPART_PLAY_SIZE} color={colors.text.secondary} />
+          </Pressable>
+        )}
+        {onAdd == null ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add to ${label}`}
+            hitSlop={{ top: spacing.md, bottom: spacing.md, left: spacing.sm, right: spacing.md }}
+            onPress={() => {
+              triggerTapHaptic();
+              onAdd();
+            }}
+            style={({ pressed }) => pressed && pressable.control}
+          >
+            <Icon bold name="plus" size={DAYPART_ICON_SIZE} color={colors.text.tertiary} />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -790,8 +814,12 @@ function TodoListSection(props: TodoListSectionProps) {
   );
   const listRows = useMemo(() => todoListRows(shownGoals), [shownGoals]);
   const filledSections = useMemo(
-    () => new Set(listRows.filter((row) => row.kind === 'goal').map((row) => row.section)),
-    [listRows],
+    // A section whose last card is leaving counts as empty from the moment its
+    // slot closes, so the rows below move once rather than rise and drop back.
+    () => new Set(listRows
+      .filter((row) => row.kind === 'goal' && (clearingForAllDone || !filingIds.has(row.id)))
+      .map((row) => row.section)),
+    [listRows, filingIds, clearingForAllDone],
   );
   const playableSections = useMemo(() => {
     const open = new Map<TodoListRow['section'], string[]>();
@@ -824,6 +852,13 @@ function TodoListSection(props: TodoListSectionProps) {
     if (!next.delete(section)) next.add(section);
     setFlippedSections(next);
   };
+  const addToSection = props.mode !== 'tasks' || (readOnly && !upcoming)
+    ? undefined
+    : (section: TodoListRow['section']) => {
+        // A to-do added under a folded header would land out of sight.
+        if (isFolded(section)) toggleFold(section);
+        props.onAddAt(section === 'anytime' ? null : selfCareGoalDaypartTime(section));
+      };
   const openCounts = useMemo(() => {
     const counts = new Map<TodoListRow['section'], number>();
     for (const row of listRows) {
@@ -1176,6 +1211,7 @@ function TodoListSection(props: TodoListSectionProps) {
                 openCount={openCounts.get(row.section) ?? 0}
                 onToggleFold={() => toggleFold(row.section)}
                 onStart={playableSections.has(row.section) ? () => startSection(row.section) : undefined}
+                onAdd={addToSection == null ? undefined : () => addToSection(row.section)}
               />
             </JourneyDragRow>
           ) : (
@@ -1480,15 +1516,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  daypartStart: {
+  daypartActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginVertical: -spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    backgroundColor: colors.background.accentSoft,
+    gap: spacing.md,
   },
   daypartNow: {
     ...typography.label.detail,

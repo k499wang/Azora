@@ -181,6 +181,27 @@ test('suggestions seed the add form before paint and submission preserves edits'
   assert.equal(submitted.recurrence, 'weekly');
 });
 
+test('a suggestion keeps the time of the section the sheet was opened from', () => {
+  const tapSuggestionAndSave = (props, afterTap = () => {}) => {
+    let submitted;
+    const h = mount('./AddGoalSheet.tsx', { ...addProps, ...props, onSubmit: value => { submitted = value; } });
+    h.act(() => h.find(node => node.props.accessibilityLabel?.includes(', worth ')).props.onPress());
+    afterTap(h);
+    h.act(() => h.node('ChunkyButton').props.onPress());
+    return submitted.scheduledTime;
+  };
+  assert.equal(tapSuggestionAndSave({ initialScheduledTime: '21:00' }), '21:00');
+  assert.equal(tapSuggestionAndSave({ initialScheduledTime: null }), null);
+  assert.equal(
+    tapSuggestionAndSave({ initialScheduledTime: '21:00' }, h => {
+      h.act(() => field(h, 'Time of day').props.onPress());
+      h.act(() => h.node('GoalTimeOptions').props.onSelect('13:00'));
+    }),
+    '13:00',
+  );
+  assert.notEqual(tapSuggestionAndSave({}), null);
+});
+
 test('edit dismissal preserves the expanded section and draft across repeated cycles', () => {
   const h = mount('./GoalEditSheet.tsx', editProps);
   for (let cycle = 0; cycle < 8; cycle++) {

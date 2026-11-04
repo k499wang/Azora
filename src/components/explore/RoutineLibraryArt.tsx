@@ -18,6 +18,8 @@ const TONES = {
   coral: colors.playful.coral,
 } as const;
 
+const HERO_POSTER_MAX_WIDTH = 320;
+
 interface RoutineLibraryArtProps {
   entry: RoutineLibraryEntry;
   size: 'card' | 'hero' | 'poster';
@@ -38,7 +40,7 @@ export default function RoutineLibraryArt({ entry, size }: RoutineLibraryArtProp
         source={cover}
         cachePolicy="memory-disk"
         contentFit="cover"
-        style={[styles.art, sizeStyle]}
+        style={[styles.art, hero ? styles.heroPoster : sizeStyle]}
         transition={0}
       />
     );
@@ -62,5 +64,6 @@ const styles = StyleSheet.create({
   card: { height: 240 },
   hero: { height: 280 },
   poster: { width: '100%', aspectRatio: 2 / 3 },
+  heroPoster: { width: '72%', maxWidth: HERO_POSTER_MAX_WIDTH, aspectRatio: 2 / 3, alignSelf: 'center' },
   glow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, opacity: 0.18, right: -74, bottom: -112 },
 });

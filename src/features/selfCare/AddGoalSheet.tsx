@@ -143,6 +143,8 @@ interface AddGoalSheetProps {
   todayLocalDate: string;
   /** opened from a later day, so it starts as a one-off planned for that day */
   initialStartsOn?: string | null;
+  /** opened from a part of the day's header, null being Anytime: it stays in that part unless changed by hand */
+  initialScheduledTime?: string | null;
 }
 
 function errorMessage(error: unknown): string {
@@ -164,6 +166,7 @@ export default function AddGoalSheet({
   initialSuggestion = null,
   todayLocalDate,
   initialStartsOn = null,
+  initialScheduledTime,
 }: AddGoalSheetProps) {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<RNTextInput>(null);
@@ -194,13 +197,13 @@ export default function AddGoalSheet({
     setTitle(initialSuggestion?.title ?? '');
     setIcon(initialSuggestion?.icon ?? DEFAULT_SELF_CARE_GOAL_ICON);
     setRecurrence(initialStartsOn == null ? DEFAULT_RECURRENCE : 'once');
-    setScheduledTime(null);
+    setScheduledTime(initialScheduledTime ?? null);
     setDurationMinutes(null);
     setStartsOn(initialStartsOn);
     setCategoryId(FIRST_CATEGORY.id);
     setShelf('suggestions');
     setEditingField(null);
-  }, [initialSuggestion, initialStartsOn, visible]);
+  }, [initialSuggestion, initialStartsOn, initialScheduledTime, visible]);
   // Only a one-off can wait for a later day; a repeat starts now.
   const plannedFor = recurrence === 'once' ? startsOn : null;
 
@@ -241,7 +244,7 @@ export default function AddGoalSheet({
     setTitle(suggestion.title);
     setIcon(suggestion.icon);
     setRecurrence(suggestion.recurrence);
-    setScheduledTime(suggestion.scheduledTime);
+    if (initialScheduledTime === undefined) setScheduledTime(suggestion.scheduledTime);
     setShelf('suggestions');
     inputRef.current?.focus();
   };

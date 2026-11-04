@@ -3,24 +3,25 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RoutineLibraryDetailScreenProps } from '../app/navigation';
 import AppTopBar from '../components/common/AppTopBar';
+import CoinWorth from '../components/common/CoinWorth';
 import AnimatedSelectionToggle from '../components/common/AnimatedSelectionToggle';
 import ChunkyButton, { CHUNKY_TONE_QUIET } from '../components/common/ChunkyButton';
 import RoutineLibraryArt from '../components/explore/RoutineLibraryArt';
 import ScreenContent from '../components/common/ScreenContent';
 import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
+import Icon from '../components/common/icons/Icon';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
+import TaskCardBody, { taskCard } from '../components/home/journey/TaskCardBody';
 import {
   getRoutineLibraryEntry,
   routineTemplateDrafts,
   type RoutineTemplate,
 } from '../data/routineLibrary';
+import { routineFacts } from '../data/routineShelves';
+import { getRoutineGuide } from '../data/routineGuides';
+import { routineTipIcon } from '../data/routineTipIcon';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
-import CoinWorth from '../components/common/CoinWorth';
-import {
-  selfCareGoalDaypartLabel,
-  selfCareGoalCoins,
-  selfCareGoalRecurrenceLabel,
-} from '../features/selfCare/domain/selfCareGoal';
 import { useAddRoutinePreset } from '../features/selfCare/useAddRoutinePreset';
 import { useRoutineSelection } from '../features/selfCare/useRoutineSelection';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -36,11 +37,15 @@ import { pressable } from '../theme/pressable';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
+const GUIDE_ICON_SIZE = 36;
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Please try again.';
 }
 
 function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigation: RoutineLibraryDetailScreenProps['navigation'] }) {
+  const guide = getRoutineGuide(entry.id);
+  const facts = routineFacts(entry);
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
@@ -49,10 +54,6 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
   const selection = useRoutineSelection(entry.tasks.map((task) => task.id),
     userId != null && goalsQuery.isSuccess, createGoals.isPending, true);
   const { selectedIds, allSelected } = selection;
-  const [savedGoalIds, setSavedGoalIds] = useState<string[] | null>(null);
-  const startableGoalIds = (goalsQuery.data ?? [])
-    .filter((goal) => !goal.completedToday && savedGoalIds?.includes(goal.id))
-    .map((goal) => goal.id);
   const selectedTasks = useMemo(
     () => entry.tasks.filter((task) => selectedIds.includes(task.id)),
     [entry.tasks, selectedIds],
@@ -69,9 +70,9 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
     sourceScreen: 'RoutineLibraryDetail',
     onAllowed: () => {
     void selection.submit(async () => {
-      const saved = await createGoals.mutateAsync(routineTemplateDrafts(selectedTasks));
-      setSavedGoalIds(saved.map((goal) => goal.id));
+      await createGoals.mutateAsync(routineTemplateDrafts(selectedTasks));
       trackRoutinePresetAdded({ routine: entry.id, tasks: selectedTasks.length });
+      if (navigation.isFocused()) navigation.goBack();
     });
     },
   });
@@ -82,12 +83,62 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScreenContent width="grouped">
           <RoutineLibraryArt entry={entry} size="hero" />
-          <Text style={[styles.title, styles.templateTitle]}>{entry.title}</Text>
-          <Text style={styles.description}>{entry.description}</Text>
+          <View style={styles.facts}>
+            <TaskIllustration name="streak" size={16} />
+            <Text style={styles.fact}>{facts.repeat}</Text>
+            <Text style={styles.factDivider}>·</Text>
+            <Icon name="clock" size={16} color={colors.text.secondary} />
+            <Text style={styles.fact}>{facts.minutes}</Text>
+            <Text style={styles.factDivider}>·</Text>
+            <Icon name="checklist" size={16} color={colors.text.secondary} />
+            <Text style={styles.fact}>{facts.steps}</Text>
+            <Text style={styles.factDivider}>·</Text>
+            <CoinWorth coins={facts.coins} />
+          </View>
+          <Text style={styles.lead}>{entry.description}</Text>
+          {guide ? (
+            <>
+              <View style={styles.guideSection}>
+                <SectionHeader title="About this routine" />
+                <View style={styles.introduction}>
+                  {guide.introduction.map((paragraph) => (
+                    <Text key={paragraph} style={styles.guideCopy}>{paragraph}</Text>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.guideSection}>
+                <SectionHeader title="Before you begin" />
+                <View style={styles.tips}>
+                  {guide.preparation.map((tip) => (
+                    <View key={tip} style={styles.tip}>
+                      <TaskIllustration name={routineTipIcon(tip)} size={GUIDE_ICON_SIZE} />
+                      <Text style={[styles.guideCopy, styles.tipCopy]}>{tip}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </>
+          ) : null}
+          {guide ? (
+            <View style={styles.guideSection}>
+              <SectionHeader title="How to do it" />
+              <View style={styles.tips}>
+                {entry.tasks.map((task) => (
+                  <View key={task.id} style={styles.tip}>
+                    <TaskIllustration name={task.icon} size={GUIDE_ICON_SIZE} />
+                    <View style={styles.tipCopy}>
+                      <Text style={styles.howTitle}>{task.title}</Text>
+                      <Text style={styles.guideCopy}>{guide.taskDescriptions[task.id]}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
           <View style={styles.tasksHeader}>
             <SectionHeader
               title="Choose tasks"
-              right={savedGoalIds != null ? undefined : (
+              right={(
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={allSelected ? 'Clear all tasks' : 'Add all tasks'}
@@ -105,29 +156,28 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
           {goalsQuery.isError ? <Text style={styles.error}>{errorMessage(goalsQuery.error)}</Text> : null}
           <View style={styles.rows}>
             {entry.tasks.map((task) => {
-              const selected = savedGoalIds != null || selectedIds.includes(task.id);
-              const disabled = savedGoalIds != null || selection.locked;
+              const selected = selectedIds.includes(task.id);
+              const disabled = selection.locked;
               return (
                 <Pressable
                   key={task.id}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected, disabled }}
-                  accessibilityLabel={`${task.title}, worth ${selfCareGoalCoins(task.recurrence)} coins`}
+                  accessibilityLabel={`${task.title}, ${task.durationMinutes} min`}
+                  accessibilityHint={guide?.taskDescriptions[task.id]}
                   disabled={disabled}
                   onPress={() => toggle(task.id)}
-                  style={({ pressed }) => [card.base, card.shadow, styles.row, pressed && pressable.surface, disabled && savedGoalIds == null && styles.disabled]}
+                  style={({ pressed }) => [taskCard.surface, pressed && pressable.surface, disabled && styles.disabled]}
                 >
-                  <RoutineTaskIcon name={task.icon} />
-                  <View style={styles.rowCopy}>
-                    <Text style={styles.rowTitle}>{task.title}</Text>
-                    <View style={styles.rowMetaLine}>
-                      <Text style={styles.rowMeta}>
-                        Repeats {selfCareGoalRecurrenceLabel(task.recurrence).toLowerCase()} · {selfCareGoalDaypartLabel(task.scheduledTime)}
-                      </Text>
-                      <CoinWorth coins={selfCareGoalCoins(task.recurrence)} />
-                    </View>
+                  <View style={taskCard.face}>
+                    <TaskCardBody
+                      icon={<RoutineTaskIcon name={task.icon} />}
+                      badge={<AnimatedSelectionToggle selected={selected} />}
+                    >
+                      <Text style={taskCard.title}>{task.title}</Text>
+                      <Text style={taskCard.detail}>{task.durationMinutes} min</Text>
+                    </TaskCardBody>
                   </View>
-                  <AnimatedSelectionToggle selected={selected} />
                 </Pressable>
               );
             })}
@@ -135,33 +185,14 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
         </ScreenContent>
       </ScrollView>
       <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
-        <ScreenContent width="grouped" style={styles.trayActions}>
-          {savedGoalIds == null ? (
-            <ChunkyButton
-              shape="card"
-              label={selectedTasks.length === 0 ? 'Add to My Routine' : `Add ${selectedTasks.length} to My Routine`}
-              disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
-              loading={createGoals.isPending}
-              onPress={addToRoutine}
-            />
-          ) : (
-            <>
-              <Text style={styles.added}>Added to your to-dos</Text>
-              {startableGoalIds.length === 0 ? null : (
-                <ChunkyButton
-                  shape="card"
-                  label="Start now"
-                  onPress={() => navigation.replace('RoutinePlayer', { goalIds: startableGoalIds })}
-                />
-              )}
-              <ChunkyButton
-                shape="card"
-                tone={CHUNKY_TONE_QUIET}
-                label="Done"
-                onPress={() => navigation.goBack()}
-              />
-            </>
-          )}
+        <ScreenContent width="grouped">
+          <ChunkyButton
+            shape="card"
+            label={selectedTasks.length === 0 ? 'Add to My Routine' : `Add ${selectedTasks.length} to My Routine`}
+            disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
+            loading={createGoals.isPending}
+            onPress={addToRoutine}
+          />
           {createGoals.isError ? <Text style={styles.error}>{errorMessage(createGoals.error)}</Text> : null}
         </ScreenContent>
       </View>
@@ -210,23 +241,26 @@ export default function RoutineLibraryDetailScreen(props: RoutineLibraryDetailSc
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
-  content: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.lg, paddingBottom: 180 },
+  content: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.lg, paddingBottom: spacing.xl },
   pdfContent: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.lg, paddingBottom: spacing['7xl'] },
   eyebrow: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.brand, textTransform: 'uppercase', letterSpacing: 0.6, paddingTop: spacing.lg },
   title: { ...typography.title.title2, fontFamily: fonts.semibold, color: colors.text.primary, paddingTop: spacing.xs },
-  templateTitle: { paddingTop: spacing.lg },
+  facts: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: spacing.xs, paddingTop: spacing.lg },
+  fact: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.secondary },
+  factDivider: { ...typography.label.medium, color: colors.text.tertiary, paddingHorizontal: spacing.xs },
+  lead: { ...typography.body.large, fontFamily: fonts.semibold, textAlign: 'center', color: colors.text.primary, paddingTop: spacing.md },
   description: { ...typography.body.medium, color: colors.text.secondary, paddingTop: spacing.sm },
-  tasksHeader: { paddingTop: spacing.lg },
+  introduction: { gap: spacing.md, paddingTop: spacing.sm },
+  guideCopy: { ...typography.body.medium, color: colors.text.secondary },
+  guideSection: { paddingTop: spacing.xl },
+  tips: { gap: spacing.md, paddingTop: spacing.md },
+  tip: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  tipCopy: { flex: 1 },
+  howTitle: { ...typography.body.large, fontFamily: fonts.semibold, color: colors.text.primary, paddingBottom: spacing.xs },
+  tasksHeader: { paddingTop: spacing.xl },
   addAll: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.brand },
-  rows: { gap: spacing.sm, paddingTop: spacing.md },
-  row: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
-  rowCopy: { flex: 1, gap: 6 },
-  rowTitle: { ...typography.body.large, fontFamily: fonts.semibold, color: colors.text.primary },
-  rowMetaLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: spacing.sm },
-  rowMeta: { ...typography.label.detail, color: colors.text.tertiary },
+  rows: { gap: spacing.sm, paddingTop: spacing.sm },
   tray: { ...card.trayShadow, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle, backgroundColor: colors.background.canvas },
-  trayActions: { gap: spacing.sm },
-  added: { ...typography.body.medium, fontFamily: fonts.semibold, textAlign: 'center', color: colors.text.primary },
   disabled: { opacity: 0.45 },
   error: { ...typography.label.medium, color: colors.error[700], textAlign: 'center', paddingTop: spacing.sm },
   pdfMeta: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.tertiary, paddingTop: spacing.md },

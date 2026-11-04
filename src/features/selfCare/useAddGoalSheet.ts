@@ -16,10 +16,11 @@ export function useAddGoalSheet(userId: string | null, localDate: string) {
   const todayLocalDate = useTodayLocalDate();
   const todoAccess = useFeatureAccess(FeatureKey.RoutineTodos);
   const [adding, setAdding] = useState(false);
+  const [initialScheduledTime, setInitialScheduledTime] = useState<string | null | undefined>(undefined);
 
   // Stable while access is, so the memoised list it is handed to does not
   // re-render with every update to the screen around it.
-  const open = useCallback(() => {
+  const openSheet = useCallback((scheduledTime?: string | null) => {
     if (!todoAccess.allowed && !todoAccess.isLoading) {
       const gate = {
         feature: FeatureKey.RoutineTodos,
@@ -31,8 +32,11 @@ export function useAddGoalSheet(userId: string | null, localDate: string) {
       navigation.navigate('ProPaywall', gate);
       return;
     }
+    setInitialScheduledTime(scheduledTime);
     setAdding(true);
   }, [navigation, todoAccess]);
+  const open = useCallback(() => openSheet(), [openSheet]);
+  const openAt = useCallback((scheduledTime: string | null) => openSheet(scheduledTime), [openSheet]);
 
   const close = () => {
     setAdding(false);
@@ -46,6 +50,7 @@ export function useAddGoalSheet(userId: string | null, localDate: string) {
 
   return {
     open,
+    openAt,
     sheet: {
       visible: adding,
       onClose: close,
@@ -54,6 +59,7 @@ export function useAddGoalSheet(userId: string | null, localDate: string) {
       error: createGoal.error,
       todayLocalDate,
       initialStartsOn: localDate > todayLocalDate ? localDate : null,
+      initialScheduledTime,
     },
   };
 }

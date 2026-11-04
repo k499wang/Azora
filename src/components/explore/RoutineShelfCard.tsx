@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { RoutineTemplate } from '../../data/routineLibrary';
+import { routineSummary } from '../../data/routineShelves';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -17,7 +18,7 @@ interface Props {
 }
 
 export default function RoutineShelfCard({ routine, added, onPress }: Props) {
-  const label = added ? `${routine.title}, added` : routine.title;
+  const label = `${routine.title}, ${routineSummary(routine)}${added ? ', added' : ''}`;
   return (
     <View>
       <Pressable
