@@ -28,6 +28,7 @@ import PactCelebrationPreviewScreen from '../../screens/PactCelebrationPreviewSc
 import PactPreviewScreen from '../../screens/PactPreviewScreen';
 import ProWelcomePreviewScreen from '../../screens/ProWelcomePreviewScreen';
 import OnboardingPaywallPreviewScreen from '../../screens/OnboardingPaywallPreviewScreen';
+import AzoSecretLayerScreen from '../../screens/AzoSecretLayerScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
 import HotelScreen, {
   HotelPreviewScreen,
@@ -270,6 +271,11 @@ function AppStack({ showBootPaywall, tourEnabled, initialTab }: AppStackProps) {
           presentation: 'transparentModal',
           animation: 'slide_from_bottom',
         }}
+      />
+      <Stack.Screen
+        name="AzoSecretLayer"
+        component={AzoSecretLayerScreen}
+        options={{ presentation: 'card', animation: 'slide_from_right' }}
       />
       <Stack.Screen
         name="ExitOffer"

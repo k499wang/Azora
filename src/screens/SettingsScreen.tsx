@@ -281,7 +281,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 icon="sound-effects"
                 label="Sound effects"
                 showChevron={false}
-                isLast
                 rightSlot={
                   <Switch
                     accessibilityLabel="Sound effects"
@@ -294,6 +293,12 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                     thumbColor={audioPreferences.soundEffects ? colors.primary.blue500 : colors.neutral[50]}
                   />
                 }
+              />
+              <SettingsRow
+                icon="lock-outline"
+                label="Azo’s Secret Layer"
+                onPress={() => navigation.navigate('AzoSecretLayer')}
+                isLast
               />
             </SettingsGroup>
           </View>

@@ -36,6 +36,15 @@ export type RoomScreenParams = { fromLab?: boolean } | undefined;
 /** Sample plan pairs for the dev paywall preview. */
 export type PreviewPlans = 'annualWeekly' | 'monthlyWeekly';
 
+export interface PaywallReviewOptions {
+  offeringIdentifier: string;
+  paywallLayout?: PaywallLayout;
+  planPicker?: PaywallPlanPicker;
+  onlyPackageId?: PaywallPackageId | null;
+  cleaning?: boolean;
+  initialStep?: 'plan';
+}
+
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   /** AI-guided first steps for a photographed messy space. */
@@ -65,6 +74,7 @@ export type RootStackParamList = {
     sourceAction?: string;
     feature?: FeatureKeyValue;
     isBlocking?: boolean;
+    review?: PaywallReviewOptions;
   };
   HeartRateSessionDetail: { sessionId: string };
   ExerciseSession: {
@@ -159,6 +169,7 @@ export type RootStackParamList = {
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;
+  AzoSecretLayer: undefined;
   /** Sean Ellis question + one improvement, offered to paying Pro members from Home. */
   ProFeedback: undefined;
   AccountManagement: undefined;
@@ -231,6 +242,7 @@ export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
+export type AzoSecretLayerScreenProps = RootStackScreenProps<'AzoSecretLayer'>;
 export type AccountManagementScreenProps = RootStackScreenProps<'AccountManagement'>;
 export type ProFeedbackScreenProps = RootStackScreenProps<'ProFeedback'>;
 export type SkillsInPracticeScreenProps = RootStackScreenProps<'SkillsInPractice'>;

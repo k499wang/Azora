@@ -21,8 +21,10 @@ const INTENT_TITLES = buildIntentTitleLookup(ONBOARDING_INTENT_LOOKUP_OPTIONS);
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
   const isBlocking = route.params?.isBlocking === true;
+  const review = route.params?.review;
   const paywall = usePaywall({
     placement: route.params?.placement ?? PaywallPlacement.ProfileUpgrade,
+    offeringIdentifier: review?.offeringIdentifier,
     feature: route.params?.feature,
     sourceScreen: route.params?.sourceScreen,
     sourceAction: route.params?.sourceAction,
@@ -41,7 +43,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     profile?.onboardingGoal ?? savedProfile?.onboardingGoal,
     INTENT_TITLES,
   );
-  const planIntent = selectedIntents[0] ?? 'other';
+  const planIntent = review?.cleaning ? 'cleaning' : selectedIntents[0] ?? 'other';
   const planPreset = enrolledOrGoalPreset(enrollmentQuery.data?.planId, planIntent, enrollmentQuery.data?.presetRevision);
   const name = profile != null ? profile.displayName : savedProfile?.displayName;
   const scores = savedProfile?.stressLevel != null && savedProfile.sleepQuality != null
@@ -54,6 +56,12 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const allowDismissRef = useRef(false);
   const [welcome, setWelcome] = useState<{ trialDays: number | null } | null>(null);
   const goalPhrase = chosenGoalPhrase(planIntent, selectedIntents);
+  const offering = paywall.offering == null || review == null ? paywall.offering : {
+    ...paywall.offering,
+    paywallLayout: review.paywallLayout ?? paywall.offering.paywallLayout,
+    planPicker: review.planPicker ?? paywall.offering.planPicker,
+    onlyPackageId: review.onlyPackageId === undefined ? paywall.offering.onlyPackageId : review.onlyPackageId,
+  };
 
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !isBlocking });
@@ -104,15 +112,16 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 
   return (
     <OnboardingPaywallScreen
-      initialStep="plan"
-      offering={paywall.offering}
+      initialStep={review != null ? review.initialStep : 'plan'}
+      offering={offering}
+      cleaning={review?.cleaning}
       name={name ?? undefined}
       planIntent={planIntent}
       planPreset={planPreset}
       selectedIntents={selectedIntents}
       goalPhrase={goalPhrase}
       scores={scores}
-      paywallMode={isBlocking ? 'hard' : paywall.offering?.paywallMode ?? 'soft'}
+      paywallMode={review != null ? 'soft' : isBlocking ? 'hard' : paywall.offering?.paywallMode ?? 'soft'}
       selectedPackageId={paywall.selectedPackageId}
       stepIndex={0}
       stepCount={1}

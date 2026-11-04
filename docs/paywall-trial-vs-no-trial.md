@@ -86,10 +86,12 @@ Rules that apply to every layout:
   $4.99"), or plain prices ("Subscribe yearly" / "Continue with monthly") when
   the user is not eligible for a trial.
 
-- **A paid intro on the annual plan only shows on the trial timeline screen.**
-  The long page and plan cards still show annual as its full price ("Annual",
-  "Subscribe yearly"). Don't serve an annual paid-trial product to `long` or
-  `long_then_trial` offerings.
+- The long page supports eligible free or paid introductory offers on either
+  plan. Cards use the store's actual trial duration as their title, put the full
+  recurring charge in the main price position, and show introductory prices and
+  monthly equivalents in smaller text. Its button says "Redeem {days}-day trial"
+  for an eligible trial and "Subscribe" otherwise. The trial step opened from
+  `long_then_trial` also omits the free price from its button.
 
 ## PostHog feature flags
 
@@ -189,11 +191,11 @@ The layout belongs to the offering, so this needs two offerings.
 
 "All other cases" covers `profile_upgrade`, the paywall shown on app start, and every `*_gate` placement. For a no-trial long page in the app instead, point "All other cases" at `no_trial_main`.
 
-Most users reaching the in-app paywall have already used their trial in onboarding, so they will usually see the no-trial version of the long page ("Annual" / "Continue").
+Users who have already used their introductory offer see regular plan names and prices on the long page, with a "Subscribe" button.
 
 ## Rules
 
-- `"paywall_layout": "long"` works with or without a trial. With a trial the user is eligible for, the annual card reads "Try Free / then $59.99/yr" with "7 days / Free trial" on the right and the button reads "Start my free trial". Without one it reads "Annual" and "Continue".
+- `"paywall_layout": "long"` works with or without a trial. For example, an eligible seven-day free trial shows "7-day trial", smaller "Free" copy, and the full recurring price, such as "$59.99/year". A paid trial shows its introductory price below the title. The button reads "Redeem 7-day trial". Without an eligible offer it shows the plan name and "Subscribe". The long page has no pricing summary above its button; the cards contain the price disclosures.
 - Metadata values are lowercase and exact. A typo such as `"Long"` quietly falls back to the step deck.
 - Changing Targeting affects **production immediately**, on every app version. To test first, add a condition (e.g. app version) so the rule only matches you.
 - Even on a trial offering, a user who already used a trial (or whose eligibility check fails) sees the plan screen without a trial.

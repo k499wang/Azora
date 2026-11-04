@@ -292,6 +292,12 @@ test('switching trial plans updates the timeline, price, and exact purchased pac
   deck.unmount();
 });
 
+test('the long-page trial step omits the free price from its purchase button', () => {
+  const deck = deckHarness({ initialStep: 'plan', showTrialPriceInButton: false });
+  assert.equal(deck.component('Button').props.label, 'Redeem 7-day trial');
+  deck.unmount();
+});
+
 test('a monthly plan without an eligible intro does not display the annual free trial', () => {
   const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: null };
   const deck = deckHarness({ offering: { ...offering, packages: [annual, monthly] }, initialStep: 'plan', selectedPackageId: 'monthly' });

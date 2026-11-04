@@ -3,6 +3,7 @@ import {
   getCurrentRevenueCatAppUserId,
   getRevenueCatCustomerInfo,
   getRevenueCatOffering,
+  getRevenueCatOfferings,
   getRevenueCatOfferingForPlacement,
   hasCurrentRevenueCatIdentity,
   isRevenueCatReady,
@@ -51,15 +52,17 @@ export interface PaywallOfferingResult {
 // only: a relaunch always reads RevenueCat fresh.
 const offeringCache = new Map<string, PaywallOfferingResult>();
 
-function offeringCacheKey(placement: PaywallPlacementValue): string | null {
+function offeringCacheKey(placement: PaywallPlacementValue, offeringIdentifier?: string): string | null {
   const appUserId = getCurrentRevenueCatAppUserId();
-  return appUserId == null ? null : `${appUserId}:${placement}`;
+  if (appUserId == null) return null;
+  return offeringIdentifier == null ? `${appUserId}:${placement}` : `${appUserId}:${placement}:offering:${offeringIdentifier}`;
 }
 
 export function getCachedPaywallOffering(
   placement: PaywallPlacementValue,
+  offeringIdentifier?: string,
 ): PaywallOfferingResult | null {
-  const key = offeringCacheKey(placement);
+  const key = offeringCacheKey(placement, offeringIdentifier);
   return key == null ? null : offeringCache.get(key) ?? null;
 }
 
@@ -74,6 +77,7 @@ export async function prefetchPaywallOfferings(): Promise<void> {
 
 export async function getPaywallOffering(
   placement: PaywallPlacementValue,
+  offeringIdentifier?: string,
 ): Promise<PaywallOfferingResult> {
   if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) {
     return {
@@ -82,9 +86,13 @@ export async function getPaywallOffering(
     };
   }
 
+  const requestAppUserId = requireCurrentRevenueCatAppUserId();
+
   let offering: PurchasesOffering | null;
   try {
-    offering = await getRevenueCatOfferingForPlacement(placement);
+    offering = offeringIdentifier == null
+      ? await getRevenueCatOfferingForPlacement(placement)
+      : await getRevenueCatOffering(offeringIdentifier);
   } catch (error) {
     if (error instanceof RevenueCatSignedOutError) {
       return {
@@ -109,11 +117,17 @@ export async function getPaywallOffering(
   const ownWeekly = findPackageOfType(offering, PACKAGE_TYPE.WEEKLY);
   const pairsShortPlans = ownAnnual == null && ownMonthly != null && ownWeekly != null;
   const annual = pairsShortPlans ? ownMonthly : ownAnnual;
-  const monthly = pairsShortPlans ? ownWeekly : await findPaidTrialMonthlyPackage(offering);
+  // Explicit offering access must show its own products for App Review.
+  const monthly = pairsShortPlans
+    ? ownWeekly
+    : offeringIdentifier != null
+      ? findPackage(offering, 'monthly')
+      : await findPaidTrialMonthlyPackage(offering);
   const [annualTrialEligibilityStatus, monthlyIntroEligibilityStatus] = await Promise.all([
     getTrialEligibilityStatus(annual),
     getTrialEligibilityStatus(monthly),
   ]);
+  if (getCurrentRevenueCatAppUserId() !== requestAppUserId) throw new RevenueCatSignedOutError();
   const packages = [annual, monthly]
     .filter((pkg): pkg is PurchasesPackage => pkg != null)
     .map((pkg) =>
@@ -165,9 +179,35 @@ export async function getPaywallOffering(
     },
     revenueCatPackages: { annual, monthly },
   };
-  const cacheKey = offeringCacheKey(placement);
+  const cacheKey = offeringCacheKey(placement, offeringIdentifier);
   if (cacheKey != null) offeringCache.set(cacheKey, result);
   return result;
+}
+
+export async function getPaywallReviewOfferings(): Promise<Array<{
+  identifier: string;
+  title: string;
+  packageCount: number;
+  hasFirstPlan: boolean;
+  hasShortPlan: boolean;
+}>> {
+  const appUserId = requireCurrentRevenueCatAppUserId();
+  if (!isRevenueCatReady()) throw new Error('Subscription options are not ready. Please try again.');
+  const offerings = await getRevenueCatOfferings();
+  if (getCurrentRevenueCatAppUserId() !== appUserId) throw new RevenueCatSignedOutError();
+  return Object.values(offerings)
+    .filter((offering) => offering.availablePackages.length > 0)
+    .map((offering) => ({
+      identifier: offering.identifier,
+      title: offering.serverDescription || offering.identifier,
+      packageCount: offering.availablePackages.length,
+      hasFirstPlan: findPackage(offering, 'annual') != null || (
+        findPackageOfType(offering, PACKAGE_TYPE.MONTHLY) != null
+        && findPackageOfType(offering, PACKAGE_TYPE.WEEKLY) != null
+      ),
+      hasShortPlan: offering.availablePackages.some(isShortPlanPackage),
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export async function purchasePaywallPackage(

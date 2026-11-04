@@ -13,4 +13,5 @@ export const SETTINGS_ILLUSTRATIONS = {
   'email-outline': TODO_ILLUSTRATIONS['todo-mail'],
   'shield-lock-outline': '<path d="M20 3 34 9v11c0 8-6 13-14 17C12 33 6 28 6 20V9Z" fill="#3E8F93"/><path d="M20 7 30 11v9c0 6-4 10-10 13Z" fill="#66B4AB"/><path d="M15 18v-3a5 5 0 0 1 10 0v3" fill="none" stroke="#FFF1D7" stroke-width="3" stroke-linecap="round"/><rect x="12" y="17" width="16" height="12" rx="3" fill="#FFF1D7"/><circle cx="20" cy="22" r="2" fill="#3E8F93"/><path d="M20 23v2" stroke="#3E8F93" stroke-width="2" stroke-linecap="round"/>',
   'file-document-outline': ONBOARDING_CONTEXT_ILLUSTRATIONS['file-document-outline'],
+  'lock-outline': '<path d="M12 18v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#0B5A87" stroke-width="4" stroke-linecap="round"/><rect x="7" y="16" width="26" height="21" rx="6" fill="#0B5A87"/><path d="M11 20h18v9a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4Z" fill="#3E8F93"/><circle cx="20" cy="25" r="3" fill="#F7CF78"/><path d="M20 27v3" stroke="#F7CF78" stroke-width="3" stroke-linecap="round"/>',
 } as const;

@@ -1,5 +1,9 @@
 # App Review reply — Guideline 2.1(b), submission 1df03da2
 
+> Historical draft. For builds with Azo’s Secret Layer, use the current
+> [paywall access instructions](app-review-paywall-access.md), including its
+> password, rather than the single-offering claims below.
+
 ## Before sending
 
 1. Pause RevenueCat Experiments and point every paywall placement at one offering.

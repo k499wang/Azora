@@ -33,6 +33,7 @@ import { markPaywallDismissed } from '../services/reviews/reviewPromptState';
 
 interface UsePaywallOptions {
   placement: PaywallPlacementValue;
+  offeringIdentifier?: string;
   feature?: FeatureKeyValue;
   sourceScreen?: string;
   sourceAction?: string;
@@ -41,6 +42,7 @@ interface UsePaywallOptions {
 
 export function usePaywall({
   placement,
+  offeringIdentifier,
   feature,
   sourceScreen,
   sourceAction,
@@ -57,7 +59,7 @@ export function usePaywall({
   );
   // A prefetched offering lets the paywall mount already filled in.
   const [cachedOffering] = useState(() =>
-    enabled ? getCachedPaywallOffering(placement) : null,
+    enabled ? getCachedPaywallOffering(placement, offeringIdentifier) : null,
   );
   const [offering, setOffering] = useState<PaywallOffering | null>(
     cachedOffering?.offering ?? null,
@@ -190,7 +192,7 @@ export function usePaywall({
     }
 
     // This hook can be mounted before onboarding prefetch finishes.
-    const prefetched = getCachedPaywallOffering(placement);
+    const prefetched = getCachedPaywallOffering(placement, offeringIdentifier);
     if (prefetched?.offering != null && offeringRef.current == null) {
       offeringRef.current = prefetched.offering;
       setOffering(prefetched.offering);
@@ -240,7 +242,7 @@ export function usePaywall({
       };
     }
 
-    getPaywallOffering(placement)
+    getPaywallOffering(placement, offeringIdentifier)
       .then((result) => {
         if (!isActive) return;
         setOffering(result.offering);
@@ -318,6 +320,7 @@ export function usePaywall({
   }, [
     enabled,
     placement,
+    offeringIdentifier,
     revenueCatAppUserId,
     revenueCatLastError,
     revenueCatStatus,

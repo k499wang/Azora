@@ -36,6 +36,10 @@ function createHarness(options = {}) {
         calls.push({ fn: 'getCustomerInfo' });
         return {};
       },
+      getOfferings: async () => {
+        calls.push({ fn: 'getOfferings' });
+        return { current: null, all: options.offerings ?? {} };
+      },
       isConfigured: async () => configured,
       logIn: async (appUserId) => {
         calls.push({ fn: 'logIn', appUserId });
@@ -152,4 +156,26 @@ test('device identifier collection failures do not block identity sync', async (
       'getCustomerInfo',
     ],
   );
+});
+
+test('the offerings catalog returns every SDK offering only after identity sync', async () => {
+  const offerings = { first: { identifier: 'first' }, second: { identifier: 'second' } };
+  const harness = createHarness({ offerings });
+  await assert.rejects(harness.client.getOfferings(), RevenueCatSignedOutError);
+  assert.equal(harness.calls.some(call => call.fn === 'getOfferings'), false);
+
+  await harness.client.syncIdentity({ id: 'user-1' });
+  assert.equal(await harness.client.getOfferings(), offerings);
+  assert.equal(harness.calls.filter(call => call.fn === 'getOfferings').length, 1);
+
+  await harness.client.clearIdentity();
+  await assert.rejects(harness.client.getOfferings(), RevenueCatSignedOutError);
+  assert.equal(harness.calls.filter(call => call.fn === 'getOfferings').length, 1);
+});
+
+test('the offerings catalog stays empty on unsupported platforms without contacting the SDK', async () => {
+  const harness = createHarness({ isSupportedPlatform: false, offerings: { hidden: {} } });
+  await harness.client.syncIdentity({ id: 'user-1' });
+  assert.deepEqual(await harness.client.getOfferings(), {});
+  assert.equal(harness.calls.some(call => call.fn === 'getOfferings'), false);
 });

@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import type { PaywallPackageOption } from '../../services/paywall';
-import { computeAnnualSavings, computePerMonth, computePerYear } from '../../lib/paywall/planPrice';
+import { computeDiscountPercent, computePerMonth, formatCurrencyLike } from '../../lib/paywall/planPrice';
 import { trialDaysFromLabel } from '../../lib/paywall/trialReminder';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
@@ -8,18 +8,17 @@ import { Text } from '../common/Text';
 
 interface Props {
   pkg: PaywallPackageOption;
-  comparisonPackage?: PaywallPackageOption;
+  largePrice?: boolean;
 }
 
 /** Trial and recurring price summary for the selected plan. */
-export function PlanPriceTerms({ pkg, comparisonPackage }: Props) {
+export function PlanPriceTerms({ pkg, largePrice = false }: Props) {
   const perMonth = pkg.billingPeriod === 'year' ? computePerMonth(pkg) : null;
-  const savingsPercent = perMonth != null && comparisonPackage != null
-    && pkg.currencyCode === comparisonPackage.currencyCode
-      ? computeAnnualSavings(pkg, comparisonPackage)
+  const savingsPercent = pkg.billingPeriod === 'year'
+      ? computeDiscountPercent({ ...pkg, priceCents: 12000 }, pkg)
       : null;
-  const comparisonPerYear = comparisonPackage != null && savingsPercent != null && savingsPercent > 0
-      ? computePerYear(comparisonPackage)
+  const comparisonPerYear = savingsPercent != null && savingsPercent > 0
+      ? formatCurrencyLike(pkg.priceString, 120)
       : null;
   const trial = pkg.trialLabel != null
     ? `${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)} days free`
@@ -42,16 +41,20 @@ export function PlanPriceTerms({ pkg, comparisonPackage }: Props) {
           {' '}
         </>
       ) : null}
-      <Text style={styles.bold}>{`${pkg.priceString} per ${pkg.billingPeriod}`}</Text>
+      <Text style={[
+        pkg.billingPeriod === 'year' && styles.yearlyPrice,
+        (largePrice || (pkg.trialLabel == null && pkg.introOffer != null)) && styles.largePrice,
+      ]}>{pkg.priceString}</Text>
+      {` per ${pkg.billingPeriod}`}
       {perMonth != null ? ` (${perMonth}/mo)` : ''}
       {savingsPercent != null && savingsPercent > 0 ? (
         <>
           {' '}
-          {`(Save ${savingsPercent}%)`}
+          {`Save ${savingsPercent}%`}
           {'.'}
         </>
       ) : '.'}
-      {pkg.trialLabel == null && pkg.introOffer != null ? ' Cancel anytime.' : null}
+      {pkg.trialLabel == null && pkg.introOffer != null && !(savingsPercent != null && savingsPercent > 0) ? ' Cancel anytime.' : null}
     </Text>
   );
 }
@@ -59,15 +62,20 @@ export function PlanPriceTerms({ pkg, comparisonPackage }: Props) {
 const styles = StyleSheet.create({
   terms: {
     ...typography.body.small,
+    fontFamily: fonts.regular,
     fontSize: 15,
-    lineHeight: 20,
+    lineHeight: 22,
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  bold: {
-    fontFamily: fonts.heavy,
+  yearlyPrice: {
+    fontSize: 17,
+  },
+  largePrice: {
+    fontSize: 17,
   },
   comparison: {
+    fontSize: 17,
     textDecorationLine: 'line-through',
     color: colors.text.tertiary,
   },

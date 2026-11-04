@@ -194,7 +194,8 @@ export function PlanCard({
         detail={
           <>
             {hasTrial ? 'Free, then ' : intro != null ? `${intro.priceString}, then ` : ''}
-            {`${pkg.priceString}/${pkg.billingPeriod}`}
+            <Text style={styles.choicePrice}>{pkg.priceString}</Text>
+            {`/${pkg.billingPeriod}`}
           </>
         }
         selected={isSelected}
@@ -264,6 +265,9 @@ export function UrgencyBanner({ percent }: { percent: number }) {
 }
 
 const styles = StyleSheet.create({
+  choicePrice: {
+    fontSize: 17,
+  },
   planCard: {
     ...card.base,
     ...card.shadow,

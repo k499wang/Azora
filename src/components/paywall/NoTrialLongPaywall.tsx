@@ -41,9 +41,9 @@ import { posthog } from '../../config/posthog';
 import { getOnboardingImageSource } from '../../services/images/onboardingImageCache';
 import {
   computeAnnualSavings,
-  formatCurrencyLike,
-  packagePriceCents,
+  computePerMonth,
 } from '../../lib/paywall/planPrice';
+import { trialDaysFromLabel } from '../../lib/paywall/trialReminder';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { dashboardContentColumn } from '../../theme/breakpoints';
@@ -152,6 +152,9 @@ export function NoTrialLongPaywall({
     (pkg) => pkg.id === selectedPackageId,
   );
   const savingsPercent = computeAnnualSavings(annualPackage, monthlyPackage);
+  const selectedTrialDays = selectedPackage?.trialLabel != null
+    ? selectedPackage.trialDays ?? trialDaysFromLabel(selectedPackage.trialLabel)
+    : selectedPackage?.introOffer?.days;
   const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
   const canClose = paywallMode !== 'hard' && onContinueWithoutPro != null;
   // On a soft paywall the way out waits a few seconds, so the offer is read first.
@@ -391,9 +394,9 @@ export function NoTrialLongPaywall({
             </View>
             <OnboardingPrimaryButton
               label={
-                onContinue == null && selectedPackage?.trialLabel != null
-                  ? 'Start my free trial'
-                  : 'Continue'
+                onContinue != null ? 'Continue'
+                  : selectedTrialDays != null ? `Redeem ${selectedTrialDays}-day trial`
+                    : 'Subscribe'
               }
               onPress={() => (onContinue != null ? onContinue() : onPurchase(selectedPackageId))}
               loading={isPurchasing || isCompleting}
@@ -432,35 +435,14 @@ interface PlanOptionProps {
 
 function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: PlanOptionProps) {
   const isAnnual = pkg.billingPeriod === 'year';
-  const cents = packagePriceCents(pkg);
-  const perMonth =
-    pkg.pricePerMonthString ??
-    (cents == null ? null : formatCurrencyLike(pkg.priceString, cents / 12 / 100));
+  const perMonth = isAnnual ? computePerMonth(pkg) : null;
   const hasTrial = pkg.trialLabel != null;
-  const intro = isAnnual ? null : pkg.introOffer;
-  const trialDays = Number.parseInt(pkg.trialLabel ?? '', 10);
-  const unitPrice = intro != null
-    ? intro.priceString
-    : hasTrial
-    ? Number.isFinite(trialDays)
-      ? `${trialDays} days`
-      : 'Free'
-    : isAnnual
-      ? perMonth ?? pkg.priceString
-      : pkg.priceString;
-  const unitLabel = intro != null
-    ? `for ${intro.days} days`
-    : hasTrial
-    ? 'Free trial'
-    : isAnnual && perMonth != null
-      ? 'per month'
-      : `per ${pkg.billingPeriod}`;
-  const title = hasTrial
-    ? 'Try Free'
-    : intro != null
-      ? `${intro.days}-Day Trial`
-      : pkg.title;
-  const period = isAnnual ? 'yr' : pkg.billingPeriod === 'week' ? 'wk' : 'mo';
+  const intro = pkg.introOffer;
+  const trialDays = hasTrial
+    ? pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)
+    : intro?.days;
+  const title = trialDays != null ? `${trialDays}-day trial` : pkg.title;
+  const introductoryPrice = hasTrial ? 'Free' : intro?.priceString;
 
   return (
     <Pressable
@@ -490,14 +472,16 @@ function PlanOption({ pkg, isSelected, savingsPercent, disabled, onSelect }: Pla
           </View>
         ) : null}
         <Text style={styles.planTitle}>{title}</Text>
-        <Text style={styles.planDetail}>
-          {hasTrial || intro != null ? 'then ' : ''}
-          {pkg.priceString}/{period}
-        </Text>
+        {introductoryPrice != null ? (
+          <Text style={styles.planDetail}>{introductoryPrice}</Text>
+        ) : null}
       </View>
       <View style={styles.planRight}>
-        <Text style={styles.planPrice}>{unitPrice}</Text>
-        <Text style={styles.planUnit}>{unitLabel}</Text>
+        <Text style={styles.planPrice}>
+          {pkg.priceString}
+          <Text style={styles.planUnit}>{`/${pkg.billingPeriod}`}</Text>
+        </Text>
+        {perMonth != null ? <Text style={styles.planUnit}>{`${perMonth}/mo equivalent`}</Text> : null}
       </View>
     </Pressable>
   );
@@ -641,15 +625,18 @@ const styles = StyleSheet.create({
   },
   planDetail: {
     ...typography.body.small,
-    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text.primary,
   },
   planRight: {
     alignItems: 'flex-end',
     paddingLeft: spacing.sm,
   },
   planPrice: {
-    ...typography.title.title1,
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
+    fontSize: 17,
     color: colors.text.primary,
   },
   planUnit: {

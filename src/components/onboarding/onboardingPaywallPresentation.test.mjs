@@ -16,7 +16,7 @@ test('the paywall shows progress until the offering resolves', () => {
 });
 
 test('standalone upgrades open the shared compact plan screen', () => {
-  assert.match(pro, /<OnboardingPaywallScreen\s+initialStep="plan"/);
+  assert.match(pro, /<OnboardingPaywallScreen\s+initialStep=\{review != null \? review\.initialStep : 'plan'\}/);
   for (const source of [paywallScreen, pro]) {
     assert.doesNotMatch(source, /PaywallLongForm|LongFormPaywall|PaywallTrayPlans/);
   }
@@ -40,7 +40,7 @@ test('trial introductions require eligibility and standalone upgrades skip them'
   assert.match(paywallScreen, /\? TRIAL_STEPS\s*:\s*\['plan'\]/);
   assert.match(paywallScreen, /<PaywallTrialStep\s+hasAnnualTrial=\{selectedPackageHasTrial\}/);
   assert.match(paywallScreen, /hasAnnualTrial \|\| paidTrial != null \? \([\s\S]{0,160}<PaywallTrialReminderControl/);
-  assert.match(paywallScreen, /selectedPackageHasTrial\s*\? `Redeem \$\{selectedTrialDays\}-days for \$0\.00`/);
+  assert.match(paywallScreen, /selectedPackageHasTrial\s*\? showTrialPriceInButton\s*\? `Redeem \$\{selectedTrialDays\}-days for \$0\.00`/);
   assert.match(paywallScreen, /No commitment, cancel anytime[\s\S]{0,400}label={ctaLabel}/);
   assert.doesNotMatch(paywallScreen, /priceSummary/);
 });
@@ -53,7 +53,7 @@ test('blocking upgrades prevent dismissal until a purchase or restore succeeds',
   assert.match(pro, /<ProWelcome[\s\S]{0,160}onContinue=\{finishPurchase\}/);
   assert.match(pro, /result\.status === 'restored' && result\.isPro\) finishPurchase\(\)/);
   assert.match(pro, /onOfferPurchased=\{\(\) => setWelcome\(\{ trialDays: null \}\)\}/);
-  assert.match(pro, /paywallMode=\{isBlocking \? 'hard'/);
+  assert.match(pro, /paywallMode=\{review != null \? 'soft' : isBlocking \? 'hard'/);
   assert.match(pro, /onContinueWithoutPro=\{isBlocking \? undefined : continueWithoutPro\}/);
   assert.match(pro, /if \(isBlocking \|\| paywall\.isLoading \|\| paywall\.isPurchasing \|\| paywall\.isRestoring\) return;\s*paywall\.trackDismissed\(\);/);
 });

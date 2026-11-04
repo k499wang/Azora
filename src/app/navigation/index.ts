@@ -50,6 +50,7 @@ export type {
   NextRoomScreenProps,
   ProfileScreenProps,
   SettingsScreenProps,
+  AzoSecretLayerScreenProps,
   AccountManagementScreenProps,
   ProFeedbackScreenProps,
   SkillsInPracticeScreenProps,

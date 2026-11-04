@@ -122,10 +122,12 @@ function TrialDeck({
   onOfferReached,
   onStepViewed,
   onExit,
+  showTrialPriceInButton = true,
 }: Omit<OnboardingPaywallScreenProps, 'selectedIntents' | 'stepIndex' | 'stepCount'> & {
   onOfferReached?: () => void;
   /** Shows a back control on the first step that leaves the deck. */
   onExit?: () => void;
+  showTrialPriceInButton?: boolean;
 }) {
   const reduceMotion = useAnimationReduceMotion();
   const insets = useSafeAreaInsets();
@@ -474,7 +476,9 @@ function TrialDeck({
   };
   const ctaLabel =
     selectedPackageHasTrial
-      ? `Redeem ${selectedTrialDays}-days for $0.00`
+      ? showTrialPriceInButton
+        ? `Redeem ${selectedTrialDays}-days for $0.00`
+        : `Redeem ${selectedTrialDays}-day trial`
       : selectedIntro != null
         ? `Redeem ${selectedIntro.days}-day trial`
         : isAnnualSelected
@@ -607,7 +611,7 @@ function TrialDeck({
                         followsReminder={hasAnnualTrial || paidTrial != null}
                       />
                     ) : null}
-                    {sideBySide && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} comparisonPackage={monthlyPackage} /> : null}
+                    {sideBySide && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
                     {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
                   </View>
                 ) : null}
@@ -657,7 +661,7 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {isOnlyOption && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
+                {isOnlyOption && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} largePrice /> : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}
@@ -711,7 +715,7 @@ function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
           exiting={SlideOutDown.duration(TRIAL_SHEET_MS).reduceMotion(reduceMotion)}
           style={StyleSheet.absoluteFill}
         >
-          <TrialDeck {...props} initialStep="plan" onExit={() => setAtTrial(false)} />
+          <TrialDeck {...props} initialStep="plan" showTrialPriceInButton={false} onExit={() => setAtTrial(false)} />
         </Reanimated.View>
       ) : null}
     </View>

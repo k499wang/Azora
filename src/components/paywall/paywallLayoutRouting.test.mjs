@@ -40,17 +40,14 @@ test('onboarding and in-app paywalls ask RevenueCat for different placements', (
 
 test('each placement resolves its own offering and cache entry', () => {
   assert.match(clientCore, /getCurrentOfferingForPlacement\(placement\)/);
-  assert.match(service, /offeringCacheKey\(placement\)/);
+  assert.match(service, /offeringCacheKey\(placement, offeringIdentifier\)/);
   assert.match(service, /`\$\{appUserId\}:\$\{placement\}`/);
 });
 
 test('the long page switches to trial copy only when the package has a trial', () => {
-  assert.match(longPage, /const title = hasTrial\s*\? 'Try Free'\s*: intro != null\s*\? `\$\{intro\.days\}-Day Trial`\s*: pkg\.title;/);
-  assert.match(longPage, /hasTrial\s*\? 'Free trial'/);
-  assert.match(
-    longPage,
-    /selectedPackage\?\.trialLabel != null\s*\? 'Start my free trial'\s*: 'Continue'/,
-  );
+  assert.match(longPage, /const title = trialDays != null \? `\$\{trialDays\}-day trial` : pkg\.title;/);
+  assert.match(longPage, /const introductoryPrice = hasTrial \? 'Free' : intro\?\.priceString;/);
+  assert.match(longPage, /selectedTrialDays != null \? `Redeem \$\{selectedTrialDays\}-day trial`/);
 });
 
 test('the plan picker is read from offering metadata and defaults to stacked', () => {

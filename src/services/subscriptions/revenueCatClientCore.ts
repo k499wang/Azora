@@ -178,6 +178,12 @@ export function createRevenueCatClient(
       const offerings = await dependencies.sdk.getOfferings?.();
       return offerings?.all[identifier] ?? null;
     },
+    async getOfferings(): Promise<Record<string, unknown>> {
+      requireCurrentAppUserId();
+      if (!isReady()) return {};
+      const offerings = await dependencies.sdk.getOfferings?.();
+      return offerings?.all ?? {};
+    },
     async purchasePackage(revenueCatPackage: unknown): Promise<unknown> {
       requireCurrentAppUserId();
       if (!isReady() || dependencies.sdk.purchasePackage == null) {
