@@ -6,6 +6,8 @@ import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
+import { Text } from '../common/Text';
 import Icon from '../common/icons/Icon';
 import RoutineLibraryArt from './RoutineLibraryArt';
 
@@ -29,9 +31,12 @@ export default function RoutineShelfCard({ routine, added, onPress }: Props) {
           triggerTapHaptic();
           onPress();
         }}
-        style={({ pressed }) => [styles.cover, card.shadow, pressed && pressable.subtle]}
+        style={({ pressed }) => [styles.content, pressed && pressable.subtle]}
       >
-        <RoutineLibraryArt entry={routine} size="poster" />
+        <View style={[styles.cover, card.shadow]}>
+          <RoutineLibraryArt entry={routine} size="poster" />
+        </View>
+        <Text numberOfLines={2} style={styles.facts}>{routineSummary(routine)}</Text>
       </Pressable>
       {added ? (
         <View style={styles.badge} pointerEvents="none">
@@ -43,9 +48,16 @@ export default function RoutineShelfCard({ routine, added, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    gap: spacing.sm,
+  },
   cover: {
     borderRadius: radius.card,
     borderCurve: 'continuous',
+  },
+  facts: {
+    ...typography.body.small,
+    color: colors.text.secondary,
   },
   badge: {
     position: 'absolute',
