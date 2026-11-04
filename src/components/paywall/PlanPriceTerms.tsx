@@ -32,7 +32,7 @@ export function PlanPriceTerms({ pkg, comparisonPackage }: Props) {
       {trial != null ? (
         <>
           {'Redeem '}
-          <Text style={styles.bold}>{trial}</Text>
+          {trial}
           {', then '}
         </>
       ) : null}
@@ -47,7 +47,7 @@ export function PlanPriceTerms({ pkg, comparisonPackage }: Props) {
       {savingsPercent != null && savingsPercent > 0 ? (
         <>
           {' '}
-          <Text style={styles.bold}>{`(Save ${savingsPercent}%)`}</Text>
+          {`(Save ${savingsPercent}%)`}
           {'.'}
         </>
       ) : '.'}
