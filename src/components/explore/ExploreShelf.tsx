@@ -22,6 +22,7 @@ export default function ExploreShelf({ title, children, onSeeAll }: ExploreShelf
       <View style={styles.header}>
         <SectionHeader
           title={title}
+          titleNumberOfLines={2}
           right={onSeeAll == null ? undefined : (
             <Pressable
               accessibilityRole="button"

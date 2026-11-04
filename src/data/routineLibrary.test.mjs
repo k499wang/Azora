@@ -31,3 +31,13 @@ test('a routine run plan keeps only the chosen steps, in routine order, with the
   assert.equal(plan.objects[0].icon, 'todo-dishes');
   assert.equal(plan.title, 'Kitchen close');
 });
+
+test('a routine run step pays what the same to-do pays, under a reason of its own', () => {
+  const close = ROUTINE_TEMPLATES.find((entry) => entry.id === 'kitchen-close');
+  const [dishes] = routineRunPlan(close, ['do-dishes']).objects;
+  assert.deepEqual(dishes.coinReward, { reason: 'routine_run:kitchen-close:do-dishes', coins: 10 });
+
+  const weekly = ROUTINE_TEMPLATES.find((entry) => entry.tasks.some((task) => task.recurrence === 'weekly'));
+  const task = weekly.tasks.find((candidate) => candidate.recurrence === 'weekly');
+  assert.equal(routineRunPlan(weekly, [task.id]).objects[0].coinReward.coins, 20);
+});

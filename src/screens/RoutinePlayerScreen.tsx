@@ -3,7 +3,6 @@ import { AppState, Pressable, ScrollView, StyleSheet, useWindowDimensions, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTimerKeepAwake } from '../features/selfCare/shared/useTimerKeepAwake';
 import { useIsFocused } from '@react-navigation/native';
-import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { useReducedMotionSetting } from '../hooks/useReducedMotionSetting';
 import type { RoutinePlayerScreenProps } from '../app/navigation';
 import { useAfterScreenClosed } from '../app/navigation/useAfterScreenClosed';
@@ -63,7 +62,7 @@ import {
 } from '../native/tapHaptics';
 import { useSelfCareGoalsQuery } from '../queries/selfCare/useSelfCareGoalsQuery';
 import { useToggleSelfCareGoalMutation } from '../queries/selfCare/useToggleSelfCareGoalMutation';
-import { getWalletQueryKey } from '../queries/wallet/useWalletQuery';
+import { useWalletSettledAfterWrites } from '../queries/wallet/useWalletSettledAfterWrites';
 import {
   trackRoutinePlayerFinished,
   trackRoutinePlayerStarted,
@@ -344,22 +343,7 @@ function FinishedView({ player, userId, onDone }: FinishedViewProps) {
   // The last tick may still be saving, and the balance only takes its coins
   // once that write lands, so the count waits for a fresh balance rather than
   // counting up from one that is missing them.
-  const queryClient = useQueryClient();
-  const writing =
-    useIsMutating({ mutationKey: ['toggle-self-care-goal', userId] }) > 0;
-  const [balanceSettled, setBalanceSettled] = useState(false);
-  useEffect(() => {
-    if (writing || balanceSettled) return;
-    let live = true;
-    queryClient
-      .refetchQueries({ queryKey: getWalletQueryKey(userId), exact: true })
-      .finally(() => {
-        if (live) setBalanceSettled(true);
-      });
-    return () => {
-      live = false;
-    };
-  }, [writing, balanceSettled, queryClient, userId]);
+  const balanceSettled = useWalletSettledAfterWrites(userId, ['toggle-self-care-goal', userId]);
   const coins = balanceSettled ? earned : 0;
   const showMinutes = minutes != null && minutes > 0;
   const coinCard = showMinutes ? 2 : 1;

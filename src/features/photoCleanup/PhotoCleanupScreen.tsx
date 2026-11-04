@@ -56,6 +56,8 @@ import { getRoutineLibraryEntry, routineRunPlan } from '../../data/routineLibrar
 import PhotoCleanupFreeBadge from './PhotoCleanupFreeBadge';
 import AzoPortrait from '../mascot/AzoPortrait';
 import PhotoCleanupCompletion from './PhotoCleanupCompletion';
+import RoutineRunCompletion from './RoutineRunCompletion';
+import { useRoutineRunCoins } from './useRoutineRunCoins';
 
 type Stage = 'capture' | 'checkingAccess' | 'loading' | 'ready' | 'guide' | 'complete';
 
@@ -116,6 +118,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   useWhileVisible(() => () => stopRoutineVoice(), []);
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const queryClient = useQueryClient();
+  const { earned: runCoins, earn: earnRunCoins } = useRoutineRunCoins(userId);
 
   useEffect(() => {
     navigation.setOptions({
@@ -308,6 +311,8 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const finishActiveObject = useCallback(() => {
     if (plan == null || plan.objects.length === 0) return;
     triggerActivityCompleteHaptic();
+    const reward = plan.objects[0].coinReward;
+    if (reward != null) earnRunCoins(reward);
     const remainingObjects = plan.objects.slice(1);
     setPlan({ ...plan, objects: remainingObjects });
     setCompletedObjectCount((count) => count + 1);
@@ -318,7 +323,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     }
 
     setSlideKey((key) => key + 1);
-  }, [endCleanup, plan]);
+  }, [earnRunCoins, endCleanup, plan]);
 
   const changeActiveMinutes = useCallback((change: number) => {
     if (plan == null) return;
@@ -476,7 +481,11 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 
           {stage === 'complete' && plan != null ? (
             <View style={styles.result}>
-              <PhotoCleanupCompletion completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} active={focused} kind={routinePlan == null ? 'cleanup' : 'routine'} />
+              {routinePlan == null ? (
+                <PhotoCleanupCompletion completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} active={focused} />
+              ) : (
+                <RoutineRunCompletion userId={userId} completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} earned={runCoins} active={focused} />
+              )}
               <View style={styles.actions}>
                 <ChunkyButton shape="card" label="Done" onPress={() => navigation.goBack()} />
                 {routinePlan != null ? null : (

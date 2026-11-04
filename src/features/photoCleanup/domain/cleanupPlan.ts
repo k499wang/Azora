@@ -1,9 +1,17 @@
+export interface CoinReward {
+  /** the ledger reason, which also limits the reward to once a day */
+  reason: string;
+  coins: number;
+}
+
 export interface CleanupItem {
   name: string;
   /** The model's estimate, in whole minutes. */
   minutes: number;
   /** The illustration, for a step that already has one; otherwise read from `name`. */
   icon?: string;
+  /** What finishing the step pays; only a library routine's steps have one. */
+  coinReward?: CoinReward;
 }
 
 export interface CleanupPlan {

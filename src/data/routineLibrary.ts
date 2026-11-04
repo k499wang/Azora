@@ -1,5 +1,5 @@
 import type { IconName } from '../components/common/icons/Icon';
-import type { SelfCareGoalRecurrence } from '../features/selfCare/domain/selfCareGoal';
+import { selfCareGoalCoins, type SelfCareGoalRecurrence } from '../features/selfCare/domain/selfCareGoal';
 import type { SelfCareGoalDraft } from '../services/selfCare/selfCareService';
 import type { CleanupPlan } from '../features/photoCleanup/domain/cleanupPlan';
 
@@ -453,7 +453,15 @@ export function routineRunPlan(routine: RoutineTemplate, taskIds: readonly strin
     title: routine.title,
     objects: routine.tasks
       .filter((task) => taskIds.includes(task.id))
-      .map((task) => ({ name: task.title, minutes: task.durationMinutes, icon: task.icon })),
+      .map((task) => ({
+        name: task.title,
+        minutes: task.durationMinutes,
+        icon: task.icon,
+        coinReward: {
+          reason: `routine_run:${routine.id}:${task.id}`,
+          coins: selfCareGoalCoins(task.recurrence),
+        },
+      })),
     safetyNote: null,
   };
 }

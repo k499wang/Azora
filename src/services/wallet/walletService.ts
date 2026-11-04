@@ -49,6 +49,23 @@ export async function grantCoins(
   return addEntry(userId, input.amount, input.reason, input.localDate);
 }
 
+/** Pays nothing, and returns null, when this reason already paid on that date. */
+export async function grantCoinsOncePerDay(
+  userId: string,
+  input: AddEntryInput,
+): Promise<WalletEntry | null> {
+  const { data, error } = await requireSupabaseClient()
+    .from('wallet_entries')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('reason', input.reason)
+    .eq('local_date', input.localDate)
+    .limit(1);
+  if (error != null) throw error;
+  if (data.length > 0) return null;
+  return grantCoins(userId, input);
+}
+
 export async function spendCoins(
   userId: string,
   input: AddEntryInput,

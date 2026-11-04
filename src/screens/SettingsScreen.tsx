@@ -22,6 +22,7 @@ import { restorePaywallPurchases } from '../services/paywall';
 import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
 import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPreference';
 import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
+import CoachingInvitationDialog from '../features/coaching/CoachingInvitationDialog';
 import { forceNextDayComplete } from '../features/room/devDayCompleteOverride';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import { publishRevenueCatEntitlement } from '../queries/subscriptions/entitlementCache';
@@ -51,6 +52,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const user = useAuthStore((s) => s.user);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [streakPreviewVisible, setStreakPreviewVisible] = useState(false);
+  const [coachingPreviewVisible, setCoachingPreviewVisible] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
@@ -549,6 +551,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={handleShowSurveyOffer}
                 />
                 <SettingsRow
+                  label="Show coaching invitation (dev)"
+                  onPress={() => setCoachingPreviewVisible(true)}
+                />
+                <SettingsRow
                   label="Reset routine first-todo streak (dev)"
                   onPress={() => {
                     if (user?.id == null) return;
@@ -673,6 +679,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             completedDaysAgo={[0]}
             onCommitStreakGoal={() => {}}
             onContinue={() => setStreakPreviewVisible(false)}
+          />
+          <CoachingInvitationDialog
+            visible={coachingPreviewVisible}
+            onExplore={() => setCoachingPreviewVisible(false)}
+            onClose={() => setCoachingPreviewVisible(false)}
           />
         </>
       ) : null}

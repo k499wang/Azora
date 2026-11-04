@@ -15,7 +15,7 @@ export interface RoutineShelf {
 
 export const ROUTINE_SHELVES: readonly RoutineShelf[] = [
   {
-    id: 'home', label: 'Home & cleaning', shortLabel: 'Home',
+    id: 'home', label: 'Keep your home tidy', shortLabel: 'Home',
     routineIds: [
       'kitchen-close', 'small-clean', 'clutter-hot-spots', 'clutter-sweep',
       'laundry-day', 'whole-home-hour', 'weekly-home-reset',
@@ -25,19 +25,19 @@ export const ROUTINE_SHELVES: readonly RoutineShelf[] = [
     categoriesTitle: 'Daily habits by room',
   },
   {
-    id: 'morning', label: 'Morning', shortLabel: 'Morning',
+    id: 'morning', label: 'Start your morning well', shortLabel: 'Morning',
     routineIds: ['morning-reset', 'get-ready', 'slow-morning', 'phone-free-morning', 'morning-movement', 'tidy-before-leaving'],
     categoryIds: [],
     categoriesTitle: null,
   },
   {
-    id: 'work', label: 'Work & focus', shortLabel: 'Work',
+    id: 'work', label: 'Focus and finish your work', shortLabel: 'Work',
     routineIds: ['focus-reset', 'midday-pause', 'workday-shutdown', 'deep-work-block', 'inbox-clear', 'study-session'],
     categoryIds: [],
     categoriesTitle: null,
   },
   {
-    id: 'evening', label: 'Evening & sleep', shortLabel: 'Evening',
+    id: 'evening', label: 'Wind down and sleep better', shortLabel: 'Evening',
     routineIds: ['evening-wind-down', 'bedtime-routine', 'phone-down', 'tomorrow-setup', 'evening-shower', 'read-before-bed'],
     categoryIds: [],
     categoriesTitle: null,

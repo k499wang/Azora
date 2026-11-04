@@ -7,12 +7,11 @@ interface Props {
   /** wall-clock minutes from Start to the last item, or null when not timed */
   elapsedMinutes: number | null;
   active: boolean;
-  kind?: 'cleanup' | 'routine';
 }
 
-export default function PhotoCleanupCompletion({ completedCount, elapsedMinutes, active, kind = 'cleanup' }: Props) {
+export default function PhotoCleanupCompletion({ completedCount, elapsedMinutes, active }: Props) {
   useCompletionSound('activity', { autoPlay: completedCount > 0, active });
-  const copy = cleanupCompletionCopy(completedCount, elapsedMinutes, kind);
+  const copy = cleanupCompletionCopy(completedCount, elapsedMinutes);
 
   return (
     <ActivityCompletionContent

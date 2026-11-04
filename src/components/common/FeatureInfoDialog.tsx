@@ -1,7 +1,8 @@
 import { Text } from './Text';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import CenterDialog from './CenterDialog';
 import { colors } from '../../theme/colors';
-import { card, radius } from '../../theme/card';
+import { radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
@@ -28,68 +29,39 @@ export default function FeatureInfoDialog({
   onClose,
 }: FeatureInfoDialogProps) {
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.dialog} onPress={() => {}}>
-          <Text style={styles.title}>{title}</Text>
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {intro ? <Text style={styles.intro}>{intro}</Text> : null}
-            {sections.map((section) => (
-              <View key={section.heading} style={styles.section}>
-                <Text style={styles.sectionHeading}>{section.heading}</Text>
-                <Text style={styles.sectionBody}>{section.body}</Text>
-              </View>
-            ))}
-          </ScrollView>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              triggerTapHaptic();
-              onClose();
-            }}
-            style={({ pressed }) => [
-              styles.closeButton,
-              pressed && styles.closeButtonPressed,
-            ]}
-          >
-            <Text style={styles.closeText}>Got it</Text>
-          </Pressable>
-        </Pressable>
+    <CenterDialog visible={visible} onClose={onClose}>
+      <Text style={styles.title}>{title}</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {intro ? <Text style={styles.intro}>{intro}</Text> : null}
+        {sections.map((section) => (
+          <View key={section.heading} style={styles.section}>
+            <Text style={styles.sectionHeading}>{section.heading}</Text>
+            <Text style={styles.sectionBody}>{section.body}</Text>
+          </View>
+        ))}
+      </ScrollView>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          triggerTapHaptic();
+          onClose();
+        }}
+        style={({ pressed }) => [
+          styles.closeButton,
+          pressed && styles.closeButtonPressed,
+        ]}
+      >
+        <Text style={styles.closeText}>Got it</Text>
       </Pressable>
-    </Modal>
+    </CenterDialog>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.overlay.dark,
-  },
-  dialog: {
-    width: '100%',
-    maxWidth: 360,
-    maxHeight: '80%',
-    borderRadius: radius.large,
-    borderCurve: 'continuous',
-    backgroundColor: colors.background.elevated,
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    ...card.shadowModal,
-  },
   title: {
     ...typography.heading.heading1,
     color: colors.text.primary,
