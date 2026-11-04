@@ -9,7 +9,12 @@ const compiled = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
 
-function createEnvironment({ isPro = true, forced = false } = {}) {
+function createEnvironment({
+  isPro = true,
+  forced = false,
+  trialEndsAt = null,
+  lastEarnedLocalDate = '2026-10-21',
+} = {}) {
   const saved = { discount: false, feedback: false };
   const calls = [];
 
@@ -42,10 +47,10 @@ function createEnvironment({ isPro = true, forced = false } = {}) {
           useAuthStore: (select) => select({ user: { id: 'user-1' } }),
         };
         if (name === '../queries/subscriptions/useUserEntitlementQuery') return {
-          useUserEntitlementQuery: () => ({ data: { isPro, trialEndsAt: null }, isPending: false }),
+          useUserEntitlementQuery: () => ({ data: { isPro, trialEndsAt }, isPending: false }),
         };
         if (name === '../queries/room/useCurrentRoomQuery') return {
-          useCurrentRoomQuery: () => ({ data: { lastEarnedLocalDate: '2026-10-21' } }),
+          useCurrentRoomQuery: () => ({ data: { lastEarnedLocalDate } }),
         };
         if (name === '../services/preferences/surveyOfferPreference') return {
           loadSurveyOfferDismissed: async (kind) => saved[kind],
@@ -137,4 +142,21 @@ test('preempting an offer only hides it for the current Home instance', async ()
   const returnedHome = await environment.mount();
   assert.equal(returnedHome.render().visible, true);
   returnedHome.unmount();
+});
+
+test('a Pro member on a trial with a completed day is offered the feedback form', async () => {
+  const trialEndsAt = new Date(Date.now() + 86_400_000).toISOString();
+  const environment = createEnvironment({ trialEndsAt });
+  const hook = await environment.mount();
+  const state = hook.render();
+  assert.equal(state.visible, true);
+  assert.equal(state.kind, 'feedback');
+  hook.unmount();
+});
+
+test('a Pro member without a completed day is not offered the feedback form', async () => {
+  const environment = createEnvironment({ lastEarnedLocalDate: null });
+  const hook = await environment.mount();
+  assert.equal(hook.render().visible, false);
+  hook.unmount();
 });

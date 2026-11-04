@@ -170,7 +170,7 @@ export type RootStackParamList = {
   HotelPreview: RoomScreenParams;
   Settings: undefined;
   AzoSecretLayer: undefined;
-  /** Sean Ellis question + one improvement, offered to paying Pro members from Home. */
+  /** Sean Ellis question + one improvement, offered to Pro members, trial included, from Home. */
   ProFeedback: undefined;
   AccountManagement: undefined;
   /** Every lesson skill the user reported trying; `preview` is a dev-only sample list. */

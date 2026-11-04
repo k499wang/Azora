@@ -31,20 +31,18 @@ export interface SurveyOfferNoticeState {
 
 /**
  * The survey Home asks for. A free account is offered the discount survey; a
- * paying Pro member (past any trial, with at least one completed day — every
- * completed day earns a room object) is offered the in-app feedback form. Each
- * is shown once storage has answered and never again once taken or closed.
+ * Pro member, trial included, with at least one completed day (every completed
+ * day earns a room object) is offered the in-app feedback form. Each is shown
+ * once storage has answered and never again once taken or closed.
  */
 export function useSurveyOfferNotice(openFeedback: () => void): SurveyOfferNoticeState {
   const user = useAuthStore((state) => state.user);
   const entitlementQuery = useUserEntitlementQuery(user?.id ?? null);
   const entitlement = entitlementQuery.data;
   const isPro = entitlement?.isPro === true;
-  const inTrial =
-    entitlement?.trialEndsAt != null && Date.parse(entitlement.trialEndsAt) > Date.now();
   const kind: SurveyOfferKind = isPro ? 'feedback' : 'discount';
   const hasCompletedDay = useCurrentRoomQuery(user?.id ?? null).data?.lastEarnedLocalDate != null;
-  const eligible = kind === 'discount' || (!inTrial && hasCompletedDay);
+  const eligible = kind === 'discount' || hasCompletedDay;
   const [dismissed, setDismissed] = useState<Record<SurveyOfferKind, boolean> | null>(null);
   const [preempted, setPreempted] = useState(false);
   const forced = useSurveyOfferForced();
