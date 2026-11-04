@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GOAL_SUGGESTION_CATEGORIES } from '../features/selfCare/goalSuggestions.ts';
 import { ROUTINE_TEMPLATES } from './routineLibrary.ts';
-import { ROUTINE_SHELVES, isRoutineAdded, routineFacts, routineShelfTemplates, routineSummary } from './routineShelves.ts';
+import { ROUTINE_SHELVES, isRoutineAdded, routineFacts, routineShelfTemplates } from './routineShelves.ts';
 
 test('every routine sits on exactly one shelf', () => {
   const shelved = ROUTINE_SHELVES.flatMap((shelf) => routineShelfTemplates(shelf).map((entry) => entry.id));
@@ -14,11 +14,13 @@ test('every need and room category sits on exactly one shelf', () => {
   assert.deepEqual([...shelved].sort(), GOAL_SUGGESTION_CATEGORIES.map((category) => category.id).sort());
 });
 
-test('a routine summary names its steps, total time, and repeat', () => {
+test('routine facts name its total time and repeat', () => {
   const whole = ROUTINE_TEMPLATES.find((entry) => entry.id === 'whole-home-hour');
-  assert.equal(routineSummary(whole), '7 steps · 60 min · Weekly');
+  assert.equal(routineFacts(whole).minutes, '60 min');
+  assert.equal(routineFacts(whole).repeat, 'Weekly');
   const one = { tasks: [{ recurrence: 'weekdays', durationMinutes: 5 }] };
-  assert.equal(routineSummary(one), '1 step · 5 min · Weekdays');
+  assert.equal(routineFacts(one).minutes, '5 min');
+  assert.equal(routineFacts(one).repeat, 'Weekdays');
 });
 
 test('routine coins total what every step pays', () => {

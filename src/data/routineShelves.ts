@@ -54,12 +54,6 @@ export function routineShelfTemplates(shelf: RoutineShelf): RoutineTemplate[] {
   return shelf.routineIds.flatMap((id) => ROUTINE_TEMPLATES.filter((entry) => entry.id === id));
 }
 
-/** "4 steps · 21 min · Daily": what someone is signing up for, before they open it. */
-export function routineSummary(routine: Pick<RoutineTemplate, 'tasks'>): string {
-  const { steps, minutes, repeat } = routineFacts(routine);
-  return `${steps} · ${minutes} · ${repeat}`;
-}
-
 export function routineFacts(routine: Pick<RoutineTemplate, 'tasks'>) {
   const count = routine.tasks.length;
   const total = routine.tasks.reduce((sum, task) => sum + task.durationMinutes, 0);

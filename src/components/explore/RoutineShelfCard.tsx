@@ -1,17 +1,18 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { RoutineTemplate } from '../../data/routineLibrary';
-import { routineSummary } from '../../data/routineShelves';
+import { routineFacts } from '../../data/routineShelves';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
 import Icon from '../common/icons/Icon';
 import RoutineLibraryArt from './RoutineLibraryArt';
 
 const ADDED_BADGE_SIZE = 28;
+const FACT_ICON_SIZE = 16;
 
 interface Props {
   routine: RoutineTemplate;
@@ -20,7 +21,8 @@ interface Props {
 }
 
 export default function RoutineShelfCard({ routine, added, onPress }: Props) {
-  const label = `${routine.title}, ${routineSummary(routine)}${added ? ', added' : ''}`;
+  const { minutes, repeat } = routineFacts(routine);
+  const label = `${routine.title}, ${minutes}, ${repeat}${added ? ', added' : ''}`;
   return (
     <View>
       <Pressable
@@ -36,7 +38,16 @@ export default function RoutineShelfCard({ routine, added, onPress }: Props) {
         <View style={[styles.cover, card.shadow]}>
           <RoutineLibraryArt entry={routine} size="poster" />
         </View>
-        <Text numberOfLines={2} style={styles.facts}>{routineSummary(routine)}</Text>
+        <View style={styles.facts}>
+          <View style={styles.fact}>
+            <Icon name="timer" size={FACT_ICON_SIZE} color={colors.text.secondary} />
+            <Text numberOfLines={1} style={styles.factText}>{minutes}</Text>
+          </View>
+          <View style={styles.fact}>
+            <Icon name="repeat" size={FACT_ICON_SIZE} color={colors.text.secondary} />
+            <Text numberOfLines={1} style={styles.factText}>{repeat}</Text>
+          </View>
+        </View>
       </Pressable>
       {added ? (
         <View style={styles.badge} pointerEvents="none">
@@ -56,7 +67,19 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   facts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: spacing.sm,
+    rowGap: spacing.xs,
+  },
+  fact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  factText: {
     ...typography.body.small,
+    fontFamily: fonts.semibold,
     color: colors.text.secondary,
   },
   badge: {
