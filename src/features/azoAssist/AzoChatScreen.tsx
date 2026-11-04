@@ -223,28 +223,7 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                 <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={stagger.base}>
                   <Text style={styles.heading}>{copy.chatHeading}</Text>
                 </RiseUnlessReducedMotion>
-                <View style={styles.welcomeSide}>
-                  <View style={styles.starters}>
-                    {copy.starters.map((starter, index) => (
-                      <RiseUnlessReducedMotion
-                        key={starter}
-                        reducedMotion={reducedMotion}
-                        delay={stagger.base * 2 + stagger.tight * index}
-                      >
-                        <Pressable
-                          accessibilityRole="button"
-                          onPress={() => {
-                            triggerTapHaptic();
-                            void send(starter);
-                          }}
-                          style={({ pressed }) => [card.base, card.shadow, styles.starter, pressed && pressable.control]}
-                        >
-                          <Text style={styles.starterText}>{starter}</Text>
-                        </Pressable>
-                      </RiseUnlessReducedMotion>
-                    ))}
-                  </View>
-                </View>
+                <View style={styles.welcomeSide} />
               </View>
             ) : null}
 
@@ -330,6 +309,34 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
         </ScrollView>
 
         <View style={[styles.composerTray, { paddingBottom: insets.bottom + spacing.sm }]}>
+          {messages.length === 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              style={styles.starters}
+              contentContainerStyle={styles.startersContent}
+            >
+              {copy.starters.map((starter, index) => (
+                <RiseUnlessReducedMotion
+                  key={starter}
+                  reducedMotion={reducedMotion}
+                  delay={stagger.base * 2 + stagger.tight * index}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      triggerTapHaptic();
+                      void send(starter);
+                    }}
+                    style={({ pressed }) => [card.base, card.shadow, styles.starter, pressed && pressable.control]}
+                  >
+                    <Text style={styles.starterText}>{starter}</Text>
+                  </Pressable>
+                </RiseUnlessReducedMotion>
+              ))}
+            </ScrollView>
+          ) : null}
           <ScreenContent width="grouped" style={styles.trayContent}>
             {assist.freeMessagesLeft != null ? (
               <FreeMessagesCaption left={assist.freeMessagesLeft} onUpgrade={upgrade} />
@@ -466,7 +473,9 @@ function AzoReply({ text, streaming, onDone }: { text: string; streaming: boolea
   );
 }
 
-const WELCOME_SIDE_MIN_HEIGHT = 230;
+const WELCOME_SIDE_MIN_HEIGHT = 150;
+/** Narrow enough that the next card shows at the screen's edge, which is what says it scrolls. */
+const STARTER_WIDTH = 176;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
@@ -492,16 +501,23 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   starters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexGrow: 0,
+    marginHorizontal: -padding.screen.horizontal,
+    marginBottom: spacing.xs,
+  },
+  // The vertical padding leaves the cards' shadows room inside the scroller's clip.
+  startersContent: {
     gap: spacing.sm,
-    marginTop: spacing.md,
+    paddingHorizontal: padding.screen.horizontal,
+    paddingVertical: spacing.xs,
   },
   starter: {
+    flex: 1,
+    width: STARTER_WIDTH,
+    justifyContent: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
+    paddingVertical: spacing.sm + spacing.xs,
+    borderRadius: radius.xl,
   },
   starterText: {
     ...typography.label.medium,

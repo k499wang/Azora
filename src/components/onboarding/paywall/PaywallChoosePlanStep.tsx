@@ -10,7 +10,6 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
 import { PlanCard } from '../../paywall/PlanCard';
-import { PaywallCheckLine } from '../../paywall/PaywallCheckLine';
 import { computePerMonth } from '../../../lib/paywall/planPrice';
 import { trialDaysFromLabel } from '../../../lib/paywall/trialReminder';
 import { paywallStepStyles as styles } from './paywallStepStyles';
@@ -95,7 +94,6 @@ export function PaywallChoosePlanStep({
               />
             ))}
           </View>
-          <PaywallCheckLine label="No commitment, cancel anytime" />
         </View>
       )}
     </View>
@@ -110,12 +108,12 @@ interface OptionCardProps {
 
 function OptionCard({ pkg, isSelected, onSelect }: OptionCardProps) {
   const intro = pkg.introOffer;
-  const title = pkg.trialLabel != null ? 'Free' : intro?.priceString ?? pkg.priceString;
-  const detail = pkg.trialLabel != null
+  const title = pkg.trialLabel != null
     ? `${trialDays(pkg)}-Day Trial`
     : intro != null
       ? `${intro.days}-Day Trial`
-      : PERIOD_NAME[pkg.billingPeriod];
+      : pkg.priceString;
+  const detail = pkg.trialLabel != null ? 'Free' : intro?.priceString ?? PERIOD_NAME[pkg.billingPeriod];
 
   return (
     <Pressable

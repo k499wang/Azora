@@ -67,6 +67,12 @@ export function computePerMonth(pkg: PaywallPackageOption): string | null {
   return cents == null ? null : formatCurrencyLike(pkg.priceString, cents / 100);
 }
 
+/** Comparable yearly cost using the unrounded recurring price. */
+export function computePerYear(pkg: PaywallPackageOption): string | null {
+  const cents = perMonthCents(pkg);
+  return cents == null ? null : formatCurrencyLike(pkg.priceString, cents * 12 / 100);
+}
+
 export function computeDiscountPercent(
   anchor: PaywallPackageOption | null | undefined,
   discounted: PaywallPackageOption | null | undefined,

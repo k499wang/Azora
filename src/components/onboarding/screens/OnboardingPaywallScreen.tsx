@@ -473,10 +473,10 @@ function TrialDeck({
     onPurchase(selectedPackageId);
   };
   const ctaLabel =
-    isAnnualSelected && selectedPackageHasTrial
-      ? `Redeem ${selectedTrialDays} days for $0.00`
+    selectedPackageHasTrial
+      ? `Redeem ${selectedTrialDays}-days for $0.00`
       : selectedIntro != null
-        ? `Redeem ${selectedIntro.days} days for ${selectedIntro.priceString}`
+        ? `Redeem ${selectedIntro.days}-day trial`
         : isAnnualSelected
           ? 'Subscribe yearly'
           : `Continue with ${selectedPackage?.title.toLowerCase() ?? 'monthly'}`;
@@ -607,6 +607,7 @@ function TrialDeck({
                         followsReminder={hasAnnualTrial || paidTrial != null}
                       />
                     ) : null}
+                    {sideBySide && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} comparisonPackage={monthlyPackage} /> : null}
                     {preview ? <Text style={styles.previewNote}>Sample prices · Preview only</Text> : null}
                   </View>
                 ) : null}
@@ -648,11 +649,7 @@ function TrialDeck({
               </>
             ) : (
               <>
-                {sideBySide ? (
-                  selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null
-                ) : (
-                  <PaywallCheckLine label="No commitment, cancel anytime" />
-                )}
+                <PaywallCheckLine label="No commitment, cancel anytime" />
                 <OnboardingPrimaryButton
                   label={ctaLabel}
                   labelSize="xlarge"
@@ -660,7 +657,7 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {!sideBySide && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
+                {isOnlyOption && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}

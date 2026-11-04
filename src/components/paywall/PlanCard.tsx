@@ -190,15 +190,11 @@ export function PlanCard({
   if (balanced && light) {
     return (
       <PaywallChoiceCard
-        title={headline}
+        title={hasTrial ? `${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)}-Day Trial` : headline}
         detail={
           <>
-            {planDetail != null
-              ? `${planDetail}, then `
-              : intro != null
-                ? `${intro.priceString}, then `
-                : ''}
-            <Text style={styles.choicePrice}>{`${pkg.priceString}/${pkg.billingPeriod}`}</Text>
+            {hasTrial ? 'Free, then ' : intro != null ? `${intro.priceString}, then ` : ''}
+            {`${pkg.priceString}/${pkg.billingPeriod}`}
           </>
         }
         selected={isSelected}
@@ -268,9 +264,6 @@ export function UrgencyBanner({ percent }: { percent: number }) {
 }
 
 const styles = StyleSheet.create({
-  choicePrice: {
-    fontFamily: fonts.heavy,
-  },
   planCard: {
     ...card.base,
     ...card.shadow,

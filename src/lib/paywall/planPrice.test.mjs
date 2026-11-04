@@ -4,6 +4,7 @@ import {
   computeAnnualSavings,
   computeDiscountPercent,
   computePerMonth,
+  computePerYear,
   formatCurrencyLike,
   packagePriceCents,
   parsePriceNumber,
@@ -46,6 +47,14 @@ test('computePerMonth spreads each billing period over a month', () => {
     computePerMonth({ id: 'monthly', billingPeriod: 'week', priceString: '$4.99' }),
     '$21.62',
   );
+});
+
+test('computePerYear compares full yearly costs without rounding a monthly equivalent first', () => {
+  assert.equal(computePerYear({ billingPeriod: 'month', priceString: '$9.99' }), '$119.88');
+  assert.equal(computePerYear({ billingPeriod: 'week', priceString: '$4.99' }), '$259.48');
+  assert.equal(computePerYear({ billingPeriod: 'year', priceString: '$59.99' }), '$59.99');
+  assert.equal(computePerYear({ billingPeriod: 'month', priceString: '$9.99', priceCents: 1000 }), '$120.00');
+  assert.equal(computePerYear({ billingPeriod: 'month', priceString: 'Unavailable' }), null);
 });
 
 test('computeDiscountPercent measures the discounted plan against the anchor', () => {

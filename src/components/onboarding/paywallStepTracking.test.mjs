@@ -277,7 +277,7 @@ test('switching trial plans updates the timeline, price, and exact purchased pac
     assert.equal(paid.paidTrial.days, 3);
     assert.equal(paid.paidTrial.introPrice, '$0.99');
     assert.equal(paid.paidTrial.renewalPrice, '$9.99/month');
-    assert.equal(deck.component('Button').props.label, 'Redeem 3 days for $0.99');
+    assert.equal(deck.component('Button').props.label, 'Redeem 3-day trial');
     deck.pressNext();
     deck.component('PaywallChoosePlanStep').props.onSelectPackage('annual');
     const free = deck.component('PaywallTrialStep').props;
@@ -285,7 +285,7 @@ test('switching trial plans updates the timeline, price, and exact purchased pac
     assert.equal(free.trialLabel, '7-day free trial');
     assert.equal(free.trialDays, 7);
     assert.equal(free.paidTrial, null);
-    assert.equal(deck.component('Button').props.label, 'Redeem 7 days for $0.00');
+    assert.equal(deck.component('Button').props.label, 'Redeem 7-days for $0.00');
     deck.pressNext();
   }
   assert.deepEqual(purchases, Array.from({ length: 10 }, () => ['monthly', 'annual']).flat());
@@ -333,8 +333,9 @@ test('paid-trial-only offerings check out the short plan without a plan card', (
   const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' } };
   const deck = deckHarness({ offering: { ...offering, onlyPackageId: 'monthly', packages: [annual, monthly] }, onPurchase: id => purchases.push(id) });
   assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
-  assert.equal(deck.component('Button').props.label, 'Redeem 3 days for $0.99');
+  assert.equal(deck.component('Button').props.label, 'Redeem 3-day trial');
   assert.equal(deck.component('PaywallTrialStep').props.onlyOption, true);
+  assert.equal(deck.component('PlanPriceTerms').props.pkg, monthly);
   deck.pressNext();
   assert.deepEqual(purchases, ['monthly']);
   deck.unmount();
@@ -348,7 +349,8 @@ test('annual paid-trial-only offerings show the paid intro and buy annual', () =
   assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
   const { paidTrial } = deck.component('PaywallTrialStep').props;
   assert.equal(`${paidTrial.days} ${paidTrial.introPrice} ${paidTrial.renewalPrice}`, '7 $4.99 $59.99/year');
-  assert.equal(deck.component('Button').props.label, 'Redeem 7 days for $4.99');
+  assert.equal(deck.component('Button').props.label, 'Redeem 7-day trial');
+  assert.equal(deck.component('PlanPriceTerms').props.pkg, paidAnnual);
   deck.pressNext();
   assert.deepEqual(purchases, ['annual']);
   deck.unmount();
@@ -365,15 +367,15 @@ test('every offering shape shows the right cards, timeline, reminder, reviews, a
   const fullWeekly = plan('monthly', 'Weekly', 'week', '$9.99', null);
   const shapes = [
     { name: 'annual + weekly paid trials', packages: [paidAnnual, paidWeekly], cards: true,
-      picks: [['annual', 'Redeem 30 days for $4.99', '$29.99/year'], ['monthly', 'Redeem 7 days for $0.99', '$9.99/week']] },
+      picks: [['annual', 'Redeem 30-day trial', '$29.99/year'], ['monthly', 'Redeem 7-day trial', '$9.99/week']] },
     { name: 'monthly + weekly paid trials', packages: [firstMonthly, paidWeekly], cards: true,
-      picks: [['annual', 'Redeem 30 days for $4.99', '$9.99/month'], ['monthly', 'Redeem 7 days for $0.99', '$9.99/week']] },
+      picks: [['annual', 'Redeem 30-day trial', '$9.99/month'], ['monthly', 'Redeem 7-day trial', '$9.99/week']] },
     { name: 'annual paid trial only', packages: [paidAnnual, paidWeekly], only: 'annual',
-      picks: [['annual', 'Redeem 30 days for $4.99', '$29.99/year']] },
+      picks: [['annual', 'Redeem 30-day trial', '$29.99/year']] },
     { name: 'monthly paid trial only', packages: [firstMonthly, paidWeekly], only: 'annual',
-      picks: [['annual', 'Redeem 30 days for $4.99', '$9.99/month']] },
+      picks: [['annual', 'Redeem 30-day trial', '$9.99/month']] },
     { name: 'weekly paid trial only', packages: [paidAnnual, paidWeekly], only: 'monthly',
-      picks: [['monthly', 'Redeem 7 days for $0.99', '$9.99/week']] },
+      picks: [['monthly', 'Redeem 7-day trial', '$9.99/week']] },
     { name: 'annual only, intro used up', packages: [fullAnnual, fullWeekly], only: 'annual',
       picks: [['annual', 'Subscribe yearly', null]] },
     { name: 'weekly only, intro used up', packages: [fullAnnual, fullWeekly], only: 'monthly',
