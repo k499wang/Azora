@@ -1,5 +1,5 @@
 import {
-  groupOrderedSelfCareGoalsByDaypart,
+  everySelfCareGoalDaypartGroup,
   type SelfCareGoal,
   type SelfCareGoalDaypartGroup,
 } from './selfCareGoal';
@@ -7,7 +7,7 @@ import {
 type SectionId = SelfCareGoalDaypartGroup['id'];
 
 export type TodoListRow =
-  | { kind: 'header'; id: string; section: SectionId; label: string; icon: SelfCareGoalDaypartGroup['icon']; leaving: boolean }
+  | { kind: 'header'; id: string; section: SectionId; label: string; icon: SelfCareGoalDaypartGroup['icon'] }
   | { kind: 'goal'; id: string; section: SectionId; goal: SelfCareGoal };
 
 export function todoListHeaderId(section: SectionId): string {
@@ -15,15 +15,11 @@ export function todoListHeaderId(section: SectionId): string {
 }
 
 /**
- * The list as drawn: each part of the day under its own header, in the order
- * the goals already stand in. A part whose every goal is on its way off the
- * list marks its header leaving, so it fades and closes up with them.
+ * The list as drawn: every part of the day under its own header, in the order
+ * the goals already stand in. A part with no goals still shows its header.
  */
-export function todoListRows(
-  ordered: SelfCareGoal[],
-  leaving: ReadonlySet<string>,
-): TodoListRow[] {
-  return groupOrderedSelfCareGoalsByDaypart(ordered).flatMap((group) => {
+export function todoListRows(ordered: SelfCareGoal[]): TodoListRow[] {
+  return everySelfCareGoalDaypartGroup(ordered).flatMap((group) => {
     const goals: TodoListRow[] = group.goals.map((goal) => ({
       kind: 'goal',
       id: goal.id,
@@ -37,7 +33,6 @@ export function todoListRows(
         section: group.id,
         label: group.label,
         icon: group.icon,
-        leaving: group.goals.every((goal) => leaving.has(goal.id)),
       },
       ...goals,
     ];

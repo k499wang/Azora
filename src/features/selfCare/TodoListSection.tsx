@@ -142,6 +142,7 @@ const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
 const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
 const ADD_GOAL_ROW_ID = 'add-goal';
+const EMPTY_DAY_ROW_ID = 'empty-day';
 const DAY_DONE_ICON_SIZE = 64;
 const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
   angle: -90 + i * 45,
@@ -589,7 +590,6 @@ function DaypartHeader({
   label,
   icon,
   now,
-  leaving,
   folded,
   openCount,
   onToggleFold,
@@ -598,7 +598,6 @@ function DaypartHeader({
   label: string;
   icon: IconName;
   now: boolean;
-  leaving: boolean;
   folded: boolean;
   /** to-dos still to do under this header, shown while it is folded so they stay in mind */
   openCount: number;
@@ -606,17 +605,11 @@ function DaypartHeader({
   /** plays the part of the day's open to-dos one at a time; left out when there is nothing to play */
   onStart?: () => void;
 }) {
-  const reducedMotion = useReducedMotionSetting();
-  const fadeStyle = useAnimatedStyle(() => ({
-    opacity: leaving && !reducedMotion
-      ? withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
-      : leaving ? 0 : 1,
-  }));
   const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${withTiming(folded ? -90 : 0, FOLD_TIMING)}deg` }],
+    transform: [{ rotate: withTiming(`${folded ? -90 : 0}deg`, FOLD_TIMING) }],
   }), [folded]);
   return (
-    <Animated.View style={[styles.daypartHeaderRow, fadeStyle]}>
+    <View style={styles.daypartHeaderRow}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={folded && openCount > 0 ? `${label}, ${openCount} to do` : label}
@@ -651,14 +644,14 @@ function DaypartHeader({
           <Text style={styles.daypartNow}>Start</Text>
         </Pressable>
       )}
-    </Animated.View>
+    </View>
   );
 }
 
 function EmptyDayState() {
   return (
     <Animated.View entering={FadeIn.duration(duration.slow)}
-      style={[styles.dayDone, styles.dayDoneFill]}
+      style={styles.dayDone}
     >
       <Icon name="calendar" size={EMPTY_DAY_ICON_SIZE} color={colors.text.tertiary} />
       <Text style={styles.emptyDayText}>No to-dos on this day.</Text>
@@ -795,11 +788,10 @@ function TodoListSection(props: TodoListSectionProps) {
     () => readOnly ? EMPTY_IDS : leavingSelfCareGoalIds(goals, settlingGoals.settling, settlingGoals.holding),
     [goals, settlingGoals.settling, settlingGoals.holding, readOnly],
   );
-  // Cards making way for the all-done state fade where they stand, headers
-  // with them, so nothing on the rail moves underneath the fade.
-  const listRows = useMemo(
-    () => todoListRows(shownGoals, clearingForAllDone ? EMPTY_IDS : filingIds),
-    [shownGoals, clearingForAllDone, filingIds],
+  const listRows = useMemo(() => todoListRows(shownGoals), [shownGoals]);
+  const filledSections = useMemo(
+    () => new Set(listRows.filter((row) => row.kind === 'goal').map((row) => row.section)),
+    [listRows],
   );
   const playableSections = useMemo(() => {
     const open = new Map<TodoListRow['section'], string[]>();
@@ -843,23 +835,16 @@ function TodoListSection(props: TodoListSectionProps) {
   }, [listRows]);
   const collapsedIds = useMemo(() => {
     if (!tasksOnly || clearingForAllDone) return EMPTY_IDS;
-    const hiddenRows = listRows.filter((row) =>
-      row.kind === 'header' ? row.leaving : isFolded(row.section));
+    const hiddenRows = listRows.filter((row) => row.kind === 'goal' && isFolded(row.section));
     if (hiddenRows.length === 0) return filingIds;
     return new Set([...filingIds, ...hiddenRows.map((row) => row.id)]);
   }, [tasksOnly, clearingForAllDone, listRows, filingIds, isFolded]);
   const foldedHeaderSpace = useMemo(() => {
     if (!tasksOnly) return undefined;
     return new Map(listRows
-      .filter((row) => row.kind === 'header' && isFolded(row.section))
+      .filter((row) => row.kind === 'header' && (isFolded(row.section) || !filledSections.has(row.section)))
       .map((row) => [row.id, FOLDED_HEADER_SPACE]));
-  }, [tasksOnly, listRows, isFolded]);
-  // The header that will stand first once the leaving rows are gone takes the
-  // first header's spacing now, so it closes up once instead of settling twice.
-  const firstHeaderIndex = Math.max(
-    0,
-    listRows.findIndex((row) => row.kind === 'header' && !row.leaving),
-  );
+  }, [tasksOnly, listRows, isFolded, filledSections]);
   const rowKey = listRows.map((row) => row.id).join('|');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rowIds = useMemo(() => listRows.map((row) => row.id), [rowKey]);
@@ -994,10 +979,11 @@ function TodoListSection(props: TodoListSectionProps) {
   const measureJourney = useCallback((event: LayoutChangeEvent) => {
     setJourneyHeight(event.nativeEvent.layout.height);
   }, []);
-  const taskLayoutIds = useMemo(
-    () => readOnly || !addNodeVisible ? rowIds : [...rowIds, ADD_GOAL_ROW_ID],
-    [rowIds, readOnly, addNodeVisible],
-  );
+  const emptyDayVisible = readOnly && taskCount === 0;
+  const taskLayoutIds = useMemo(() => {
+    if (emptyDayVisible) return [...rowIds, EMPTY_DAY_ROW_ID];
+    return readOnly || !addNodeVisible ? rowIds : [...rowIds, ADD_GOAL_ROW_ID];
+  }, [rowIds, readOnly, addNodeVisible, emptyDayVisible]);
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskLayoutIds : journeyIds,
     gap: tasksOnly ? spacing.xs : JOURNEY_ROW_GAP,
@@ -1179,14 +1165,13 @@ function TodoListSection(props: TodoListSectionProps) {
               id={row.id}
               index={index}
               scrollRef={props.scrollRef}
-              style={[styles.daypartRow, index === firstHeaderIndex ? styles.daypartFirstSpacing : styles.daypartSectionSpacing]}
+              style={[styles.daypartRow, index === 0 ? styles.daypartFirstSpacing : styles.daypartSectionSpacing]}
               dragDisabled
             >
               <DaypartHeader
                 label={row.label}
                 icon={row.icon}
                 now={row.section === nowSection}
-                leaving={row.leaving}
                 folded={isFolded(row.section)}
                 openCount={openCounts.get(row.section) ?? 0}
                 onToggleFold={() => toggleFold(row.section)}
@@ -1210,7 +1195,17 @@ function TodoListSection(props: TodoListSectionProps) {
               onMove={moveBy}
             />
           ))}
-          {readOnly && taskCount === 0 ? <EmptyDayState /> : null}
+          {emptyDayVisible ? (
+            <JourneyDragRow
+              controller={controller}
+              id={EMPTY_DAY_ROW_ID}
+              index={rowIds.length}
+              scrollRef={props.scrollRef}
+              dragDisabled
+            >
+              <EmptyDayState />
+            </JourneyDragRow>
+          ) : null}
           {readOnly || !addNodeVisible || openSheet == null ? null : (
             <JourneyDragRow
               controller={controller}
@@ -1464,7 +1459,7 @@ const styles = StyleSheet.create({
     paddingTop: JOURNEY_ROW_GAP - spacing.xs,
   },
   daypartFirstSpacing: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
   },
   daypartHeader: {
     flexDirection: 'row',

@@ -11,7 +11,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import type { PaywallLayout, PaywallPackageId, PaywallPlacementValue } from '../../services/paywall';
+import type { PaywallLayout, PaywallPackageId, PaywallPlacementValue, PaywallPlanPicker } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
 import type { RoutineLibraryId } from '../../data/routineLibrary';
@@ -149,7 +149,7 @@ export type RootStackParamList = {
   /** dev-only run of the welcome shown after a Pro purchase */
   ProWelcomePreview: { trialDays: number | null };
   /** dev-only preview of the personalized scrolling paywall */
-  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean; onlyPackageId?: PaywallPackageId; plans?: PreviewPlans };
+  OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean; onlyPackageId?: PaywallPackageId; plans?: PreviewPlans; planPicker?: PaywallPlanPicker };
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;

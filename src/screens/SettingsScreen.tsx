@@ -468,6 +468,18 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', plans: 'monthlyWeekly' })}
                 />
                 <SettingsRow
+                  label="Preview design your trial, side by side (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', initialStep: 'plan', planPicker: 'side_by_side' })}
+                />
+                <SettingsRow
+                  label="Preview design your trial, side by side, annual + weekly paid trials (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', plans: 'annualWeekly', planPicker: 'side_by_side' })}
+                />
+                <SettingsRow
+                  label="Preview design your trial, side by side, monthly + weekly paid trials (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck', plans: 'monthlyWeekly', planPicker: 'side_by_side' })}
+                />
+                <SettingsRow
                   label="Preview breathing result (dev)"
                   onPress={() =>
                     navigation.navigate('SessionComplete', {

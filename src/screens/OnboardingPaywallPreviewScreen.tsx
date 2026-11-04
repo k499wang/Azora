@@ -6,7 +6,7 @@ import OnboardingPaywallScreen from '../components/onboarding/screens/Onboarding
 import { onboardingPresetFor } from '../lib/onboardingPreset';
 import { computeMindMap } from '../lib/onboardingScores';
 import { colors } from '../theme/colors';
-import type { PaywallLayout, PaywallOffering, PaywallPackageId, PaywallPackageOption } from '../services/paywall';
+import type { PaywallLayout, PaywallOffering, PaywallPackageId, PaywallPackageOption, PaywallPlanPicker } from '../services/paywall';
 import type { PreviewPlans } from '../app/navigation/types';
 import type { OnboardingIntent } from '../components/onboarding/types';
 
@@ -110,6 +110,7 @@ export default function OnboardingPaywallPreviewScreen({ navigation, route }: On
       cleaning={route.params.cleaning}
       onlyPackageId={route.params.onlyPackageId}
       plans={route.params.plans}
+      planPicker={route.params.planPicker}
       planIntent={route.params.cleaning ? 'cleaning' : 'stress_relief'}
       goalPhrase="feel calmer on the hard days"
       onClose={() => navigation.goBack()}
@@ -123,6 +124,7 @@ interface OnboardingPaywallPreviewProps {
   cleaning?: boolean;
   onlyPackageId?: PaywallPackageId;
   plans?: PreviewPlans;
+  planPicker?: PaywallPlanPicker;
   planIntent: OnboardingIntent;
   goalPhrase: string;
   onClose: () => void;
@@ -134,6 +136,7 @@ export function OnboardingPaywallPreview({
   cleaning,
   onlyPackageId,
   plans,
+  planPicker = 'stacked',
   planIntent,
   goalPhrase,
   onClose,
@@ -150,6 +153,7 @@ export function OnboardingPaywallPreview({
           offering={{
             ...PREVIEW_OFFERING,
             paywallLayout: layout,
+            planPicker,
             onlyPackageId: onlyPackageId ?? null,
             packages: plans != null
               ? PREVIEW_PLAN_SETS[plans]

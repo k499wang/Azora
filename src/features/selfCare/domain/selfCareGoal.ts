@@ -453,7 +453,14 @@ export function groupSelfCareGoalsByDaypart(
 export function groupOrderedSelfCareGoalsByDaypart(
   ordered: SelfCareGoal[],
 ): SelfCareGoalDaypartGroup[] {
-  const groups: SelfCareGoalDaypartGroup[] = [
+  return everySelfCareGoalDaypartGroup(ordered).filter((group) => group.goals.length > 0);
+}
+
+/** Every part of the day in order, including those with no goals. */
+export function everySelfCareGoalDaypartGroup(
+  ordered: SelfCareGoal[],
+): SelfCareGoalDaypartGroup[] {
+  return [
     ...SELF_CARE_GOAL_DAYPARTS.map((spec) => ({
       id: spec.id,
       label: spec.label,
@@ -467,5 +474,4 @@ export function groupOrderedSelfCareGoalsByDaypart(
       goals: ordered.filter((goal) => goal.scheduledTime == null),
     },
   ];
-  return groups.filter((group) => group.goals.length > 0);
 }
