@@ -122,11 +122,11 @@ export function NoTrialPaywallContent() {
       <View style={styles.trustSection}>
         <View style={styles.trustRow}>
           <Icon name="check" size={18} color={colors.primary.blue500} />
-          <Text style={styles.trustText}>Cancel anytime — no questions asked</Text>
+          <Text style={styles.trustText}>Cancel anytime, no questions asked</Text>
         </View>
         <View style={styles.trustRow}>
           <Icon name="check" size={18} color={colors.primary.blue500} />
-          <Text style={styles.trustText}>Money-back guarantee — love it or get a full refund</Text>
+          <Text style={styles.trustText}>Money-back guarantee: love it or get a full refund</Text>
         </View>
         <View style={styles.trustRow}>
           <Icon name="check" size={18} color={colors.primary.blue500} />
@@ -136,7 +136,7 @@ export function NoTrialPaywallContent() {
 
       {/* Emotional CTA */}
       <View style={styles.emotionalCta}>
-        <Text style={styles.emotionalCtaText}>Your Journey to a Better You Starts Today.</Text>
+        <Text style={styles.emotionalCtaText}>Your Personalized Plan Starts Today.</Text>
       </View>
     </View>
   );

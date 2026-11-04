@@ -99,7 +99,7 @@ export function PaywallLongForm({
       <View
         style={[styles.emotionalCta, claimOfferSlot == null && styles.emotionalCtaSpacing]}
       >
-        <Text style={styles.emotionalCtaText}>Your Journey to a Better You Starts Today.</Text>
+        <Text style={styles.emotionalCtaText}>Your Personalized Plan Starts Today.</Text>
       </View>
 
       {footerSlot ? <View style={styles.slot}>{footerSlot}</View> : null}

@@ -123,7 +123,7 @@ export const SLEEP_CAUSE_OPTIONS: OnboardingOption<SleepCauseId>[] = [
   { id: 'phone', title: 'My phone keeps me up', icon: 'laptop', accent: colors.playful.sky.base, echo: 'your phone keeps you up' },
   { id: 'schedule', title: 'Late nights and odd hours', icon: 'clock-fast', accent: colors.playful.amber.base, echo: 'your hours are all over the place' },
   { id: 'body', title: 'Discomfort or pain', icon: 'heart-pulse', accent: colors.playful.blush.base, echo: 'your body keeps you awake' },
-  { id: 'fine', title: 'Nothing — I drop off fine', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you drop off without trouble' },
+  { id: 'fine', title: 'Nothing, I drop off fine', icon: 'emoticon-happy-outline', accent: colors.playful.teal.base, echo: 'you drop off without trouble' },
 ];
 
 export const STRESS_SIGNAL_OPTIONS: OnboardingOption<StressSignalId>[] = [

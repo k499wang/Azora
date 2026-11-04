@@ -550,6 +550,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md + 3,
     borderRadius: radius.large,
+    borderCurve: 'continuous',
     borderWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 3,
     borderColor: colors.border.subtle,

@@ -518,6 +518,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + spacing.xs,
     borderRadius: radius.xl,
+    borderCurve: 'continuous',
   },
   starterText: {
     ...typography.label.medium,
@@ -529,6 +530,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + spacing.xs,
     borderRadius: radius.xl,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: azoChatColors.border,
   },

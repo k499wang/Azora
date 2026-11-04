@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     backgroundColor: colors.background.elevated,
     borderRadius: 50,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: colors.border.subtle,
     paddingHorizontal: spacing.md,

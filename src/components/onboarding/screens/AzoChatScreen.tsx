@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
   bubble: {
     backgroundColor: azoChatColors.bubble,
     borderRadius: 22,
+    borderCurve: 'continuous',
     borderWidth: BUBBLE_BORDER,
     borderColor: azoChatColors.border,
     paddingHorizontal: spacing.md,

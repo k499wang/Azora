@@ -29,7 +29,7 @@ const TICK_WIDTH = 5;
 const TRI_TIP_OFFSET = 8;  // how far beyond INNER_R the tip extends
 const TRI_HALF_DEG = 7;    // half-width of the base in degrees
 
-const PASTEL_STOPS = ['#FCA5A5', '#FDE68A', '#86EFAC'];
+const PASTEL_STOPS = [...colors.hrvTrackStops];
 
 function hexToRgb(hex: string): [number, number, number] {
   return [
@@ -427,7 +427,8 @@ const styles = StyleSheet.create({
   zonePill: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
   },
   zonePillText: {
     ...typography.label.small,

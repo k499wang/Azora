@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.xl,
+    borderCurve: 'continuous',
     backgroundColor: colors.toast.fill,
   },
   copy: {

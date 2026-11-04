@@ -154,6 +154,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.accentSoft,
     borderWidth: 1,
     borderColor: colors.primary.blue100,

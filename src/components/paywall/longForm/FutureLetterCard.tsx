@@ -21,7 +21,7 @@ export function FutureLetterCard({ name }: FutureLetterCardProps) {
 
       <Text style={styles.body}>
         It's me, future you. I'm calling from today because this is an important day
-        for you — for us.
+        for you. For us.
       </Text>
 
       <Text style={styles.boldBody}>
@@ -45,7 +45,8 @@ export function FutureLetterCard({ name }: FutureLetterCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.playful.night.base,
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
     padding: spacing.xl,
     paddingTop: spacing['2xl'],
     gap: spacing.md,

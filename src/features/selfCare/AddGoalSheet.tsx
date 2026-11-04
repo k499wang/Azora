@@ -505,6 +505,7 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: padding.screen.horizontal,
     borderRadius: radius.sheet,
+    borderCurve: 'continuous',
     padding: spacing.mdPlus,
     gap: spacing.md,
   },

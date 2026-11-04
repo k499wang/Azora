@@ -311,7 +311,7 @@ export function ResultScreen({
 
         <View style={styles.errorActions}>
           <ChunkyButton
-            label="Try Again"
+            label="Try again"
             shape="card"
             onPress={() => {
               posthog.capture(AnalyticsEvent.HeartRateResultAction, {
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: colors.surface.amber,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
@@ -410,6 +410,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: colors.background.card,
     borderRadius: 16,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: colors.border.default,
     padding: spacing.md,
@@ -452,6 +453,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.error[500],

@@ -183,7 +183,8 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   zonePill: {
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },

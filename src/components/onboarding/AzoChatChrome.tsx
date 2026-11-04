@@ -83,7 +83,8 @@ const styles = StyleSheet.create({
   onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: azoChatColors.accent },
   onlineLabel: { fontSize: scaleType(18), lineHeight: scaleType(22), color: azoChatColors.muted },
   avatar: {
-    borderRadius: 13,
+    borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: colors.primary.blue100,
     padding: 3,
     overflow: 'hidden',

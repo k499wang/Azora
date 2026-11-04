@@ -11,7 +11,7 @@ interface Props {
 }
 
 const referenceBody = lungAgeReferenceHolds()
-  .map((ref) => `Age ${ref.age} — about ${ref.medianSeconds}s`)
+  .map((ref) => `Age ${ref.age}: about ${ref.medianSeconds}s`)
   .join('\n');
 
 export default function LungAgeInfoDialog({ visible, onClose }: Props) {
@@ -32,7 +32,7 @@ export default function LungAgeInfoDialog({ visible, onClose }: Props) {
         },
         {
           heading: 'Reading your result',
-          body: 'A hold exactly at the typical time for your age returns your own age. Every extra second pulls the number down. Because it comes from one hold, it moves with how rested, caffeinated, or stressed you are — the trend across weeks is what matters.',
+          body: 'A hold exactly at the typical time for your age returns your own age. Every extra second pulls the number down. Because it comes from one hold, it moves with how rested, caffeinated, or stressed you are. The trend across weeks is what matters.',
         },
         {
           heading: 'Lowering it',

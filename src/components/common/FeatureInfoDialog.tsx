@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.medium,
+    borderCurve: 'continuous',
     backgroundColor: colors.primary.blue500,
   },
   closeButtonPressed: pressable.control,

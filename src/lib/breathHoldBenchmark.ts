@@ -42,34 +42,34 @@ export function getHoldBenchmark(holdSeconds: number, age: number | null): HoldB
 
   if (holdSeconds >= p90) {
     return {
-      sentence: `Top 10% of ${ageRefLabel} — elite-level breath control.`,
+      sentence: `Top 10% of ${ageRefLabel}. Elite-level breath control.`,
       bandLabel: band.label,
       percentileBucket: 'top10',
     };
   }
   if (holdSeconds >= p75) {
     return {
-      sentence: `Top 25% of ${ageRefLabel} — well above average.`,
+      sentence: `Top 25% of ${ageRefLabel}. Well above average.`,
       bandLabel: band.label,
       percentileBucket: 'top25',
     };
   }
   if (holdSeconds >= p50) {
     return {
-      sentence: `Above the median for ${ageRefLabel} — strong result.`,
+      sentence: `Above the median for ${ageRefLabel}. Strong result.`,
       bandLabel: band.label,
       percentileBucket: 'aboveAverage',
     };
   }
   if (holdSeconds >= p25) {
     return {
-      sentence: `Around the average for ${ageRefLabel} — solid baseline to build on.`,
+      sentence: `Around the average for ${ageRefLabel}. Solid baseline to build on.`,
       bandLabel: band.label,
       percentileBucket: 'average',
     };
   }
   return {
-    sentence: `Below average for ${ageRefLabel} — consistent practice will lift this fast.`,
+    sentence: `Below average for ${ageRefLabel}. Consistent practice will lift this fast.`,
     bandLabel: band.label,
     percentileBucket: 'belowAverage',
   };

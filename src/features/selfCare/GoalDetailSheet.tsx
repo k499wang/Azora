@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: radius.sheet,
+    borderCurve: 'continuous',
     paddingTop: BADGE_SIZE / 2 + spacing.md,
     paddingBottom: spacing.xs,
     paddingHorizontal: spacing.mdPlus,

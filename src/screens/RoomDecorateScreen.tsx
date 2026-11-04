@@ -195,7 +195,7 @@ export default function RoomDecorateScreen({
       }
       note={
         completingRoom
-          ? 'All 7 decorations placed — this room is finished.'
+          ? 'All 7 decorations placed. This room is finished.'
           : celebrating || isLoading
             ? undefined
             : decorateNote(panelState)

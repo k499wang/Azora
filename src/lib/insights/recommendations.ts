@@ -42,14 +42,14 @@ export const RECOMMENDATION_RULES: RecommendationRule[] = [
     match: ({ stress }) => stress != null && stress > 66,
     techniqueId: '478',
     reason:
-      'your stress is elevated — the extended exhale calms the nervous system quickly',
+      'your stress is elevated, and the extended exhale calms the nervous system quickly',
   },
   {
     id: 'hrv-below-baseline',
     match: ({ rmssd, avgRmssd }) =>
       rmssd != null && avgRmssd != null && avgRmssd > 0 && rmssd < avgRmssd * 0.85,
     techniqueId: 'extended-exhale',
-    reason: 'your HRV is below baseline — extended exhales rebuild vagal tone',
+    reason: 'your HRV is below baseline, and extended exhales rebuild vagal tone',
   },
   {
     id: 'moderate-stress',
@@ -61,13 +61,13 @@ export const RECOMMENDATION_RULES: RecommendationRule[] = [
     id: 'strong-recovery',
     match: ({ hrDrop }) => hrDrop != null && hrDrop >= 12,
     techniqueId: 'box',
-    reason: 'strong recovery today — box breathing builds focus on top of it',
+    reason: 'strong recovery today, so box breathing builds focus on top of it',
   },
   {
     id: 'calm-and-recovered',
     match: ({ stress }) => stress != null && stress <= 33,
     techniqueId: 'wimhof',
-    reason: "you're calm and recovered — channel that into energy",
+    reason: "you're calm and recovered, so channel that into energy",
   },
 ];
 

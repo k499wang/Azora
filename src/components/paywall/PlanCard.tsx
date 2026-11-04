@@ -258,7 +258,7 @@ export function UrgencyBanner({ percent }: { percent: number }) {
     <View style={styles.urgencyBanner}>
       <View style={styles.urgencyDot} />
       <Text style={styles.urgencyText}>
-        Limited-time offer — save {percent}% with annual
+        Limited-time offer: save {percent}% with annual
       </Text>
     </View>
   );

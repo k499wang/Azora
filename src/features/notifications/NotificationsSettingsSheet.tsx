@@ -328,6 +328,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     marginTop: spacing.sm,
     borderRadius: 16,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary.blue500,
@@ -348,7 +349,8 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   reminderBlock: {
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: colors.border.subtle,
     backgroundColor: colors.background.elevated,
@@ -375,6 +377,7 @@ const styles = StyleSheet.create({
   settingsNotice: {
     minHeight: 44,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: colors.warning[100],
     flexDirection: 'row',
     alignItems: 'center',

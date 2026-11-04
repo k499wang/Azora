@@ -166,7 +166,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       'We’ll start with small plan steps, with short guided Resets and lessons about winding down and sleeping through the night.',
     reflectionHeadline: 'Fall asleep faster, sleep deeper.',
     reflectionBody:
-      'A nightly wind-down teaches your body to slip into rest on cue — no willpower needed.',
+      'A nightly wind-down teaches your body to slip into rest on cue, no willpower needed.',
     valuePoints: [
       {
         icon: 'moon',
@@ -244,7 +244,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       'We’ll start with energizing sessions that lift alertness in minutes.',
     reflectionHeadline: 'Energize without the crash.',
     reflectionBody:
-      'An active reset raises alertness and circulation — a natural lift you can repeat anytime.',
+      'An active reset raises alertness and circulation, a natural lift you can repeat anytime.',
     valuePoints: [
       {
         icon: 'sun',
@@ -373,7 +373,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       'We’ll start with small plan steps, with short guided Resets and lessons about stillness and noticing what is around you.',
     reflectionHeadline: 'Find stillness on purpose.',
     reflectionBody:
-      'Stillness has anchored meditation and prayer for millennia — a doorway to presence you carry everywhere.',
+      'Stillness has anchored meditation and prayer for millennia. You can carry it anywhere.',
     valuePoints: [
       {
         icon: 'lotus',
@@ -397,14 +397,14 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     icon: 'lotus',
     accent: colors.playful.sky.base,
     title: 'Support my yoga',
-    body: 'Carry your breath off the mat — pranayama to steady every practice.',
+    body: 'Carry your breath off the mat with pranayama that steadies every practice.',
     hook: 'The breath half of your practice.',
     goalPhrase: 'breathe better on the mat',
     assessmentPlan:
       'We’ll start with breath-led practices for steadier movement and deeper stillness.',
     reflectionHeadline: 'Bring your breath to the mat.',
     reflectionBody:
-      'Pranayama is the breath side of yoga — the same slow, intentional breathing that steadies poses and deepens stillness.',
+      'Pranayama is the breath side of yoga: the same slow, intentional breathing that steadies poses and deepens stillness.',
     valuePoints: [
       {
         icon: 'lotus',
@@ -473,7 +473,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       {
         icon: 'streak',
         accent: colors.playful.amber.base,
-        label: 'Habits solidify in ~66 days — Azora tracks every one',
+        label: 'Habits solidify in ~66 days, and Azora tracks every one',
       },
       {
         icon: 'breath-timer',

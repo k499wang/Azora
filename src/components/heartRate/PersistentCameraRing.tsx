@@ -183,11 +183,11 @@ const styles = StyleSheet.create({
     bottom: RING_STROKE + 4,
     borderRadius: (RING_SIZE - (RING_STROKE + 4) * 2) / 2,
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: colors.cameraPreview,
   },
   previewPlaceholder: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.cameraPreview,
   },
   heartOverlay: {
     ...StyleSheet.absoluteFillObject,

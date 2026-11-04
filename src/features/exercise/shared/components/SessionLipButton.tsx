@@ -73,6 +73,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.medium,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderBottomWidth: 4,
   },

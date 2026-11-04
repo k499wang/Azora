@@ -97,6 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.orange[200],
     borderRadius: 12,
+    borderCurve: 'continuous',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -110,7 +111,8 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.background.card,
-    borderRadius: 18,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border.default,

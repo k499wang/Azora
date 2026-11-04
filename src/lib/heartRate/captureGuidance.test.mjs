@@ -63,7 +63,7 @@ test('placement steps prepare the hand, then explain coverage, pressure, and a s
     {
       title: 'Case off, hands warm',
       detail:
-        'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker \u2014 rub your hands together for about 30 seconds first.',
+        'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker. Rub your hands together for about 30 seconds first.',
     },
     {
       title: 'Press against the lens shown in the live check',
@@ -96,7 +96,7 @@ test('camera check distinguishes finger coverage from pulse confirmation', () =>
   assert.equal(checkMessage(), 'Finding your pulse…');
   assert.equal(
     checkMessage({ signalStatus: 'measuring', pulseConfirmed: true }),
-    'Pulse found — hold still.',
+    'Pulse found. Hold still.',
   );
 });
 

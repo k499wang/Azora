@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
   row: {
     minHeight: ROW_MIN_HEIGHT,
     borderRadius: radius.xl,
+    borderCurve: 'continuous',
     gap: spacing.md,
     padding: spacing.md,
   },

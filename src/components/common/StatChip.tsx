@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
   },
   pillCompact: {
     borderRadius: radius.medium,
+    borderCurve: 'continuous',
   },
   row: {
     flexDirection: 'row',

@@ -56,7 +56,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
     backgroundColor: colors.error[700],
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
   },
   titleRow: {
     flexDirection: 'row',

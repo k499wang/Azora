@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
     ...card.paper,
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
+    borderCurve: 'continuous',
     borderWidth: 0,
     paddingHorizontal: spacing.md,
     // clear of the rings running down over the top edge

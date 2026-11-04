@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   halo: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 66,
+    borderCurve: 'continuous',
   },
   iconShell: {
     width: 92,

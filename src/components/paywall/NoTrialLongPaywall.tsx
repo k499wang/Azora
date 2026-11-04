@@ -663,7 +663,8 @@ const styles = StyleSheet.create({
   errorBlock: {
     alignItems: 'center',
     gap: spacing.xs,
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
     padding: spacing.md,
     marginTop: spacing.md,
     backgroundColor: colors.error[100],

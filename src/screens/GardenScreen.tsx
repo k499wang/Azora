@@ -202,7 +202,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    borderRadius: 18,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: colors.primary.blue500,
   },
   retryButtonPressed: {

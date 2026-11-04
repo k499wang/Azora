@@ -41,10 +41,10 @@ const PROBLEM_AGITATION: Record<OnboardingIntent, string> = {
   energy: "Dragging through the afternoon is no way to live.",
   self_acceptance: "You shouldn't have to earn your own kindness.",
   emotional_balance: 'Practise a pause when irritation rises, then choose your response.',
-  self_care: "You give enough — it's time to give to yourself.",
+  self_care: "You give enough. It's time to give to yourself.",
   spiritual: "Your inner life matters as much as your outer one.",
   yoga: "Your body and mind deserve time together.",
-  heart_health: "Your heart works hard — it deserves your attention.",
+  heart_health: "Your heart works hard. It deserves your attention.",
   cleaning: 'Your space does not have to feel like one more thing you are failing at.',
   daily_habit: "Small daily actions compound into real change.",
   other: "You know something needs to shift.",
@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
   goalsCard: {
     backgroundColor: colors.background.card,
     borderRadius: 16,
+    borderCurve: 'continuous',
     padding: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.subtle,
@@ -123,6 +124,7 @@ const styles = StyleSheet.create({
   agitationCard: {
     backgroundColor: colors.primary.blue100,
     borderRadius: 16,
+    borderCurve: 'continuous',
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.primary.blue200,

@@ -71,9 +71,7 @@ import {
 } from '../services/analytics/tracking';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
-import { duration } from '../theme/motion';
 import { padding, spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
 
 const HEADER_BUTTON_SIZE = 40;
 const HEADER_ICON_SIZE = 18;

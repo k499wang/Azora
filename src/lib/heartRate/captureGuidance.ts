@@ -32,12 +32,12 @@ export function getHeartRatePlacementGuidance(
     instruction:
       'Press the soft pad of your index finger against the lens shown in the live check so it is completely covered, with your skin touching the glass. Leave the flash uncovered.',
     multiCameraWarning:
-      'Use the lens shown during the live check — covering another lens will not work.',
+      'Use the lens shown during the live check. Covering another lens will not work.',
     steps: [
       {
         title: 'Case off, hands warm',
         detail:
-          'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker — rub your hands together for about 30 seconds first.',
+          'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker. Rub your hands together for about 30 seconds first.',
       },
       {
         title: 'Press against the lens shown in the live check',
@@ -86,7 +86,7 @@ const TROUBLESHOOTING_TIPS: Record<string, HeartRatePlacementStep> = {
   indexPad: {
     title: 'Use your index fingertip',
     detail:
-      'The soft pad of your index finger reads best — thumbs and the sides of fingers have thicker skin. If one hand won’t read, try the other.',
+      'The soft pad of your index finger reads best. Thumbs and the sides of fingers have thicker skin. If one hand won’t read, try the other.',
   },
   cleanLens: {
     title: 'Wipe the lens and dim the light',
@@ -225,7 +225,7 @@ export function getCameraCheckMessage({
     return `Center your fingertip pad over the ${cameraTarget}.`;
   }
   if (pulseConfirmed) {
-    return 'Pulse found — hold still.';
+    return 'Pulse found. Hold still.';
   }
   return 'Finding your pulse…';
 }

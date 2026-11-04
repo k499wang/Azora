@@ -10,9 +10,9 @@ export function placementCorrection(
 ): string | null {
   switch (status) {
     case 'excessive_motion':
-      return 'Too much movement — keep still';
+      return 'Too much movement. Keep still';
     case 'no_pulse':
-      return 'No pulse — adjust your finger';
+      return 'No pulse. Adjust your finger';
     case 'partial_coverage':
       return 'Cover the lens fully';
     case 'too_much_pressure':

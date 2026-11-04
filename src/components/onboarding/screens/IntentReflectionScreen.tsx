@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     overflow: 'hidden',
     borderRadius: 16,
+    borderCurve: 'continuous',
     paddingVertical: 0,
     paddingHorizontal: 0,
   },
@@ -137,7 +138,8 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',

@@ -9,7 +9,7 @@ import { colors } from '../../theme/colors';
 const RMSSD_INFO = {
   title: 'RMSSD',
   message:
-    'Root Mean Square of Successive Differences — a heart rate variability (HRV) measure that reflects parasympathetic (vagal) activity and recovery.\n\nHealthy resting range: 20–80 ms. Higher generally indicates better recovery and cardiovascular health. Varies with age, fitness, and stress.',
+    'Root Mean Square of Successive Differences is a heart rate variability (HRV) measure that reflects parasympathetic (vagal) activity and recovery.\n\nHealthy resting range: 20–80 ms. Higher generally indicates better recovery and cardiovascular health. Varies with age, fitness, and stress.',
 };
 
 const LOCKED_PLACEHOLDERS = {

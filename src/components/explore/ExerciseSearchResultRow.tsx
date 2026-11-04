@@ -87,7 +87,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     padding: 10,
-    borderRadius: 18,
+    borderRadius: 16,
+    borderCurve: 'continuous',
   },
   rowPressed: {
     opacity: 0.88,
@@ -98,7 +99,8 @@ const styles = StyleSheet.create({
     height: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   content: {

@@ -123,7 +123,8 @@ const styles = StyleSheet.create({
   dialog: {
     width: '100%',
     maxWidth: 340,
-    borderRadius: 18,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.elevated,
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
@@ -145,6 +146,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
     borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.primary,
     paddingHorizontal: spacing.md,
     ...typography.input.text,
@@ -161,7 +163,8 @@ const styles = StyleSheet.create({
     minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderCurve: 'continuous',
     paddingHorizontal: spacing.sm,
   },
   actionButtonPressed: {

@@ -413,6 +413,9 @@ export const colors = {
   // tint, saturated accent. These are the tint level — full card backgrounds for
   // category, selected, or special content, where a border would otherwise go.
   // Never use a `playful.*.soft` as a card fill; it belongs on badges and fills.
+  cameraPreview: '#000000',
+  hrvTrackStops: ['#FCA5A5', '#FDE68A', '#86EFAC'],
+
   surface: {
     welcome: '#FAF6F0',
     /** selected / primary card */

@@ -36,7 +36,7 @@ const exerciseRecommendation: InsightBuilder = (ctx) => {
     id: `recommend-${pick.techniqueId}`,
     eyebrow: 'Recommended for you',
     tone: pick.techniqueName,
-    detail: `Try ${pick.techniqueName} — ${pick.reason}.`,
+    detail: `Try ${pick.techniqueName}: ${pick.reason}.`,
     techniqueId: pick.techniqueId,
     ctaLabel: `Start • ${pick.duration}`,
   };
@@ -50,7 +50,7 @@ const heartInsight: InsightBuilder = ({ rmssd, avgRmssd, hrDrop, minBpm }) => {
         id: 'hrv-above-baseline',
         eyebrow: 'Heart insight',
         tone: 'HRV above baseline',
-        detail: `Your RMSSD is ${deltaPct}% above your 7-day average — a sign your nervous system is recovering well today.`,
+        detail: `Your RMSSD is ${deltaPct}% above your 7-day average, a sign your nervous system is recovering well today.`,
       };
     }
     if (deltaPct <= -15) {
@@ -65,7 +65,7 @@ const heartInsight: InsightBuilder = ({ rmssd, avgRmssd, hrDrop, minBpm }) => {
       id: 'hrv-steady',
       eyebrow: 'Heart insight',
       tone: 'HRV holding steady',
-      detail: `Your RMSSD is in line with your 7-day average (${Math.round(avgRmssd)} ms) — consistency is the goal.`,
+      detail: `Your RMSSD is in line with your 7-day average (${Math.round(avgRmssd)} ms). Consistency is the goal.`,
     };
   }
 
@@ -75,7 +75,7 @@ const heartInsight: InsightBuilder = ({ rmssd, avgRmssd, hrDrop, minBpm }) => {
         id: 'hr-drop-strong',
         eyebrow: 'Heart insight',
         tone: 'Strong vagal response',
-        detail: `Your heart rate dropped ${hrDrop} bpm during the hold — a strong parasympathetic signal.`,
+        detail: `Your heart rate dropped ${hrDrop} bpm during the hold, a strong parasympathetic signal.`,
       };
     }
     if (hrDrop >= 8) {
@@ -90,7 +90,7 @@ const heartInsight: InsightBuilder = ({ rmssd, avgRmssd, hrDrop, minBpm }) => {
       id: 'hr-drop-low',
       eyebrow: 'Heart insight',
       tone: 'Limited HR drop',
-      detail: `Only a ${hrDrop} bpm drop this session — try a longer, slower exhale to engage the vagus nerve.`,
+      detail: `Only a ${hrDrop} bpm drop this session. Try a longer, slower exhale to engage the vagus nerve.`,
     };
   }
 
@@ -99,7 +99,7 @@ const heartInsight: InsightBuilder = ({ rmssd, avgRmssd, hrDrop, minBpm }) => {
       id: 'min-bpm',
       eyebrow: 'Heart insight',
       tone: 'Resting low recorded',
-      detail: `Your lowest HR this session was ${minBpm} bpm — a useful baseline as you build consistency.`,
+      detail: `Your lowest HR this session was ${minBpm} bpm, a useful baseline as you build consistency.`,
     };
   }
 
@@ -138,7 +138,7 @@ const recoveryInsight: InsightBuilder = ({ rmssd, sdnn, hrDrop }) => {
     detail:
       hrDrop != null && hrDrop > 0
         ? `Variability is on the lower side. A ${hrDrop} bpm drop still shows some recovery, but stress or fatigue may be elevated.`
-        : 'Variability is on the lower side — common when stress, fatigue, or inconsistent breathing is higher.',
+        : 'Variability is on the lower side, common when stress, fatigue, or inconsistent breathing is higher.',
   };
 };
 
@@ -152,7 +152,7 @@ const stressInsight: InsightBuilder = ({ stress, stressHistory }) => {
         id: 'stress-down',
         eyebrow: 'Stress insight',
         tone: 'Stress trending down',
-        detail: `Your average stress is ${Math.abs(delta)} pts lower than last week — the routine is paying off.`,
+        detail: `Your average stress is ${Math.abs(delta)} pts lower than last week. The routine is paying off.`,
       };
     }
     if (delta >= 5) {
@@ -176,7 +176,7 @@ const stressInsight: InsightBuilder = ({ stress, stressHistory }) => {
       id: 'stress-low-streak',
       eyebrow: 'Stress insight',
       tone: `${stats.lowZoneStreak}-day low-stress streak`,
-      detail: 'Your daily best has stayed in the low zone — your baseline is shifting.',
+      detail: 'Your daily best has stayed in the low zone. Your baseline is shifting.',
     };
   }
 
@@ -197,7 +197,7 @@ const stressInsight: InsightBuilder = ({ stress, stressHistory }) => {
         id: 'stress-calm',
         eyebrow: 'Stress insight',
         tone: 'Calm state',
-        detail: `Your stress score (${stress}) is in the ${zone.label.toLowerCase()} zone — a good baseline.`,
+        detail: `Your stress score (${stress}) is in the ${zone.label.toLowerCase()} zone, a good baseline.`,
       };
     }
     if (stress <= 66) {
@@ -238,7 +238,7 @@ export const SAMPLE_INSIGHTS: Insight[] = [
     eyebrow: 'Recommended for you',
     tone: 'Resonance',
     detail:
-      "Try Resonance — coherent breathing maximizes HRV when you're in a balanced state.",
+      "Try Resonance: coherent breathing maximizes HRV when you're in a balanced state.",
     techniqueId: 'resonance',
     ctaLabel: 'Start • ~2 min',
   },
@@ -247,7 +247,7 @@ export const SAMPLE_INSIGHTS: Insight[] = [
     eyebrow: 'Heart insight',
     tone: 'HRV above baseline',
     detail:
-      'Your RMSSD is 12% above your 7-day average — a sign your nervous system is recovering well today.',
+      'Your RMSSD is 12% above your 7-day average, a sign your nervous system is recovering well today.',
   },
   {
     id: 'sample-recovery',
@@ -261,6 +261,6 @@ export const SAMPLE_INSIGHTS: Insight[] = [
     eyebrow: 'Stress insight',
     tone: 'Stress trending down',
     detail:
-      'Your average stress is 6 pts lower than last week — the routine is paying off.',
+      'Your average stress is 6 pts lower than last week. The routine is paying off.',
   },
 ];

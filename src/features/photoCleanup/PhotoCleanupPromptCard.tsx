@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     minHeight: 326,
     overflow: 'hidden',
     borderRadius: radius.large,
+    borderCurve: 'continuous',
   },
   artwork: {
     height: 172,

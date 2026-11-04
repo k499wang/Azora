@@ -130,7 +130,6 @@ import {
   TODAY_JOURNEY_COLUMN_WIDTH,
   TODAY_JOURNEY_DASH_GAP,
   TODAY_JOURNEY_DASH_HEIGHT,
-  TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
   TODAY_JOURNEY_RAIL_WIDTH,
   todayJourneyDashCount,
@@ -139,10 +138,6 @@ import { useTourTarget } from '../tour/tourTargets';
 import type { RootStackNavigationProp } from '../../app/navigation';
 
 const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
-// The add action stays compact even though user-authored to-do cards can grow.
-const ADD_ROW_HEIGHT = 60;
-const ADD_BADGE_SIZE = 38;
-const ADD_GOAL_ROW_ID = 'add-goal';
 const EMPTY_DAY_ROW_ID = 'empty-day';
 const DAY_DONE_ICON_SIZE = 64;
 const DAY_DONE_BURST = Array.from({ length: 8 }, (_, i) => ({
@@ -169,7 +164,6 @@ const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
 const JOURNEY_ROW_GAP = 12;
 const FOLDED_HEADER_SPACE = JOURNEY_ROW_GAP + spacing.md;
 const FOLD_TIMING = { duration: duration.fast, easing: easing.enter, reduceMotion: ReduceMotion.Never } as const;
-const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 // A load shorter than this never shows the skeleton: shown for a few frames and
 // swapped straight out, it read as the list flashing.
 const SKELETON_REVEAL = FadeIn.delay(200).duration(duration.fast);
@@ -499,26 +493,6 @@ const GoalRow = memo(function GoalRow({
 function goalSlotProps(rows: TodoListRow[], index: number) {
   const { first, last } = todoListGoalSlots(rows, index);
   return { firstSlot: first, lastSlot: last };
-}
-
-/** The way onto the personal task list. */
-function AddGoalRow({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Add a habit"
-      onPress={() => {
-        triggerTapHaptic();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.addRow, pressed && pressable.surface]}
-    >
-      <View style={styles.addBadge}>
-        <Icon bold name="plus" size={20} color={colors.text.secondary} />
-      </View>
-      <Text style={styles.addLabel}>Add a habit</Text>
-    </Pressable>
-  );
 }
 
 function AllDoneState({
@@ -972,7 +946,6 @@ function TodoListSection(props: TodoListSectionProps) {
   // The create error belongs to the sheet that is still open over this list.
   const mutationError =
     toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
-  const addNodeVisible = goalsQuery.isSuccess && goals.length === 0;
   const journeyReady = journeyOrder.ready && dailyRows != null;
   const fullOrder = journeyOrder.fullOrder;
   // Only the hours today actually fills. A plan asks for one exercise in its
@@ -1017,15 +990,14 @@ function TodoListSection(props: TodoListSectionProps) {
   const emptyDayVisible = readOnly && taskCount === 0;
   const taskLayoutIds = useMemo(() => {
     if (emptyDayVisible) return [...rowIds, EMPTY_DAY_ROW_ID];
-    return readOnly || !addNodeVisible ? rowIds : [...rowIds, ADD_GOAL_ROW_ID];
-  }, [rowIds, readOnly, addNodeVisible, emptyDayVisible]);
+    return rowIds;
+  }, [rowIds, emptyDayVisible]);
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: tasksOnly ? taskLayoutIds : journeyIds,
     gap: tasksOnly ? spacing.xs : JOURNEY_ROW_GAP,
     enabled: tasksOnly ? !readOnly : true,
     positioned: true,
     estimatedHeight: tasksOnly ? GOAL_ROW_HEIGHT : undefined,
-    fixedTailId: tasksOnly && !readOnly ? ADD_GOAL_ROW_ID : undefined,
     collapsed: collapsedIds,
     spaceAfter: foldedHeaderSpace,
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
@@ -1096,12 +1068,6 @@ function TodoListSection(props: TodoListSectionProps) {
     shape: railShape,
     done: doneRows,
   });
-
-  const addRowFadeStyle = useAnimatedStyle(() => ({
-    opacity: clearingForAllDone
-      ? reducedMotion ? 0 : withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter })
-      : 1,
-  }), [clearingForAllDone, reducedMotion]);
 
   if (userId == null) return null;
 
@@ -1179,7 +1145,7 @@ function TodoListSection(props: TodoListSectionProps) {
           <Text style={styles.statusText}>
             {tasksOnly ? "Couldn’t load your to-dos." : "Couldn’t load your plan."}
           </Text>
-          <ChunkyButton label="Retry" onPress={retryInitialLoad} tone={CHUNKY_TONE_QUIET} />
+          <ChunkyButton label="Try again" onPress={retryInitialLoad} tone={CHUNKY_TONE_QUIET} />
         </View>
       ) : null}
       {initialLoading || initialLoadError ? null : showAllDone ? (
@@ -1242,18 +1208,6 @@ function TodoListSection(props: TodoListSectionProps) {
               <EmptyDayState />
             </JourneyDragRow>
           ) : null}
-          {readOnly || !addNodeVisible || openSheet == null ? null : (
-            <JourneyDragRow
-              controller={controller}
-              id={ADD_GOAL_ROW_ID}
-              index={rowIds.length}
-              scrollRef={props.scrollRef}
-            >
-              <Animated.View style={addRowFadeStyle}>
-                <AddGoalRow onPress={openSheet} />
-              </Animated.View>
-            </JourneyDragRow>
-          )}
         </Animated.View>
       ) : journeyReady ? (
         <View style={styles.journey} onLayout={measureJourney}>
@@ -1467,16 +1421,6 @@ const styles = StyleSheet.create({
   goalFold: {
     flex: 1,
   },
-  addRow: {
-    minHeight: ADD_ROW_HEIGHT,
-    marginTop: ADD_ROW_OFFSET,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.card,
-    backgroundColor: colors.inertRow.fill,
-  },
   dayDone: {
     alignItems: 'center',
     gap: spacing.md,
@@ -1551,21 +1495,6 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
-  },
-  addBadge: {
-    width: ADD_BADGE_SIZE,
-    height: ADD_BADGE_SIZE,
-    borderRadius: radius.small,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.canvas,
-  },
-  addLabel: {
-    ...typography.body.large,
-    fontSize: 20,
-    lineHeight: 28,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   statusCard: {
     minHeight: 64,

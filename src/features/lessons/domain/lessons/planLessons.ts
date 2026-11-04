@@ -240,7 +240,7 @@ export const PLAN_LESSONS = [
         text: 'If today feels full, ask: **what’s a version I can do?** Maybe it’s one Reset instead of two. Start with that part, then return for the rest when you can. **Continuing from where you are** helps you keep going.',
       },
     ],
-    source: 'Habit formation — repetition in a stable context drives automaticity more than session length.',
+    source: 'Habit formation: repetition in a stable context drives automaticity more than session length.',
   },
   {
     id: 'plan.bad',
@@ -403,6 +403,6 @@ export const PLAN_LESSONS = [
         text: 'Choose the part of your plan that was **most useful and manageable to repeat**, then decide when you will return to it in an ordinary week.',
       },
     ],
-    source: 'Maintenance phase — narrowing to a single cue-bound behaviour is what survives the end of a structured programme.',
+    source: 'Maintenance phase: narrowing to a single cue-bound behaviour is what survives the end of a structured programme.',
   },
 ] as const satisfies readonly LessonDefinition[];

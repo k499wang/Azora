@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     borderRadius: 16,
+    borderCurve: 'continuous',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.subtle,
     borderBottomWidth: LIP_DEPTH,
@@ -195,6 +196,7 @@ const styles = StyleSheet.create({
   },
   pillLead: {
     borderRadius: 22,
+    borderCurve: 'continuous',
   },
   // a square rotated onto its corner, tucked behind the pill so only the point
   // aimed at Azo shows

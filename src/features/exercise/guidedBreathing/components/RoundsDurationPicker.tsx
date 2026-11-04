@@ -212,6 +212,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     minWidth: 104,
     borderRadius: radius.medium,
+    borderCurve: 'continuous',
     borderWidth: 1,
     paddingVertical: spacing.xs,
     elevation: 6,

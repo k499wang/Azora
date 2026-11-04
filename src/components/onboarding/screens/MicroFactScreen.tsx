@@ -188,7 +188,7 @@ export default function MicroFactScreen({
       </View>
 
       <Text style={styles.caption}>
-        Slow exhales activate the vagus nerve — your body's brake pedal.
+        Slow exhales activate the vagus nerve, your body's brake pedal.
       </Text>
     </OnboardingScreenLayout>
   );

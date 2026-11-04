@@ -48,7 +48,7 @@ export const FOCUS_LESSONS = [
         text: 'Think of one task you have been putting off. **Name a first step you can do in two minutes**, then do it.',
       },
     ],
-    source: 'Behavioural activation — action precedes motivation; the two-minute entry rule is the applied form.',
+    source: 'Behavioural activation: action precedes motivation; the two-minute entry rule is the applied form.',
   },
   {
     id: 'focus.switch',

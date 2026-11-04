@@ -107,6 +107,7 @@ const styles = StyleSheet.create({
   sheet: {
     ...card.paper,
     borderRadius: radius.card,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   binding: {

@@ -22,7 +22,7 @@ const DEFAULT_COPY: AzoAssistCopy = {
   ],
   chatHeading: 'Dump it all here. I’ll turn it into a plan.',
   chatPlaceholder: 'What’s today’s plan?',
-  planOpener: 'What’s on your mind today? Let it all out—messy is fine. I’ll turn it into manageable to-dos you can add to your list.',
+  planOpener: 'What’s on your mind today? Let it all out. Messy is fine. I’ll turn it into manageable to-dos you can add to your list.',
   brainDumpHeading: 'Brain dump it all. I’ll turn it into a routine you can actually finish.',
 };
 
@@ -35,7 +35,7 @@ const HOME_COPY: AzoAssistCopy = {
   ],
   chatHeading: 'Tell me what’s piling up. I’ll turn it into a cleaning plan.',
   chatPlaceholder: 'What needs tidying today?',
-  planOpener: 'What’s on your mind today? Tell me everything that’s piling up at home—messy is fine. I’ll turn it into small cleaning to-dos you can add to your list.',
+  planOpener: 'What’s on your mind today? Tell me everything that’s piling up at home. Messy is fine. I’ll turn it into small cleaning to-dos you can add to your list.',
   brainDumpHeading: 'Brain dump every mess on your mind. I’ll turn it into a cleaning routine you can actually finish.',
 };
 

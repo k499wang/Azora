@@ -204,6 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.card,
   },
   bubbleTail: {

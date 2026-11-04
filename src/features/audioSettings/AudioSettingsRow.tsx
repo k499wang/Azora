@@ -72,7 +72,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
-    borderRadius: 14,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     gap: spacing.sm,
   },
   rowDisabled: {

@@ -37,7 +37,7 @@ const Y_TICK_HEIGHT = 14;
 const HRV_INFO = {
   title: 'Heart Rate Variability',
   message:
-    'HRV is the variation in time between consecutive heartbeats. The chart shows your RR intervals (in milliseconds) over the session — wider swings mean more variability and stronger vagal tone.\n\nHealthy resting RR intervals fall roughly between 700–1100 ms, with visible beat-to-beat variation. Higher variability generally indicates better recovery and cardiovascular health.',
+    'HRV is the variation in time between consecutive heartbeats. The chart shows your RR intervals (in milliseconds) over the session. Wider swings mean more variability and stronger vagal tone.\n\nHealthy resting RR intervals fall roughly between 700–1100 ms, with visible beat-to-beat variation. Higher variability generally indicates better recovery and cardiovascular health.',
 };
 
 export default function HRVChart({
@@ -261,7 +261,7 @@ export default function HRVChart({
         dividerColor={colors.neutral[200]}
         insight={chart ? hrvInsight : null}
         locked={locked}
-        lockedPlaceholder="Your HRV is 14% higher than your 30-day baseline, indicating your parasympathetic nervous system is in a strong recovery state. This pattern often follows consistent sleep and low-stress days — your nervous system is ready for higher-intensity effort. If this trend holds through tomorrow, it may be a good window to push a harder session."
+        lockedPlaceholder="Your HRV is 14% higher than your 30-day baseline, indicating your parasympathetic nervous system is in a strong recovery state. This pattern often follows consistent sleep and low-stress days. Your nervous system is ready for higher-intensity effort. If this trend holds through tomorrow, it may be a good window to push a harder session."
         blurLockedContent={false}
       />
       {locked ? (

@@ -300,7 +300,7 @@ export function buildBpmLockedInsightPlaceholder(
     return 'Your breathing-session graph can show whether this reset tends to settle, raise, stabilize, or rhythmically vary your heart rate across repeated sessions.';
   }
 
-  return "Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity.";
+  return "Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session, well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity.";
 }
 
 export function buildBpmInsight(

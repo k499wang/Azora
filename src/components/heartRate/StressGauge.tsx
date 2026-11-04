@@ -305,7 +305,8 @@ const styles = StyleSheet.create({
   zonePill: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
   },
   zonePillText: {
     ...typography.label.small,

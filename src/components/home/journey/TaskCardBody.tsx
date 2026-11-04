@@ -42,6 +42,7 @@ export const taskCard = StyleSheet.create({
     ...card.base,
     ...card.outlined,
     borderRadius: radius.xl,
+    borderCurve: 'continuous',
   },
   face: {
     minHeight: TODAY_JOURNEY_CARD_MIN_HEIGHT,

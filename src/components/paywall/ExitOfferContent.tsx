@@ -277,7 +277,7 @@ export function ExitOfferContent({
                 <OfferGiftArt size={Math.min(GIFT_BOX_SIZE, windowWidth - 2 * spacing.lg)} delay={GIFT_OPEN_DELAY} />
               </Animated.View>
               <Animated.View entering={contentEntrance(0, reduceMotion)}>
-                <Text style={paywallStepStyles.stepTitle}>Wait — a better price</Text>
+                <Text style={paywallStepStyles.stepTitle}>Wait, a better price</Text>
               </Animated.View>
               <Animated.View entering={cardEntrance(reduceMotion)}>
                 {showInitialLoading ? (
@@ -305,7 +305,7 @@ export function ExitOfferContent({
               loading={paywall.isPurchasing}
             />
           )}
-          <Text style={styles.commitmentText}>No commitment — cancel anytime</Text>
+          <Text style={styles.commitmentText}>No commitment. Cancel anytime</Text>
         </ScreenContent>
       </View>
     </LinearGradient>

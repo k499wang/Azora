@@ -500,7 +500,8 @@ const styles = StyleSheet.create({
   lockedWrap: {
     width: '100%',
     position: 'relative',
-    borderRadius: 20,
+    borderRadius: 22,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   lockedContent: {
