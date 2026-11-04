@@ -1,6 +1,7 @@
 import type { IconName } from '../components/common/icons/Icon';
 import type { SelfCareGoalRecurrence } from '../features/selfCare/domain/selfCareGoal';
 import type { SelfCareGoalDraft } from '../services/selfCare/selfCareService';
+import type { CleanupPlan } from '../features/photoCleanup/domain/cleanupPlan';
 
 export type RoutineLibraryId =
   | 'morning-reset'
@@ -444,6 +445,17 @@ export const HOME_CARE_GUIDES = ROUTINE_LIBRARY.filter(
 
 export function getRoutineLibraryEntry(id: RoutineLibraryId) {
   return ROUTINE_LIBRARY.find((entry) => entry.id === id) ?? null;
+}
+
+/** The chosen steps as a plan to run straight away, without adding anything to the list. */
+export function routineRunPlan(routine: RoutineTemplate, taskIds: readonly string[]): CleanupPlan {
+  return {
+    title: routine.title,
+    objects: routine.tasks
+      .filter((task) => taskIds.includes(task.id))
+      .map((task) => ({ name: task.title, minutes: task.durationMinutes, icon: task.icon })),
+    safetyNote: null,
+  };
 }
 
 export function routineTemplateDrafts(

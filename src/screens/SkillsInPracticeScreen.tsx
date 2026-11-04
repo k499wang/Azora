@@ -1,7 +1,8 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import type { SkillsInPracticeScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
 import ScreenContent from '../components/common/ScreenContent';
 import { Text } from '../components/common/Text';
 import SkillPracticeRow, { skillPracticeResult } from '../features/plan/SkillPracticeRow';
@@ -34,6 +35,7 @@ interface SkillItem {
 /** Every skill the user reported trying in this plan, newest first. */
 export default function SkillsInPracticeScreen({ route }: SkillsInPracticeScreenProps) {
   const insets = useSafeAreaInsets();
+  const { scrollY, onScroll } = useCollapsingTitle();
   const isPreview = __DEV__ && route.params?.preview === true;
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { enrollment } = usePlanPositionState(isPreview ? null : userId);
@@ -54,12 +56,14 @@ export default function SkillsInPracticeScreen({ route }: SkillsInPracticeScreen
 
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
+        <CollapsingBackTitle title="Skills in practice" />
         <ScreenContent width="grouped">
-          <AppTopBar title="Skills in practice" showBack showAvatar={false} showStreak={false} />
           <View style={styles.body}>
             <Text style={styles.summary}>
               {items.length === 0
@@ -82,7 +86,8 @@ export default function SkillsInPracticeScreen({ route }: SkillsInPracticeScreen
             {isPreview ? <Text style={styles.note}>Preview only — sample lessons, nothing saved.</Text> : null}
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="Skills in practice" scrollY={scrollY} />
     </View>
   );
 }

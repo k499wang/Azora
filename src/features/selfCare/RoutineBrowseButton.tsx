@@ -9,7 +9,7 @@ interface Props {
 export default function RoutineBrowseButton({ onPress }: Props) {
   return (
     <GlassIconButton accessibilityLabel="Browse routines" variant="regular" onPress={onPress}>
-      <Icon name="dots-horizontal" size={20} color={colors.text.secondary} />
+      <Icon name="grid-plus" size={20} color={colors.text.secondary} />
     </GlassIconButton>
   );
 }

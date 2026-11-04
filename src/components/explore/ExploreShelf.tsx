@@ -34,7 +34,7 @@ export default function ExploreShelf({ title, children, onSeeAll }: ExploreShelf
               style={({ pressed }) => [styles.seeAll, pressed && pressable.subtle]}
             >
               <Text style={styles.seeAllLabel}>All</Text>
-              <Icon bold name="chevron-right" size={16} color={colors.text.brand} />
+              <Icon bold name="chevron-right" size={20} color={colors.text.brand} />
             </Pressable>
           )}
         />
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   seeAllLabel: {
-    ...typography.label.medium,
+    ...typography.label.large,
     fontFamily: fonts.semibold,
     color: colors.text.brand,
   },

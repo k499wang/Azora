@@ -2,6 +2,8 @@ export interface CleanupItem {
   name: string;
   /** The model's estimate, in whole minutes. */
   minutes: number;
+  /** The illustration, for a step that already has one; otherwise read from `name`. */
+  icon?: string;
 }
 
 export interface CleanupPlan {

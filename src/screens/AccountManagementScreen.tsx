@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Alert, StyleSheet, View } from 'react-native';
 import type { AccountManagementScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
-import { Text } from '../components/common/Text';
 import SettingsGroup from '../components/settings/SettingsGroup';
 import SettingsRow from '../components/settings/SettingsRow';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
 
-export default function AccountManagementScreen({ navigation }: AccountManagementScreenProps) {
+export default function AccountManagementScreen(_: AccountManagementScreenProps) {
+  const { scrollY, onScroll } = useCollapsingTitle();
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [signingOut, setSigningOut] = useState(false);
@@ -113,37 +112,15 @@ export default function AccountManagementScreen({ navigation }: AccountManagemen
 
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <CollapsingBackTitle title="Account management" style={{ paddingBottom: spacing.lg }} />
         <ScreenContent width="grouped">
-          <View style={styles.topSection}>
-            <AppTopBar
-              showAvatar={false}
-              showStreak={false}
-              leftSlot={
-                <View style={styles.headerLeft}>
-                  <Pressable
-                    onPress={() => navigation.goBack()}
-                    accessibilityRole="button"
-                    accessibilityLabel="Back"
-                    hitSlop={12}
-                    style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-                  >
-                    <MaterialCommunityIcons
-                      name="chevron-left"
-                      size={28}
-                      color={colors.text.primary}
-                    />
-                  </Pressable>
-                  <Text style={styles.headerTitle}>Account management</Text>
-                </View>
-              }
-            />
-          </View>
-
           <View style={styles.section}>
             <SettingsGroup>
               <SettingsRow
@@ -166,7 +143,8 @@ export default function AccountManagementScreen({ navigation }: AccountManagemen
             </SettingsGroup>
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="Account management" scrollY={scrollY} />
     </View>
   );
 }
@@ -182,33 +160,9 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
-  topSection: {
-    paddingBottom: spacing.xl,
-  },
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
     gap: spacing.md,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: -spacing.xs,
-  },
-  headerTitle: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    letterSpacing: 0.2,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

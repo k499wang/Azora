@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RoutineLibraryDetailScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import CoinWorth from '../components/common/CoinWorth';
 import AnimatedSelectionToggle from '../components/common/AnimatedSelectionToggle';
 import ChunkyButton, { CHUNKY_TONE_QUIET } from '../components/common/ChunkyButton';
@@ -28,7 +29,7 @@ import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { useCreateSelfCareGoalsMutation } from '../queries/selfCare/useCreateSelfCareGoalsMutation';
 import { useSelfCareGoalsQuery } from '../queries/selfCare/useSelfCareGoalsQuery';
-import { trackRoutinePresetAdded } from '../services/analytics/tracking';
+import { trackRoutinePresetAdded, trackRoutineStartedNow } from '../services/analytics/tracking';
 import { shareHouseCleaningPdf, previewHouseCleaningPdf } from '../services/routineLibrary/houseCleaningPdf';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
@@ -45,6 +46,7 @@ function errorMessage(error: unknown) {
 
 function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigation: RoutineLibraryDetailScreenProps['navigation'] }) {
   const guide = getRoutineGuide(entry.id);
+  const { scrollY, onScroll } = useCollapsingTitle();
   const facts = routineFacts(entry);
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -66,6 +68,14 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
     triggerTapHaptic();
     selection.toggleAll();
   };
+  const { addToRoutine: startNow } = useAddRoutinePreset({
+    sourceScreen: 'RoutineLibraryDetail',
+    sourceAction: 'start_now',
+    onAllowed: () => {
+      trackRoutineStartedNow({ routine: entry.id, tasks: selectedTasks.length });
+      navigation.navigate('PhotoCleanup', { run: { routineId: entry.id, taskIds: selectedIds } });
+    },
+  });
   const { addToRoutine, isLoading: isRoutinePresetAccessLoading } = useAddRoutinePreset({
     sourceScreen: 'RoutineLibraryDetail',
     onAllowed: () => {
@@ -79,8 +89,8 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
 
   return (
     <View style={styles.screen}>
-      <AppTopBar title={entry.title} showBack showAvatar={false} showStreak={false} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <CollapsingBackTitle title={entry.title} style={styles.bleed} />
         <ScreenContent width="grouped">
           <RoutineLibraryArt entry={entry} size="hero" />
           <View style={styles.facts}>
@@ -183,11 +193,19 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
             })}
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title={entry.title} scrollY={scrollY} />
       <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
-        <ScreenContent width="grouped">
+        <ScreenContent width="grouped" style={styles.trayActions}>
           <ChunkyButton
             shape="card"
+            label="Start now"
+            disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
+            onPress={startNow}
+          />
+          <ChunkyButton
+            shape="card"
+            tone={CHUNKY_TONE_QUIET}
             label={selectedTasks.length === 0 ? 'Add to My Routine' : `Add ${selectedTasks.length} to My Routine`}
             disabled={!selection.canSubmit || isRoutinePresetAccessLoading}
             loading={createGoals.isPending}
@@ -203,6 +221,7 @@ function TemplateDetail({ entry, navigation }: { entry: RoutineTemplate; navigat
 function PdfDetail({ route }: Pick<RoutineLibraryDetailScreenProps, 'route'>) {
   const entry = getRoutineLibraryEntry(route.params.libraryId);
   const [error, setError] = useState<string | null>(null);
+  const { scrollY, onScroll } = useCollapsingTitle();
   if (entry == null || entry.kind !== 'pdf') return null;
   const perform = (action: () => Promise<void>) => {
     triggerTapHaptic();
@@ -211,8 +230,8 @@ function PdfDetail({ route }: Pick<RoutineLibraryDetailScreenProps, 'route'>) {
   };
   return (
     <View style={styles.screen}>
-      <AppTopBar title="House cleaning guide" showBack showAvatar={false} showStreak={false} />
-      <ScrollView contentContainerStyle={styles.pdfContent} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.pdfContent} showsVerticalScrollIndicator={false}>
+        <CollapsingBackTitle title="House cleaning guide" style={styles.bleed} />
         <ScreenContent width="grouped">
           <RoutineLibraryArt entry={entry} size="hero" />
           <Text style={styles.eyebrow}>{entry.eyebrow}</Text>
@@ -226,7 +245,8 @@ function PdfDetail({ route }: Pick<RoutineLibraryDetailScreenProps, 'route'>) {
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="House cleaning guide" scrollY={scrollY} />
     </View>
   );
 }
@@ -241,8 +261,9 @@ export default function RoutineLibraryDetailScreen(props: RoutineLibraryDetailSc
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
-  content: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.lg, paddingBottom: spacing.xl },
-  pdfContent: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.lg, paddingBottom: spacing['7xl'] },
+  bleed: { marginHorizontal: -padding.screen.horizontal, paddingBottom: spacing.sm },
+  content: { paddingHorizontal: padding.screen.horizontal, paddingBottom: spacing.xl },
+  pdfContent: { paddingHorizontal: padding.screen.horizontal, paddingBottom: spacing['7xl'] },
   eyebrow: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.brand, textTransform: 'uppercase', letterSpacing: 0.6, paddingTop: spacing.lg },
   title: { ...typography.title.title2, fontFamily: fonts.semibold, color: colors.text.primary, paddingTop: spacing.xs },
   facts: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', columnGap: spacing.xs, paddingTop: spacing.lg },
@@ -258,9 +279,10 @@ const styles = StyleSheet.create({
   tipCopy: { flex: 1 },
   howTitle: { ...typography.body.large, fontFamily: fonts.semibold, color: colors.text.primary, paddingBottom: spacing.xs },
   tasksHeader: { paddingTop: spacing.xl },
-  addAll: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.brand },
+  addAll: { ...typography.label.large, fontFamily: fonts.semibold, color: colors.text.brand },
   rows: { gap: spacing.sm, paddingTop: spacing.sm },
   tray: { ...card.trayShadow, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle, backgroundColor: colors.background.canvas },
+  trayActions: { gap: spacing.sm },
   disabled: { opacity: 0.45 },
   error: { ...typography.label.medium, color: colors.error[700], textAlign: 'center', paddingTop: spacing.sm },
   pdfMeta: { ...typography.label.medium, fontFamily: fonts.semibold, color: colors.text.tertiary, paddingTop: spacing.md },

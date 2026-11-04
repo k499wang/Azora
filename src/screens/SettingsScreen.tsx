@@ -1,13 +1,11 @@
-import { Text } from '../components/common/Text';
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Switch, View } from 'react-native';
 import * as Device from 'expo-device';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
-import { typography, fonts } from '../theme/typography';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import SectionHeader from '../components/common/SectionHeader';
 import SettingsGroup from '../components/settings/SettingsGroup';
 import SettingsRow from '../components/settings/SettingsRow';
@@ -49,6 +47,7 @@ const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
+  const { scrollY, onScroll } = useCollapsingTitle();
   const user = useAuthStore((s) => s.user);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [streakPreviewVisible, setStreakPreviewVisible] = useState(false);
@@ -239,35 +238,15 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <CollapsingBackTitle title="Settings" style={{ paddingBottom: spacing.lg }} />
         <ScreenContent width="grouped">
-          <View style={styles.topSection}>
-            <AppTopBar
-              showAvatar={false}
-              showStreak={false}
-              leftSlot={
-                <View style={styles.headerLeft}>
-                  <Pressable
-                    onPress={() => navigation.goBack()}
-                    hitSlop={12}
-                    style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-                  >
-                    <MaterialCommunityIcons
-                      name="chevron-left"
-                      size={28}
-                      color={colors.text.primary}
-                    />
-                  </Pressable>
-                  <Text style={styles.headerTitle}>Settings</Text>
-                </View>
-              }
-            />
-          </View>
-
           <View style={styles.section}>
             <SectionHeader title="Preferences" />
             <SettingsGroup>
@@ -669,7 +648,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             </SettingsGroup>
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="Settings" scrollY={scrollY} />
 
       <NotificationsSettingsSheet
         visible={notificationsVisible}
@@ -706,33 +686,9 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
-  topSection: {
-    paddingBottom: spacing.xl,
-  },
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
     gap: spacing.lg,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: -spacing.xs,
-  },
-  headerTitle: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    letterSpacing: 0.2,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

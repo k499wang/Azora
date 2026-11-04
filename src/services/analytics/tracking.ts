@@ -273,6 +273,10 @@ export function trackRoutinePresetAdded(props: { routine: string; tasks: number 
   posthog.capture(AnalyticsEvent.RoutinePresetAdded, { routine: props.routine, tasks: props.tasks });
 }
 
+export function trackRoutineStartedNow(props: { routine: string; tasks: number }) {
+  posthog.capture(AnalyticsEvent.RoutineStartedNow, { routine: props.routine, tasks: props.tasks });
+}
+
 export function trackCleanupRoomPicked(props: { room: string }) {
   posthog.capture(AnalyticsEvent.CleanupRoomPicked, { room: props.room });
 }

@@ -455,10 +455,11 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/>
   `,
 
-  'dots-horizontal': `
-    <circle cx="5" cy="12" r="1.9" fill="currentColor"/>
-    <circle cx="12" cy="12" r="1.9" fill="currentColor"/>
-    <circle cx="19" cy="12" r="1.9" fill="currentColor"/>
+  'grid-plus': `
+    <rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/>
+    <rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor"/>
+    <rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/>
+    <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M17 14v6M14 17h6"/>
   `,
 
   minus: `

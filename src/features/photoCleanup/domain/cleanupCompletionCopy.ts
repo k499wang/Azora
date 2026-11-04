@@ -1,9 +1,21 @@
 /** Removed items clear the list but do not count as completed cleanup. */
-export function cleanupCompletionCopy(completedCount: number, elapsedMinutes: number | null = null) {
+export function cleanupCompletionCopy(
+  completedCount: number,
+  elapsedMinutes: number | null = null,
+  kind: 'cleanup' | 'routine' = 'cleanup',
+) {
   if (completedCount === 0) {
     return {
       title: 'List cleared',
       subtitle: 'No items were marked done. You can try another spot whenever you’re ready.',
+    };
+  }
+  if (kind === 'routine') {
+    return {
+      title: 'Routine done',
+      subtitle: `You finished ${completedCount} ${completedCount === 1 ? 'step' : 'steps'}${
+        elapsedMinutes == null ? '' : ` in ${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'}`
+      }.`,
     };
   }
   return {

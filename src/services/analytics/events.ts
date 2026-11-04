@@ -94,6 +94,7 @@ export const AnalyticsEvent = {
   RoutinePlayerFinished: 'routine_player_finished',
   CleanupRoomPicked: 'cleanup_room_picked',
   RoutinePresetAdded: 'routine_preset_added',
+  RoutineStartedNow: 'routine_started_now',
   AzoAssistRequested: 'azo_assist_requested',
   AzoAssistTodosAdded: 'azo_assist_todos_added',
   AzoAssistTodosChanged: 'azo_assist_todos_changed',

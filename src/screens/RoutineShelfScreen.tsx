@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RoutineShelfScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import { Text } from '../components/common/Text';
 import RoutineShelfCard from '../components/explore/RoutineShelfCard';
@@ -19,6 +20,7 @@ import { fonts, typography } from '../theme/typography';
 export default function RoutineShelfScreen({ navigation, route }: RoutineShelfScreenProps) {
   const insets = useSafeAreaInsets();
   const isAdded = useIsRoutineAdded();
+  const { scrollY, onScroll } = useCollapsingTitle();
   const [shelfId, setShelfId] = useState<RoutineShelfId>(route.params.shelfId);
   const openedOnLastChip = useRef(route.params.shelfId === ROUTINE_SHELVES.at(-1)?.id);
   const chips = useRef<ScrollView>(null);
@@ -27,8 +29,14 @@ export default function RoutineShelfScreen({ navigation, route }: RoutineShelfSc
 
   return (
     <View style={styles.screen}>
-      <AppTopBar title={shelf.label} showBack showAvatar={false} showStreak={false} />
-      <View>
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+        showsVerticalScrollIndicator={false}
+      >
+        <CollapsingBackTitle title={shelf.label} />
+        <View>
         <ScrollView
           ref={chips}
           horizontal
@@ -58,11 +66,7 @@ export default function RoutineShelfScreen({ navigation, route }: RoutineShelfSc
             );
           })}
         </ScrollView>
-      </View>
-      <ScrollView
-        contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
-        showsVerticalScrollIndicator={false}
-      >
+        </View>
         <ScreenContent width="grouped" style={styles.body}>
           <View style={styles.grid}>
             {routineShelfTemplates(shelf).map((routine) => (
@@ -89,7 +93,8 @@ export default function RoutineShelfScreen({ navigation, route }: RoutineShelfSc
             </View>
           )}
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title={shelf.label} scrollY={scrollY} />
     </View>
   );
 }
@@ -98,7 +103,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   chips: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
     gap: spacing.xs,
   },
   chip: {

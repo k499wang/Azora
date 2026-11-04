@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import ScreenContent from '../components/common/ScreenContent';
@@ -30,6 +31,7 @@ import { useTourTarget } from '../features/tour/tourTargets';
 
 export default function HeartScreen({ navigation }: HeartScreenProps) {
   const insets = useSafeAreaInsets();
+  const { scrollY, onScroll } = useCollapsingTitle();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const statsQuery = useHeartRateStatsQuery(userId);
   const profileQuery = useProfileQuery(userId);
@@ -78,7 +80,9 @@ export default function HeartScreen({ navigation }: HeartScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -86,8 +90,8 @@ export default function HeartScreen({ navigation }: HeartScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
+        <CollapsingBackTitle title="Heart" />
         <ScreenContent width="dashboard">
-          <AppTopBar title="Heart" showBack showAvatar={false} showStreak={false} />
           <View style={styles.statsContent}>
             {partialStatsError ? (
               <Text style={styles.partialErrorText}>Some stats may be out of date.</Text>
@@ -123,7 +127,8 @@ export default function HeartScreen({ navigation }: HeartScreenProps) {
             />
           </View>
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="Heart" scrollY={scrollY} />
       <View
         {...startHeartMeasurementTarget}
         style={[

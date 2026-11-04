@@ -85,7 +85,7 @@ test('removed Heart summary cards stay out of dashboard and result views', () =>
   const result = read('components/heartRate/HeartRateResultContent.tsx');
   const sessionComplete = read('screens/SessionCompleteScreen.tsx');
 
-  assert.match(heart, /showStreak={false}/);
+  assert.doesNotMatch(heart, /TopBarStreak|AppTopBar/);
   assert.doesNotMatch(heartRate, /label="HR change"|label="Lowest HR"/);
   assert.doesNotMatch(hrv, /label="Avg HRV"/);
   assert.doesNotMatch(result, /label="Avg HRV"/);

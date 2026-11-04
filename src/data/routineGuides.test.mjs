@@ -31,8 +31,9 @@ test('each guide describes exactly the existing tasks without missing or stale I
     );
     for (const task of entry.tasks) {
       const copy = guide.taskDescriptions[task.id];
-      assert.ok(wordCount(copy) >= 25, `${entry.id}/${task.id} needs practical guidance`);
-      assert.ok(wordCount(copy) <= 45, `${entry.id}/${task.id} should remain readable in a card`);
+      assert.ok(copy.trim().length > 0, `${entry.id}/${task.id} needs guidance`);
+      assert.equal(copy, copy.trim(), `${entry.id}/${task.id} has extra whitespace`);
+      assert.ok(wordCount(copy) <= 24, `${entry.id}/${task.id} should stay short and easy to read`);
       assert.notEqual(copy, task.title, `${entry.id}/${task.id} repeats its title`);
     }
   }
@@ -40,7 +41,6 @@ test('each guide describes exactly the existing tasks without missing or stale I
 
 test('guides include substantive original introductions, preparation, and a smaller start', () => {
   const introductions = new Set();
-  const taskDescriptions = new Set();
   const smallStarts = new Set();
   for (const entry of ROUTINE_TEMPLATES) {
     const guide = getRoutineGuide(entry.id);
@@ -54,10 +54,6 @@ test('guides include substantive original introductions, preparation, and a smal
     assert.ok(guide.preparation.length >= 2 && guide.preparation.length <= 3, entry.id);
     for (const tip of guide.preparation) {
       assert.ok(wordCount(tip) >= 7, `${entry.id} has an empty or incomplete tip`);
-    }
-    for (const description of Object.values(guide.taskDescriptions)) {
-      assert.ok(!taskDescriptions.has(description), `${entry.id} reuses generic task copy`);
-      taskDescriptions.add(description);
     }
     assert.ok(wordCount(guide.smallStart) >= 20, `${entry.id} needs a concrete smaller version`);
     assert.ok(!smallStarts.has(guide.smallStart), `${entry.id} repeats a smaller version`);

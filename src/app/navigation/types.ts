@@ -39,7 +39,7 @@ export type PreviewPlans = 'annualWeekly' | 'monthlyWeekly';
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   /** AI-guided first steps for a photographed messy space. */
-  PhotoCleanup: { preview?: boolean; roomId?: CleanupRoomId } | undefined;
+  PhotoCleanup: { preview?: boolean; roomId?: CleanupRoomId; run?: { routineId: RoutineLibraryId; taskIds: string[] } } | undefined;
   /** Ready-made cleaning plans, one per room. */
   CleanupRooms: undefined;
   /** Chat with Azo, who can suggest to-dos for today. */

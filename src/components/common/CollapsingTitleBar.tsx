@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -8,13 +9,17 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from './Text';
+import Icon from './icons/Icon';
 
 /** matches `AppTopBar`, so a collapsing bar is the height of every other one */
 const BAR_HEIGHT = 58;
+const BACK_ICON_SIZE = 26;
 
 /**
  * The scroll range the bar collapses over, in points, measured from the top of
@@ -83,13 +88,60 @@ export default function CollapsingTitleBar({ title, scrollY }: Props) {
       </Animated.View>
 
       <Animated.View style={[styles.row, collapsed]}>
-        <Text style={styles.title}>{title}</Text>
+        <Text numberOfLines={1} style={styles.title}>{title}</Text>
       </Animated.View>
     </View>
   );
 }
 
+/**
+ * The large title of a pushed screen, with its back chevron beside it. Both
+ * scroll away with the content; a `CollapsingTitleBar` then carries the title.
+ */
+export function CollapsingBackTitle({ title, style }: { title: string; style?: StyleProp<ViewStyle> }) {
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[{ paddingTop: insets.top }, style]}>
+      <View style={styles.backTitleRow}>
+        {navigation.canGoBack() ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={spacing.md}
+            style={({ pressed }) => [styles.back, pressed && pressable.control]}
+            onPress={() => {
+              triggerTapHaptic();
+              navigation.goBack();
+            }}
+          >
+            <Icon name="chevron-left" size={BACK_ICON_SIZE} color={colors.text.primary} />
+          </Pressable>
+        ) : null}
+        <Text style={styles.backTitle}>{title}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  back: {
+    marginLeft: -spacing.xs,
+    marginRight: spacing.xs,
+  },
+  backTitleRow: {
+    minHeight: BAR_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  backTitle: {
+    flexShrink: 1,
+    ...typography.title.title2,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
   bar: {
     position: 'absolute',
     top: 0,
@@ -110,6 +162,7 @@ const styles = StyleSheet.create({
   },
   row: {
     height: BAR_HEIGHT,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },

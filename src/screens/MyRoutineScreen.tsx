@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 import type { MyRoutineScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import SectionHeader from '../components/common/SectionHeader';
 import ScreenContent from '../components/common/ScreenContent';
 import Skeleton from '../components/common/Skeleton';
@@ -35,7 +36,10 @@ function errorMessage(error: unknown): string {
 }
 
 /** Every habit on the routine, including the ones today is not one of the days for. */
+const AnimatedSectionList = Animated.createAnimatedComponent(SectionList) as unknown as typeof SectionList;
+
 export default function MyRoutineScreen(_: MyRoutineScreenProps) {
+  const { scrollY, onScroll } = useCollapsingTitle();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const goalsQuery = useActiveSelfCareGoalsQuery(userId, todayLocalDate);
@@ -79,21 +83,20 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <AppTopBar
-        title="My routine"
-        showBack
-        showAvatar={false}
-        showStreak={false}
-      />
-      <SectionList
+      <AnimatedSectionList
+        onScroll={onScroll as never}
+        scrollEventThrottle={16}
         sections={sections}
         stickySectionHeadersEnabled={false}
         keyExtractor={(goal) => goal.id}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
-          status == null ? null : (
-            <ScreenContent width="grouped">{status}</ScreenContent>
-          )
+          <>
+            <CollapsingBackTitle title="My routine" style={styles.bleed} />
+            {status == null ? null : (
+              <ScreenContent width="grouped">{status}</ScreenContent>
+            )}
+          </>
         }
         renderSectionHeader={({ section }) => (
           <ScreenContent width="grouped">
@@ -141,6 +144,7 @@ export default function MyRoutineScreen(_: MyRoutineScreenProps) {
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+      <CollapsingTitleBar title="My routine" scrollY={scrollY} />
 
       <GoalEditSheet
         goal={editGoal}
@@ -171,8 +175,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.canvas,
   },
+  bleed: { marginHorizontal: -padding.screen.horizontal },
   content: {
-    paddingTop: spacing.lg,
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: spacing['7xl'],
   },

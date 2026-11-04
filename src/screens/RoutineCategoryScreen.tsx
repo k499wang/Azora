@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RoutineCategoryScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import AnimatedSelectionToggle from '../components/common/AnimatedSelectionToggle';
 import ChunkyButton from '../components/common/ChunkyButton';
 import ScreenContent from '../components/common/ScreenContent';
@@ -44,6 +45,7 @@ function routineDaypartLabel(scheduledTime: string): string {
 
 export default function RoutineCategoryScreen({ navigation, route }: RoutineCategoryScreenProps) {
   const insets = useSafeAreaInsets();
+  const { scrollY, onScroll } = useCollapsingTitle();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, todayLocalDate);
@@ -88,17 +90,15 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
 
   return (
     <View style={styles.screen}>
-      <AppTopBar
-        title={category.label}
-        showBack
-        showAvatar={false}
-        showStreak={false}
-      />
-      <FlatList
+      <Animated.FlatList
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={category.suggestions}
         keyExtractor={(item) => item.title}
         contentContainerStyle={styles.content}
         ListHeaderComponent={(
+          <>
+          <CollapsingBackTitle title={category.label} style={styles.bleed} />
           <ScreenContent width="grouped" style={styles.header}>
             <SectionHeader
               title="Choose routines"
@@ -123,6 +123,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
             {goalsQuery.isPending ? <Text style={styles.description}>Loading your routine…</Text> : null}
             {goalsQuery.isError ? <Text style={styles.error}>{errorMessage(goalsQuery.error)}</Text> : null}
           </ScreenContent>
+          </>
         )}
         renderItem={({ item }) => {
           const selected = selectedTitles.includes(item.title);
@@ -167,6 +168,7 @@ export default function RoutineCategoryScreen({ navigation, route }: RoutineCate
         }}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
+      <CollapsingTitleBar title={category.label} scrollY={scrollY} />
       <View style={[styles.actionTray, { paddingBottom: insets.bottom + spacing.md }]}>
         <ScreenContent width="grouped" style={styles.actionContent}>
           <ChunkyButton
@@ -192,14 +194,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: spacing.xl,
   },
+  bleed: { marginHorizontal: -padding.screen.horizontal },
   header: {
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border.subtle,
   },
   addAll: {
-    ...typography.label.medium,
+    ...typography.label.large,
     fontFamily: fonts.semibold,
     color: colors.text.brand,
   },

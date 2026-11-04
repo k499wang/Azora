@@ -1,7 +1,8 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CleanupRoomsScreenProps } from '../../app/navigation';
-import AppTopBar from '../../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../../components/common/CollapsingTitleBar';
 import ScreenContent from '../../components/common/ScreenContent';
 import ExploreActionCard from '../../components/explore/ExploreActionCard';
 import { trackCleanupRoomPicked } from '../../services/analytics/tracking';
@@ -25,14 +26,17 @@ const ROOM_HUES = {
 
 export default function CleanupRoomsScreen({ navigation }: CleanupRoomsScreenProps) {
   const insets = useSafeAreaInsets();
+  const { scrollY, onScroll } = useCollapsingTitle();
 
   return (
     <View style={styles.screen}>
-      <AppTopBar title="Clean a Room" showBack showAvatar={false} showStreak={false} />
-      <ScrollView
-        contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.xl }}
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
         showsVerticalScrollIndicator={false}
       >
+        <CollapsingBackTitle title="Clean a Room" style={styles.title} />
         <ScreenContent width="grouped" style={styles.grid}>
           {CLEANUP_ROOMS.map((room) => (
             <View key={room.id} style={styles.tile}>
@@ -51,13 +55,15 @@ export default function CleanupRoomsScreen({ navigation }: CleanupRoomsScreenPro
             </View>
           ))}
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="Clean a Room" scrollY={scrollY} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
+  title: { paddingBottom: spacing.md },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

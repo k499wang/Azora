@@ -4,7 +4,6 @@ import {
   Alert,
   AppState,
   Linking,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -15,6 +14,8 @@ import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PhotoCleanupScreenProps } from '../../app/navigation';
 import AppTopBar from '../../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../../components/common/CollapsingTitleBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import ScreenContent from '../../components/common/ScreenContent';
 import { Text } from '../../components/common/Text';
@@ -50,7 +51,8 @@ import CleanupPlanOverview from './CleanupPlanOverview';
 import { CLEANUP_ROOMS } from './domain/roomCleanupPlans';
 import CleanupItemSheet, { type CleanupItemEdit } from './CleanupItemSheet';
 import { addItem, moveItem, removeItem, replaceItem } from './domain/cleanupPlanEdits';
-import { cleanupItemIcon } from './domain/cleanupItemIcon';
+import { cleanupPlanItemIcon } from './domain/cleanupItemIcon';
+import { getRoutineLibraryEntry, routineRunPlan } from '../../data/routineLibrary';
 import PhotoCleanupFreeBadge from './PhotoCleanupFreeBadge';
 import AzoPortrait from '../mascot/AzoPortrait';
 import PhotoCleanupCompletion from './PhotoCleanupCompletion';
@@ -70,11 +72,21 @@ function errorMessage(error: unknown): string {
  */
 export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupScreenProps) {
   const focused = useIsFocused();
+  const { scrollY, onScroll } = useCollapsingTitle();
   const insets = useSafeAreaInsets();
   const preview = __DEV__ && route.params?.preview === true;
   const roomPlan = CLEANUP_ROOMS.find((room) => room.id === route.params?.roomId)?.plan ?? null;
-  const [stage, setStage] = useState<Stage>(preview || roomPlan != null ? 'ready' : 'capture');
-  const [plan, setPlan] = useState<CleanupPlan | null>(preview ? PHOTO_CLEANUP_PREVIEW_PLAN : roomPlan);
+  const run = route.params?.run;
+  const [routinePlan] = useState<CleanupPlan | null>(() => {
+    const routine = run == null ? null : getRoutineLibraryEntry(run.routineId);
+    return run == null || routine == null || routine.kind !== 'template' ? null : routineRunPlan(routine, run.taskIds);
+  });
+  const presetPlan = roomPlan ?? routinePlan;
+  const [stage, setStage] = useState<Stage>(() => {
+    if (routinePlan != null) return 'guide';
+    return preview || roomPlan != null ? 'ready' : 'capture';
+  });
+  const [plan, setPlan] = useState<CleanupPlan | null>(preview ? PHOTO_CLEANUP_PREVIEW_PLAN : presetPlan);
   const [completedObjectCount, setCompletedObjectCount] = useState(0);
   const [rearranging, setRearranging] = useState(false);
   const [slideKey, setSlideKey] = useState(0);
@@ -82,7 +94,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(() => (routinePlan == null ? null : Date.now()));
   const [elapsedMinutes, setElapsedMinutes] = useState<number | null>(null);
   const [itemEdit, setItemEdit] = useState<CleanupItemEdit | null>(null);
   const access = useFeatureAccess(FeatureKey.PhotoCleanup);
@@ -316,7 +328,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   }, [plan]);
 
   const startAnotherSpot = useCallback(() => {
-    if (roomPlan != null) {
+    if (presetPlan != null) {
       navigation.goBack();
       return;
     }
@@ -328,7 +340,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     setSlideKey(0);
     setError(null);
     setStage('capture');
-  }, [navigation, roomPlan]);
+  }, [navigation, presetPlan]);
 
   const activeObject = plan?.objects[0] ?? null;
   const nextObject = plan?.objects[1] ?? null;
@@ -365,13 +377,15 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     if (offset === 0 || offset + direction === 0) setSlideKey((key) => key + 1);
   }, [updateObjects]);
   useTimerKeepAwake('photo-cleanup', stage === 'guide' && !paused);
+  const pageTitle = stage === 'guide' || stage === 'complete'
+    ? null
+    : stage === 'ready' ? roomPlan?.title ?? 'Your cleanup' : 'Help me clean this';
   return (
     <View style={[styles.screen, stage === 'complete' && { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {stage !== 'complete' ? (
+      {stage === 'guide' ? (
         <AppTopBar
           showBack
-          title={stage === 'guide' ? undefined : stage === 'ready' ? 'Your cleanup' : 'Help me clean this'}
-          leftSlot={stage === 'guide' ? (
+          leftSlot={(
             <PlayerHeaderControls
               voiceOn={voiceOn}
               autoAdvance={autoAdvance}
@@ -381,12 +395,13 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
               }}
               onToggleAutoAdvance={() => setRoutineAutoAdvance(!autoAdvance)}
             />
-          ) : undefined}
+          )}
           showAvatar={false}
           showStreak={false}
         />
       ) : null}
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} style={styles.scroll} contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
+        {pageTitle == null ? null : <CollapsingBackTitle title={pageTitle} />}
         <ScreenContent width="grouped" style={[styles.content, stage === 'guide' && styles.slideshowContent]}>
           {stage === 'capture' ? (
             <>
@@ -433,7 +448,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
             <View style={styles.guide}>
               <TaskTimer
                 title={activeObject.name}
-                icon={cleanupItemIcon(activeObject.name) as ComponentProps<typeof TaskTimer>['icon']}
+                icon={cleanupPlanItemIcon(activeObject) as ComponentProps<typeof TaskTimer>['icon']}
                 stepKey={stepKey}
                 timer={timer}
                 minutes={activeObject.minutes}
@@ -446,7 +461,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
               <View style={styles.nextBlock}>
                 {plan.objects.length < 2 ? null : <RearrangePill onPress={() => setRearranging(true)} />}
                 <View style={[taskCard.surface, taskCard.face]}>
-                  <TaskCardBody icon={<RoutineTaskIcon name={nextObject == null ? 'celebration' : cleanupItemIcon(nextObject.name) as ComponentProps<typeof RoutineTaskIcon>['name']} />}>
+                  <TaskCardBody icon={<RoutineTaskIcon name={nextObject == null ? 'celebration' : cleanupPlanItemIcon(nextObject) as ComponentProps<typeof RoutineTaskIcon>['name']} />}>
                     <Text style={taskCard.overline}>{nextObject == null ? 'LAST ONE' : 'UP NEXT'}</Text>
                     <Text numberOfLines={1} style={taskCard.title}>
                       {nextObject == null ? 'Then you’re done' : nextObject.name}
@@ -461,20 +476,25 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 
           {stage === 'complete' && plan != null ? (
             <View style={styles.result}>
-              <PhotoCleanupCompletion completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} active={focused} />
+              <PhotoCleanupCompletion completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} active={focused} kind={routinePlan == null ? 'cleanup' : 'routine'} />
               <View style={styles.actions}>
                 <ChunkyButton shape="card" label="Done" onPress={() => navigation.goBack()} />
-                <ChunkyButton shape="card" label="Do another spot" tone={SECONDARY_TONE} onPress={startAnotherSpot} />
+                {routinePlan != null ? null : (
+                  <ChunkyButton shape="card" label="Do another spot" tone={SECONDARY_TONE} onPress={startAnotherSpot} />
+                )}
               </View>
             </View>
           ) : null}
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      {pageTitle == null ? null : <CollapsingTitleBar title={pageTitle} scrollY={scrollY} />}
       {stage === 'ready' && plan != null ? (
         <ScreenContent width="grouped" style={[styles.slideshowFooter, { paddingBottom: insets.bottom + spacing.xl }]}>
           <View style={styles.actions}>
             <ChunkyButton shape="card" label="Start cleaning" disabled={plan.objects.length === 0} onPress={startCleanup} icon={<Icon name="timer" size={22} color={colors.text.inverse} />} />
-            <ChunkyButton shape="card" label={roomPlan != null ? 'Choose a different room' : 'Use a different photo'} tone={SECONDARY_TONE} onPress={startAnotherSpot} />
+            {roomPlan != null ? null : (
+              <ChunkyButton shape="card" label="Use a different photo" tone={SECONDARY_TONE} onPress={startAnotherSpot} />
+            )}
           </View>
         </ScreenContent>
       ) : null}
@@ -504,7 +524,7 @@ function rearrangeItems(objects: readonly CleanupItem[]): RearrangeItem[] {
     return {
       key: `${item.name}#${count}`,
       title: item.name,
-      icon: cleanupItemIcon(item.name) as RearrangeItem['icon'],
+      icon: cleanupPlanItemIcon(item) as RearrangeItem['icon'],
       detail: `About ${item.minutes} min`,
     };
   });
@@ -516,7 +536,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  content: { flexGrow: 1, gap: spacing.lg, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.xl, paddingBottom: spacing['5xl'] },
+  content: { flexGrow: 1, gap: spacing.lg, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.sm, paddingBottom: spacing['5xl'] },
   slideshowContent: { paddingTop: 0, paddingBottom: spacing.md },
   nextBlock: { alignSelf: 'stretch', marginTop: 'auto', gap: spacing.sm },
   slideshowFooter: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md },

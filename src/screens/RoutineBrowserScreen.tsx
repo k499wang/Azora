@@ -1,7 +1,8 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RoutineBrowserScreenProps } from '../app/navigation';
-import AppTopBar from '../components/common/AppTopBar';
+import Animated from 'react-native-reanimated';
+import CollapsingTitleBar, { CollapsingBackTitle, useCollapsingTitle } from '../components/common/CollapsingTitleBar';
 import ScreenContent from '../components/common/ScreenContent';
 import { Text } from '../components/common/Text';
 import ExploreShelf from '../components/explore/ExploreShelf';
@@ -26,17 +27,22 @@ export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScree
   const todayLocalDate = useTodayLocalDate();
   const habitCount = useActiveSelfCareGoalsQuery(userId, todayLocalDate).data?.length ?? null;
   const isAdded = useIsRoutineAdded();
+  const { scrollY, onScroll } = useCollapsingTitle();
 
   return (
     <View style={styles.screen}>
-      <AppTopBar title="Routines" showBack showAvatar={false} showStreak={false} />
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenContent width="grouped" style={styles.inset}>
+        <View>
+          <CollapsingBackTitle title="Routines" />
+          <ScreenContent width="grouped" style={styles.inset}>
           <MyRoutineCard habitCount={habitCount} onPress={() => navigation.navigate('MyRoutine')} />
-        </ScreenContent>
+          </ScreenContent>
+        </View>
         {ROUTINE_SHELVES.map((shelf) => (
           <ExploreShelf
             key={shelf.id}
@@ -65,7 +71,8 @@ export default function RoutineBrowserScreen({ navigation }: RoutineBrowserScree
             />
           ))}
         </ScreenContent>
-      </ScrollView>
+      </Animated.ScrollView>
+      <CollapsingTitleBar title="Routines" scrollY={scrollY} />
     </View>
   );
 }
@@ -76,7 +83,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   content: {
-    paddingTop: spacing.lg,
     gap: spacing['2xl'],
   },
   inset: {

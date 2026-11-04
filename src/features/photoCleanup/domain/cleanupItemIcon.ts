@@ -19,6 +19,10 @@ const ITEM_ICONS: readonly [RegExp, string][] = [
   [/\b(desk|table|counter|surface|shelf|shelves|nightstand|dresser)\b/, 'todo-surface'],
 ];
 
+export function cleanupPlanItemIcon(item: { name: string; icon?: string }): string {
+  return item.icon ?? cleanupItemIcon(item.name);
+}
+
 export function cleanupItemIcon(name: string): string {
   const label = name.toLowerCase();
   return ITEM_ICONS.find(([pattern]) => pattern.test(label))?.[1] ?? 'todo-broom';

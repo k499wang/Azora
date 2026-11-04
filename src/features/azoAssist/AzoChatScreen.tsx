@@ -215,31 +215,35 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
           <ScreenContent width="grouped" style={styles.content}>
             {messages.length === 0 ? (
               <View style={styles.welcome}>
-                <RiseUnlessReducedMotion reducedMotion={reducedMotion}>
-                  <AzoPortrait size={140} expression="happy" active={focused} />
-                </RiseUnlessReducedMotion>
+                <View style={[styles.welcomeSide, styles.welcomeAbove]}>
+                  <RiseUnlessReducedMotion reducedMotion={reducedMotion}>
+                    <AzoPortrait size={140} expression="happy" active={focused} />
+                  </RiseUnlessReducedMotion>
+                </View>
                 <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={stagger.base}>
                   <Text style={styles.heading}>{copy.chatHeading}</Text>
                 </RiseUnlessReducedMotion>
-                <View style={styles.starters}>
-                  {copy.starters.map((starter, index) => (
-                    <RiseUnlessReducedMotion
-                      key={starter}
-                      reducedMotion={reducedMotion}
-                      delay={stagger.base * 2 + stagger.tight * index}
-                    >
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => {
-                          triggerTapHaptic();
-                          void send(starter);
-                        }}
-                        style={({ pressed }) => [card.base, card.shadow, styles.starter, pressed && pressable.control]}
+                <View style={styles.welcomeSide}>
+                  <View style={styles.starters}>
+                    {copy.starters.map((starter, index) => (
+                      <RiseUnlessReducedMotion
+                        key={starter}
+                        reducedMotion={reducedMotion}
+                        delay={stagger.base * 2 + stagger.tight * index}
                       >
-                        <Text style={styles.starterText}>{starter}</Text>
-                      </Pressable>
-                    </RiseUnlessReducedMotion>
-                  ))}
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => {
+                            triggerTapHaptic();
+                            void send(starter);
+                          }}
+                          style={({ pressed }) => [card.base, card.shadow, styles.starter, pressed && pressable.control]}
+                        >
+                          <Text style={styles.starterText}>{starter}</Text>
+                        </Pressable>
+                      </RiseUnlessReducedMotion>
+                    ))}
+                  </View>
                 </View>
               </View>
             ) : null}
@@ -462,6 +466,8 @@ function AzoReply({ text, streaming, onDone }: { text: string; streaming: boolea
   );
 }
 
+const WELCOME_SIDE_MIN_HEIGHT = 230;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
   flex: { flex: 1 },
@@ -474,7 +480,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   headerColumn: { paddingHorizontal: padding.screen.horizontal },
-  welcome: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  welcome: { flex: 1, alignItems: 'center', gap: spacing.sm },
+  // Equal sides hold the heading on the page's vertical centre, whatever each side contains.
+  welcomeSide: { flex: 1, minHeight: WELCOME_SIDE_MIN_HEIGHT, alignSelf: 'stretch' },
+  welcomeAbove: { alignItems: 'center', justifyContent: 'flex-end' },
   heading: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,

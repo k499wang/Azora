@@ -177,7 +177,7 @@ function AppStack({ showBootPaywall, tourEnabled, initialTab }: AppStackProps) {
       <Stack.Screen
         name="PhotoCleanup"
         component={PhotoCleanupScreen}
-        options={({ route }) => (route.params?.roomId == null
+        options={({ route }) => (route.params?.roomId == null && route.params?.run == null
           ? SLIDE_UP_SCREEN_OPTIONS
           : { presentation: 'card', animation: 'slide_from_right' })}
       />
