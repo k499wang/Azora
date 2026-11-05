@@ -135,3 +135,11 @@ test('profile shortcuts select Profile without stacking main tab routes', () => 
     assert.equal(state.routes[0].params.screen, 'Profile');
   }
 });
+
+test('the app always opens on Home', () => {
+  const mainTabs = readFileSync(join(here, 'MainTabs.tsx'), 'utf8');
+  const rootNavigator = readFileSync(join(here, 'RootNavigator.tsx'), 'utf8');
+
+  assert.match(mainTabs, /initialRouteName="Home"/);
+  assert.doesNotMatch(rootNavigator, /initialTab/);
+});

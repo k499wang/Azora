@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   titleBlock: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   title: {
     ...typography.title.title1,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   disc: {
-    marginTop: spacing.xl,
+    marginTop: spacing.mdPlus,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing['3xl'],
-    marginTop: spacing.xl,
+    marginTop: spacing.mdPlus,
   },
   sideControl: {
     width: SIDE_ICON_SIZE,

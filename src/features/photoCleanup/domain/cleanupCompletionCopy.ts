@@ -13,9 +13,7 @@ export function cleanupCompletionCopy(
   if (kind === 'routine') {
     return {
       title: 'Routine done',
-      subtitle: `You finished ${completedCount} ${completedCount === 1 ? 'step' : 'steps'}${
-        elapsedMinutes == null ? '' : ` in ${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'}`
-      }.`,
+      subtitle: `You finished ${completedCount} ${completedCount === 1 ? 'step' : 'steps'}.`,
     };
   }
   return {

@@ -1,5 +1,5 @@
 export interface CoinReward {
-  /** the ledger reason, which also limits the reward to once a day */
+  /** the ledger reason */
   reason: string;
   coins: number;
 }

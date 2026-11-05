@@ -33,11 +33,11 @@ import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import TaskCardBody, { taskCard } from '../../components/home/journey/TaskCardBody';
-import RoutineTaskIcon from '../selfCare/RoutineTaskIcon';
 import TaskTimer from '../selfCare/shared/TaskTimer';
 import PlayerHeaderControls from '../selfCare/shared/PlayerHeaderControls';
-import RearrangeSheet, { RearrangePill, type RearrangeItem } from '../selfCare/shared/RearrangeSheet';
+import RearrangeSheet, { type RearrangeItem } from '../selfCare/shared/RearrangeSheet';
+import TaskUpNext from '../selfCare/shared/TaskUpNext';
+import type RoutineTaskIcon from '../selfCare/RoutineTaskIcon';
 import { speakRoutineLine, stopRoutineVoice } from '../selfCare/routineVoice';
 import { ROUTINE_TIME_UP_LINE, routineStepAnnouncement } from '../selfCare/domain/routinePlayer';
 import { useAudioPreferences } from '../audioSettings';
@@ -407,7 +407,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       ) : null}
       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} style={styles.scroll} contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
         {pageTitle == null ? null : <CollapsingBackTitle title={pageTitle} />}
-        <ScreenContent width="grouped" style={[styles.content, stage === 'guide' && styles.slideshowContent]}>
+        <ScreenContent width="grouped" style={[styles.content, stage === 'guide' && [styles.slideshowContent, { paddingBottom: insets.bottom + spacing.md }]]}>
           {stage === 'capture' ? (
             <>
               <View style={styles.azoStage}>
@@ -451,30 +451,28 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
 
           {stage === 'guide' && plan != null && activeObject != null ? (
             <View style={styles.guide}>
-              <TaskTimer
-                title={activeObject.name}
-                icon={cleanupPlanItemIcon(activeObject) as ComponentProps<typeof TaskTimer>['icon']}
-                stepKey={stepKey}
-                timer={timer}
-                minutes={activeObject.minutes}
-                paused={paused}
-                onTogglePause={() => setPaused((current) => !current)}
-                onLess={() => changeActiveMinutes(-1)}
-                onMore={() => changeActiveMinutes(1)}
-                onDone={finishActiveObject}
-              />
-              <View style={styles.nextBlock}>
-                {plan.objects.length < 2 ? null : <RearrangePill onPress={() => setRearranging(true)} />}
-                <View style={[taskCard.surface, taskCard.face]}>
-                  <TaskCardBody icon={<RoutineTaskIcon name={nextObject == null ? 'celebration' : cleanupPlanItemIcon(nextObject) as ComponentProps<typeof RoutineTaskIcon>['name']} />}>
-                    <Text style={taskCard.overline}>{nextObject == null ? 'LAST ONE' : 'UP NEXT'}</Text>
-                    <Text numberOfLines={1} style={taskCard.title}>
-                      {nextObject == null ? 'Then you’re done' : nextObject.name}
-                    </Text>
-                    {nextObject == null ? null : <Text style={taskCard.detail}>About {nextObject.minutes} min</Text>}
-                  </TaskCardBody>
-                </View>
+              <View style={styles.timer}>
+                <TaskTimer
+                  title={activeObject.name}
+                  icon={cleanupPlanItemIcon(activeObject) as ComponentProps<typeof TaskTimer>['icon']}
+                  stepKey={stepKey}
+                  timer={timer}
+                  minutes={activeObject.minutes}
+                  paused={paused}
+                  onTogglePause={() => setPaused((current) => !current)}
+                  onLess={() => changeActiveMinutes(-1)}
+                  onMore={() => changeActiveMinutes(1)}
+                  onDone={finishActiveObject}
+                />
               </View>
+              <TaskUpNext
+                next={nextObject == null ? null : {
+                  title: nextObject.name,
+                  icon: cleanupPlanItemIcon(nextObject) as ComponentProps<typeof RoutineTaskIcon>['name'],
+                }}
+                detail={nextObject == null ? null : `About ${nextObject.minutes} min`}
+                onRearrange={plan.objects.length < 2 ? undefined : () => setRearranging(true)}
+              />
               {plan.safetyNote == null ? null : <Text style={styles.safety}>{plan.safetyNote}</Text>}
             </View>
           ) : null}
@@ -484,7 +482,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
               {routinePlan == null ? (
                 <PhotoCleanupCompletion completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} active={focused} />
               ) : (
-                <RoutineRunCompletion userId={userId} completedCount={completedObjectCount} elapsedMinutes={elapsedMinutes} earned={runCoins} active={focused} />
+                <RoutineRunCompletion userId={userId} completedCount={completedObjectCount} totalCount={routinePlan.objects.length} elapsedMinutes={elapsedMinutes} earned={runCoins} active={focused} />
               )}
               <View style={styles.actions}>
                 <ChunkyButton shape="card" label="Done" onPress={() => navigation.goBack()} />
@@ -546,8 +544,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   content: { flexGrow: 1, gap: spacing.lg, paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.sm, paddingBottom: spacing['5xl'] },
-  slideshowContent: { paddingTop: 0, paddingBottom: spacing.md },
-  nextBlock: { alignSelf: 'stretch', marginTop: 'auto', gap: spacing.sm },
+  slideshowContent: { paddingTop: 0 },
   slideshowFooter: { paddingHorizontal: padding.screen.horizontal, paddingTop: spacing.md },
   azoStage: { alignItems: 'center' },
   azoSpeechBubble: {
@@ -587,7 +584,8 @@ const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
   error: { ...typography.body.small, color: colors.error[700] },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
-  guide: { flex: 1, gap: spacing.lg, alignItems: 'center' },
+  guide: { flex: 1, alignItems: 'center' },
+  timer: { alignSelf: 'stretch', alignItems: 'center' },
   result: { flex: 1, gap: spacing.lg },
-  safety: { ...typography.body.small, color: colors.error[700] },
+  safety: { ...typography.body.small, color: colors.error[700], marginBottom: spacing.md },
 });

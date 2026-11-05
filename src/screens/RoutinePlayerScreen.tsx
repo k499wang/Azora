@@ -10,16 +10,14 @@ import ChunkyButton from '../components/common/ChunkyButton';
 import CoinFlightLayer from '../components/common/CoinFlightLayer';
 import ConfettiFall from '../components/common/ConfettiFall';
 import EarnedCoinBalance from '../components/common/EarnedCoinBalance';
-import HeaderStripStatCard, {
-  EarnedCoinsCard,
-  HeaderStripStatRow,
-} from '../components/common/HeaderStripStatCard';
 import { Land } from '../components/common/Reveal';
 import { Text } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
 import TaskTimer from '../features/selfCare/shared/TaskTimer';
+import RoutineResultCards, { routineCoinCardEnterAt } from '../features/selfCare/shared/RoutineResultCards';
 import PlayerHeaderControls from '../features/selfCare/shared/PlayerHeaderControls';
-import RearrangeSheet, { RearrangePill } from '../features/selfCare/shared/RearrangeSheet';
+import RearrangeSheet from '../features/selfCare/shared/RearrangeSheet';
+import TaskUpNext from '../features/selfCare/shared/TaskUpNext';
 import {
   buildRoutinePlayerSteps,
   createRoutinePlayerState,
@@ -50,7 +48,7 @@ import TaskCardBody, {
 import ActivityCompletionContent from '../features/plan/ActivityCompletionContent';
 import RoutineTaskIcon from '../features/selfCare/RoutineTaskIcon';
 import { selfCareGoalCoins } from '../features/selfCare/domain/selfCareGoal';
-import { REWARD_BEAT, rewardCardEnterAt } from '../features/plan/rewardEntrance';
+import { REWARD_BEAT } from '../features/plan/rewardEntrance';
 import { useCoinRewardFlight } from '../hooks/useCoinRewardFlight';
 import { useCompletionHaptic } from '../hooks/useCompletionHaptic';
 import { useWhileVisible } from '../hooks/useWhileVisible';
@@ -288,22 +286,11 @@ export default function RoutinePlayerScreen({
             onSkip={skip}
           />
 
-          <View style={styles.nextBlock}>
-            {remainingCount < 2 ? null : <RearrangePill onPress={() => setRearranging(true)} />}
-            <View style={[taskCard.surface, taskCard.face]}>
-              <TaskCardBody
-                icon={<RoutineTaskIcon name={next == null ? 'celebration' : next.icon} />}
-              >
-                <Text style={taskCard.overline}>{next == null ? 'LAST ONE' : 'UP NEXT'}</Text>
-                <Text numberOfLines={1} style={taskCard.title}>
-                  {next == null ? 'Then you’re done' : next.title}
-                </Text>
-                {nextDetail == null ? null : (
-                  <Text style={taskCard.detail}>{nextDetail}</Text>
-                )}
-              </TaskCardBody>
-            </View>
-          </View>
+          <TaskUpNext
+            next={next}
+            detail={nextDetail}
+            onRearrange={remainingCount < 2 ? undefined : () => setRearranging(true)}
+          />
         </View>
       )}
 
@@ -345,10 +332,7 @@ function FinishedView({ player, userId, onDone }: FinishedViewProps) {
   // counting up from one that is missing them.
   const balanceSettled = useWalletSettledAfterWrites(userId, ['toggle-self-care-goal', userId]);
   const coins = balanceSettled ? earned : 0;
-  const showMinutes = minutes != null && minutes > 0;
-  const coinCard = showMinutes ? 2 : 1;
-  const flight = useCoinRewardFlight({ coins, landedAfterMs: rewardCardEnterAt(coinCard) });
-  const enterAt = (card: number) => (reducedMotion ? undefined : rewardCardEnterAt(card));
+  const flight = useCoinRewardFlight({ coins, landedAfterMs: routineCoinCardEnterAt(minutes) });
   useCompletionHaptic('activity', celebrating);
 
   return (
@@ -368,32 +352,14 @@ function FinishedView({ player, userId, onDone }: FinishedViewProps) {
         >
           {total === 0 ? null : (
             <View style={[styles.finishedCards, { width: width - padding.screen.horizontal * 2 }]}>
-              <HeaderStripStatRow>
-                <HeaderStripStatCard
-                  label="Done"
-                  value={`${done}/${total}`}
-                  tone="sky"
-                  icon={{ name: 'check', color: colors.playful.sky.mid }}
-                  enterAt={enterAt(0)}
-                  sparkleRing={celebrating}
-                />
-                {showMinutes ? (
-                  <HeaderStripStatCard
-                    label="Minutes"
-                    value={`${minutes}`}
-                    countTo={minutes}
-                    tone="sky"
-                    icon={{ name: 'clock', color: colors.playful.sky.mid }}
-                    enterAt={enterAt(1)}
-                  />
-                ) : null}
-                <EarnedCoinsCard
-                  ref={flight.sourceRef}
-                  coins={flight.cardCoins}
-                  finalCoins={earned}
-                  enterAt={enterAt(coinCard)}
-                />
-              </HeaderStripStatRow>
+              <RoutineResultCards
+                done={done}
+                total={total}
+                minutes={minutes}
+                coins={flight.cardCoins}
+                finalCoins={earned}
+                coinCardRef={flight.sourceRef}
+              />
               <Land delay={REWARD_BEAT.cta} style={styles.recap}>
                 {player.steps.map((goal, index) => {
                   const stepDone = player.outcomes[index] === 'done';
@@ -476,11 +442,6 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     alignItems: 'center',
-  },
-  nextBlock: {
-    alignSelf: 'stretch',
-    marginTop: 'auto',
-    gap: spacing.sm,
   },
   finished: {
     flex: 1,

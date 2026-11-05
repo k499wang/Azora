@@ -138,7 +138,7 @@ export const ICON_PATHS = {
   },
   repeat: {
     viewBox: '0 0 24 24',
-    body: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5V10a4 4 0 0 1 4-4h12"/><path d="M17 3l3 3-3 3"/><path d="M20 12.5V14a4 4 0 0 1-4 4H4" opacity=".5"/><path d="M7 15l-3 3 3 3" opacity=".5"/></g>`,
+    body: `<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5V10a4 4 0 0 1 4-4h12"/><path d="M17 3l3 3-3 3"/><g opacity=".5"><path d="M20 12.5V14a4 4 0 0 1-4 4H4"/><path d="M7 15l-3 3 3 3"/></g></g>`,
   },
   heart: {
     viewBox: '0 0 24 24',
