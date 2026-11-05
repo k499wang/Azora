@@ -238,7 +238,6 @@ function RoutineCelebrations({ layerRef, navigation, active, tabBarHeight, notic
       notice={
         surveyOffer.visible ? (
           <SurveyOfferNotice
-            kind={surveyOffer.kind}
             onPress={surveyOffer.open}
             onDismiss={surveyOffer.dismiss}
           />

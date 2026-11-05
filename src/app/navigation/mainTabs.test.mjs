@@ -20,6 +20,12 @@ test('Explore is the single discovery tab and is not registered as a pushed root
   assert.doesNotMatch(types, /MainTabParamList = \{[\s\S]*?Reset: undefined;/);
 });
 
+test('coaching visits are counted above the tabs, because the app opens on Routine', () => {
+  const mainTabs = readFileSync(join(here, 'MainTabs.tsx'), 'utf8');
+
+  assert.match(mainTabs, /useCountCoachingOfferVisit\(\);/);
+});
+
 test('Plan is a main tab and is not registered as a pushed root screen', () => {
   const mainTabs = readFileSync(join(here, 'MainTabs.tsx'), 'utf8');
   const rootNavigator = readFileSync(join(here, 'RootNavigator.tsx'), 'utf8');

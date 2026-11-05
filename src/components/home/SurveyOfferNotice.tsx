@@ -16,18 +16,14 @@ import { fonts, typography } from '../../theme/typography';
 import { duration, easing, spring } from '../../theme/motion';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import type { SurveyOfferKind } from '../../services/preferences/surveyOfferPreference';
 
 /** how far below its resting place the bar starts, in points */
 const RISE = 96;
 
-const COPY: Record<SurveyOfferKind, { label: string; detail: string }> = {
-  discount: { label: 'Take a survey, get 50% off', detail: 'Takes about two minutes' },
-  feedback: { label: 'How is Azora going?', detail: 'Two questions, under a minute' },
-};
+const LABEL = 'How is Azora going?';
+const DETAIL = 'Two questions, under a minute';
 
 interface SurveyOfferNoticeProps {
-  kind: SurveyOfferKind;
   /** the offer was taken — the caller retires it and opens the survey */
   onPress: () => void;
   /** the bar has finished leaving, so the caller can stop rendering it */
@@ -40,12 +36,10 @@ interface SurveyOfferNoticeProps {
  * answered, closed, or pushed aside by something the app would rather say.
  */
 export default function SurveyOfferNotice({
-  kind,
   onPress,
   onDismiss,
 }: SurveyOfferNoticeProps) {
   const show = useSharedValue(0);
-  const copy = COPY[kind];
 
   useEffect(() => {
     show.value = withSpring(1, spring.pop);
@@ -72,7 +66,7 @@ export default function SurveyOfferNotice({
     <Animated.View style={style}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={copy.label}
+        accessibilityLabel={LABEL}
         onPress={() => {
           triggerTapHaptic();
           onPress();
@@ -81,8 +75,8 @@ export default function SurveyOfferNotice({
       >
         <Icon name="message" size={24} color={colors.notice.label} />
         <View style={styles.copy}>
-          <Text style={styles.label}>{copy.label}</Text>
-          <Text style={styles.detail}>{copy.detail}</Text>
+          <Text style={styles.label}>{LABEL}</Text>
+          <Text style={styles.detail}>{DETAIL}</Text>
         </View>
         <Pressable
           accessibilityRole="button"

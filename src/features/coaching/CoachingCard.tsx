@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { RootStackNavigationProp } from '../../app/navigation';
@@ -13,7 +12,6 @@ import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import CoachingInvitationDialog from './CoachingInvitationDialog';
 
 // A set width, so the button cannot push the card past the screen edge.
 const ACTION_WIDTH = 76;
@@ -26,49 +24,38 @@ interface CoachingCardProps {
 
 export default function CoachingCard({ surface, onDismiss }: CoachingCardProps) {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
-  const [invitationVisible, setInvitationVisible] = useState(false);
 
   return (
-    <>
-      <View style={[styles.row, surface === 'scrim' ? styles.scrim : styles.white]}>
-        <Icon name="star-white-outline" size={44} color={colors.playful.amber.base} />
-        <Text style={styles.title}>Want your own life coach?</Text>
-        <ChunkyButton
-          label="Start"
-          accessibilityLabel="Start coaching"
-          shape="card"
-          tone={surface === 'scrim' ? CHUNKY_TONE_NEUTRAL : CHUNKY_TONE_SOFT}
-          compact
-          labelSize="medium"
-          minHeight={36}
-          haptic="tap"
-          onPress={() => setInvitationVisible(true)}
-          style={styles.action}
-        />
-        {onDismiss != null ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss coaching offer"
-            hitSlop={spacing.md}
-            onPress={() => {
-              triggerTapHaptic();
-              onDismiss();
-            }}
-            style={styles.dismiss}
-          >
-            <Icon name="close" size={14} color={colors.text.secondary} />
-          </Pressable>
-        ) : null}
-      </View>
-      <CoachingInvitationDialog
-        visible={invitationVisible}
-        onExplore={() => {
-          setInvitationVisible(false);
-          navigation.navigate('CoachingSurvey');
-        }}
-        onClose={() => setInvitationVisible(false)}
+    <View style={[styles.row, surface === 'scrim' ? styles.scrim : styles.white]}>
+      <Icon name="star-white-outline" size={44} color={colors.playful.amber.base} />
+      <Text style={styles.title}>Want your own life coach?</Text>
+      <ChunkyButton
+        label="Start"
+        accessibilityLabel="Start coaching"
+        shape="card"
+        tone={surface === 'scrim' ? CHUNKY_TONE_NEUTRAL : CHUNKY_TONE_SOFT}
+        compact
+        labelSize="medium"
+        minHeight={36}
+        haptic="tap"
+        onPress={() => navigation.navigate('CoachingSurvey')}
+        style={styles.action}
       />
-    </>
+      {onDismiss != null ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss coaching offer"
+          hitSlop={spacing.md}
+          onPress={() => {
+            triggerTapHaptic();
+            onDismiss();
+          }}
+          style={styles.dismiss}
+        >
+          <Icon name="close" size={14} color={colors.text.secondary} />
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 

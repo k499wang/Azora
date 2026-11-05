@@ -3,6 +3,7 @@ import { Keyboard, Linking, Pressable, ScrollView, StyleSheet, View } from 'reac
 import type { CoachingSurveyScreenProps } from '../app/navigation';
 import { Text, TextInput } from '../components/common/Text';
 import Icon from '../components/common/icons/Icon';
+import TaskIllustration from '../components/common/icons/TaskIllustration';
 import AzoAside from '../components/onboarding/AzoAside';
 import OnboardingHapticSlider from '../components/onboarding/OnboardingHapticSlider';
 import OnboardingOptionList, {
@@ -22,12 +23,11 @@ import { triggerTapHaptic } from '../native/tapHaptics';
 import { saveCoachingSurvey } from '../services/coaching/coachingSurveyService';
 import { saveCoachingOfferDismissed } from '../services/preferences/coachingOfferPreference';
 import { useAuthStore } from '../stores/authStore';
-import { radius } from '../theme/card';
+import { card, radius, softColoredCard } from '../theme/card';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
-// Sample link until the coach's real Calendly page exists.
 const COACHING_CALENDLY_URL = 'https://calendly.com/kevin-tryazora';
 
 const OPTION_ACCENT = colors.primary.blue500;
@@ -57,7 +57,7 @@ const QUESTIONS: { text: string; note?: string; expression: AzoExpression }[] = 
   },
   {
     text: 'If it feels like a fit, would $79/month work for you?',
-    note: 'This is in addition to your Azora subscription. Nothing is charged today.',
+    note: 'You are free to pay whatever amount you want. $79 helps us pay our coaches.',
     expression: 'listening',
   },
   {
@@ -65,6 +65,11 @@ const QUESTIONS: { text: string; note?: string; expression: AzoExpression }[] = 
     expression: 'happy',
   },
 ];
+const CALL_TOPICS = [
+  { icon: 'todo-message', text: 'Talk it through' },
+  { icon: 'heart', text: 'See if it fits' },
+  { icon: 'lightbulb', text: 'Ask anything' },
+] as const;
 const IMPORTANCE_STEP = 3;
 const DETAILS_STEP = QUESTIONS.length - 1;
 const BOOKING_STEP = QUESTIONS.length;
@@ -213,10 +218,29 @@ export default function CoachingSurveyScreen({ navigation, route }: CoachingSurv
             </View>
           }
         >
-          <Text style={styles.body}>
-            Book a free 15-minute call to see whether coaching is a good fit. The coaching program
-            costs $79 USD/month. Booking this call does not enroll or charge you.
-          </Text>
+          <View style={styles.bookingCards}>
+            <View style={styles.priceCard}>
+              <TaskIllustration name="coin" size={spacing['4xl']} />
+              <Text style={styles.priceTitle}>Nothing to pay today</Text>
+              <Text style={styles.priceBody}>
+                Coaching includes a personalized plan, weekly written support, and a monthly call.
+                Booking this call does not enroll or charge you.
+              </Text>
+            </View>
+            <View style={styles.callCard}>
+              <TaskIllustration name="calendar-check-outline" size={spacing['5xl']} />
+              <Text style={styles.callTitle}>Free 15-minute call</Text>
+              <Text style={styles.callMeta}>Just you and your coach.</Text>
+              <View style={styles.callTopics}>
+                {CALL_TOPICS.map((topic) => (
+                  <View key={topic.text} style={styles.callTopic}>
+                    <TaskIllustration name={topic.icon} size={spacing['2xl']} />
+                    <Text style={styles.callTopicText}>{topic.text}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
         </OnboardingScreenLayout>
       </OnboardingSurface>
     );
@@ -345,9 +369,64 @@ export default function CoachingSurveyScreen({ navigation, route }: CoachingSurv
 }
 
 const styles = StyleSheet.create({
-  body: {
-    ...typography.body.large,
+  bookingCards: {
+    gap: spacing.md,
+  },
+  callCard: {
+    ...card.base,
+    ...card.outlined,
+    alignItems: 'center',
+    borderRadius: radius.xl,
+    borderCurve: 'continuous',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  callTitle: {
+    ...typography.title.title3,
+    marginTop: spacing.sm,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  callMeta: {
+    ...typography.body.medium,
     color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  callTopics: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    marginTop: spacing.mdPlus,
+  },
+  callTopic: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  callTopicText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  priceCard: {
+    ...softColoredCard({ tint: colors.playful.amber.soft }),
+    alignItems: 'center',
+    borderRadius: radius.xl,
+    borderCurve: 'continuous',
+    paddingHorizontal: spacing.mdPlus,
+    paddingVertical: spacing.lg,
+  },
+  priceTitle: {
+    ...typography.title.title2,
+    marginTop: spacing.xs,
+    color: colors.playful.amber.ink,
+    textAlign: 'center',
+  },
+  priceBody: {
+    ...typography.body.large,
+    marginTop: spacing.xs,
+    color: colors.playful.amber.ink,
+    textAlign: 'center',
   },
   bookingActions: {
     alignItems: 'stretch',

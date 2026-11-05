@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { create } from 'zustand';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
-import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
+import { useAuthStore } from '../../stores/authStore';
 import {
   loadCoachingOfferVisits,
   saveCoachingOfferVisits,
@@ -20,10 +20,29 @@ export function setCoachingOfferForced(forced: boolean): void {
   if (__DEV__) useForcedStore.setState({ forced });
 }
 
-/** Offered to paying subscribers, never during a trial, from their third day in a row. */
+/**
+ * Counts each day the app is open. It lives above the tabs because the app opens
+ * on Routine, so a count made on Home would miss every day Home is not opened.
+ */
+export function useCountCoachingOfferVisit() {
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const todayLocalDate = useTodayLocalDate();
+
+  useEffect(() => {
+    if (userId == null) return;
+    loadCoachingOfferVisits(userId)
+      .then((previous) =>
+        saveCoachingOfferVisits(userId, recordCoachingOfferVisit(previous, todayLocalDate)),
+      )
+      .catch(() => {
+        // Unreadable storage must not restart the run or bring back a closed card.
+      });
+  }, [userId, todayLocalDate]);
+}
+
+/** Offered to everyone from their third day with the app open. */
 export function useCoachingOffer(userId: string | null) {
   const todayLocalDate = useTodayLocalDate();
-  const entitlement = useUserEntitlementQuery(userId).data;
   const forced = useForcedStore((state) => state.forced);
   // Rereads on return, so a submitted survey retires the card behind it.
   const isFocused = useIsFocused();
@@ -57,11 +76,10 @@ export function useCoachingOffer(userId: string | null) {
     void saveCoachingOfferVisits(userId, next);
   }, [userId, visits]);
 
-  const isPaying = entitlement?.isPro === true && entitlement.trialEndsAt == null;
-  const reached = visits != null && visits.consecutiveDays >= COACHING_OFFER_DAYS;
+  const reached = visits != null && visits.daysVisited >= COACHING_OFFER_DAYS;
 
   return {
-    visible: forced || (isPaying && reached && visits?.dismissed === false),
+    visible: forced || (reached && visits?.dismissed === false),
     dismiss,
   };
 }

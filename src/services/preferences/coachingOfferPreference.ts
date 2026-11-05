@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CoachingOfferVisits } from '../../features/coaching/domain/coachingOfferVisits';
 
-const key = (userId: string) => `home:coaching_offer:${userId}`;
+const key = (userId: string) => `home:coaching_offer_days:${userId}`;
 
 export async function loadCoachingOfferVisits(userId: string): Promise<CoachingOfferVisits | null> {
   const stored = await AsyncStorage.getItem(key(userId));

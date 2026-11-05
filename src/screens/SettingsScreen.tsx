@@ -23,10 +23,8 @@ import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
 import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPreference';
 import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
 import { forceEnjoymentPrompt } from '../features/enjoymentPrompt/useEnjoymentPrompt';
-import CoachingInvitationDialog from '../features/coaching/CoachingInvitationDialog';
 import { setCoachingOfferForced } from '../features/coaching/useCoachingOffer';
 import { forceNextDayComplete } from '../features/room/devDayCompleteOverride';
-import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import { publishRevenueCatEntitlement } from '../queries/subscriptions/entitlementCache';
 import { getCurrentRevenueCatAppUserId } from '../services/subscriptions/revenueCatClient';
 import type { SettingsScreenProps } from '../app/navigation';
@@ -54,7 +52,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const user = useAuthStore((s) => s.user);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [streakPreviewVisible, setStreakPreviewVisible] = useState(false);
-  const [coachingPreviewVisible, setCoachingPreviewVisible] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
@@ -100,17 +97,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   };
 
   const handleShowSurveyOffer = () => {
-    const entitlement = queryClient.getQueryData(
-      getUserEntitlementQueryKey(user?.id ?? null),
-    ) as { isPro?: boolean } | undefined;
-
     setSurveyOfferForced(true);
     void clearSurveyOfferDismissed().then(() => {
       Alert.alert(
         'Survey offer shown',
-        entitlement?.isPro === true
-          ? 'This account is Pro, so Home shows the feedback form offer. It is being forced on for this session.'
-          : 'The stored dismissal is cleared and the offer is on Home now.',
+        'The stored dismissal is cleared and the offer is on Home now.',
         [{ text: 'Go to Home', onPress: () => returnToHome(navigation) }],
       );
     });
@@ -560,10 +551,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={handleShowSurveyOffer}
                 />
                 <SettingsRow
-                  label="Show coaching invitation (dev)"
-                  onPress={() => setCoachingPreviewVisible(true)}
-                />
-                <SettingsRow
                   label="Preview coaching survey (dev)"
                   onPress={() => navigation.navigate('CoachingSurvey', { preview: true })}
                 />
@@ -696,14 +683,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             completedDaysAgo={[0]}
             onCommitStreakGoal={() => {}}
             onContinue={() => setStreakPreviewVisible(false)}
-          />
-          <CoachingInvitationDialog
-            visible={coachingPreviewVisible}
-            onExplore={() => {
-              setCoachingPreviewVisible(false);
-              navigation.navigate('CoachingSurvey', { preview: true });
-            }}
-            onClose={() => setCoachingPreviewVisible(false)}
           />
         </>
       ) : null}

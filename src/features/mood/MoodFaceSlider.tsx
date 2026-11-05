@@ -6,15 +6,15 @@ import Animated, {
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
+  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts } from '../../theme/typography';
-import CuteMoodFace from './CuteMoodFace';
+import { typography } from '../../theme/typography';
+import CuteMoodFace, { moodAccent } from './CuteMoodFace';
 import {
   MOOD_FACES,
   MOOD_SCALE_MAX,
@@ -25,11 +25,14 @@ import {
 /** How long a released answer is held before the page moves on. */
 export const MOOD_SELECT_SETTLE_MS = 200;
 
-const FACE_SIZE = 210;
-const THUMB_SIZE = 26;
-const TRACK_HEIGHT = 22;
-const BUBBLE_WIDTH = 96;
-const BUBBLE_TAIL = 8;
+const FACE_SIZE = 190;
+const THUMB_SIZE = 36;
+const THUMB_LIP = 4;
+const THUMB_GRAB_SCALE = 1.1;
+const RAIL_HEIGHT = 14;
+const TICK_SIZE = 6;
+const GRAB_SPRING = { damping: 15, stiffness: 320 };
+const TRACK_HEIGHT = THUMB_SIZE + THUMB_LIP + spacing.md;
 const STEPS = MOOD_FACES.length - 1;
 const START_RATING = Math.ceil((MOOD_SCALE_MIN + MOOD_SCALE_MAX) / 2);
 
@@ -45,14 +48,15 @@ interface Props {
 }
 
 /**
- * One drag across the scale. The face follows the thumb continuously, the word
- * rides above it in a bubble, and the answer is given when it is let go.
+ * One drag across the scale. The face follows the thumb continuously, its word
+ * sits beneath it, and the answer is given when it is let go.
  */
 export default function MoodFaceSlider({ question, value, onChange, onGrab, mood }: Props) {
   const [width, setWidth] = useState(0);
   const [rating, setRating] = useState(value ?? START_RATING);
   const answered = value != null;
   const x = useSharedValue(0);
+  const grabbed = useSharedValue(0);
   const travel = Math.max(width - THUMB_SIZE, 0);
   const segment = travel / STEPS;
   // Where the thumb was let go, 0 to 1, so it stays there rather than jumping
@@ -91,6 +95,7 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
     return Gesture.Pan()
       .minDistance(0)
       .onBegin((event) => {
+        grabbed.value = withSpring(1, GRAB_SPRING);
         x.value = clamp(event.x);
         follow();
         if (onGrab) runOnJS(onGrab)();
@@ -102,26 +107,27 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
         runOnJS(moveTo)(ratingAt(x.value));
       })
       .onFinalize(() => {
+        grabbed.value = withSpring(0, GRAB_SPRING);
         const settled = ratingAt(x.value);
         if (travel > 0) runOnJS(release)(x.value / travel);
         runOnJS(moveTo)(settled);
         runOnJS(onChange)(settled);
       });
-  }, [mood, onChange, onGrab, segment, travel, x]);
+  }, [grabbed, mood, onChange, onGrab, segment, travel, x]);
 
   const progress = useDerivedValue(() => (travel > 0 ? x.value / travel : 0.5));
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }],
-  }));
-  const bubbleStyle = useAnimatedStyle(() => ({
     transform: [
-      {
-        translateX: Math.min(
-          Math.max(x.value + THUMB_SIZE / 2 - BUBBLE_WIDTH / 2, -spacing.md),
-          width - BUBBLE_WIDTH + spacing.md,
-        ),
-      },
+      { translateX: x.value },
+      { scale: 1 + (THUMB_GRAB_SCALE - 1) * grabbed.value },
     ],
+  }));
+  const thumbFaceStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: THUMB_LIP * grabbed.value }],
+  }));
+  const fillStyle = useAnimatedStyle(() => ({
+    width: x.value + THUMB_SIZE / 2,
+    backgroundColor: moodAccent(progress.value),
   }));
 
   const label = question.labels[rating - MOOD_SCALE_MIN];
@@ -140,16 +146,9 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
         <CuteMoodFace progress={progress} size={FACE_SIZE} />
       </View>
 
-      <View style={styles.bubbleRow} pointerEvents="none">
-        <Animated.View style={[styles.bubble, bubbleStyle]}>
-          <View style={styles.bubbleBody}>
-            <Text style={[styles.label, answered && styles.labelAnswered]} numberOfLines={1}>
-              {label}
-            </Text>
-          </View>
-          <View style={styles.bubbleTail} />
-        </Animated.View>
-      </View>
+      <Text style={[styles.label, answered && styles.labelAnswered]} numberOfLines={1}>
+        {label}
+      </Text>
 
       <GestureDetector gesture={gesture}>
         <View
@@ -164,11 +163,19 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
             step(event.nativeEvent.actionName === 'increment' ? 1 : -1)
           }
         >
-          <View style={styles.rail} />
-          <Animated.View
-            style={[styles.thumb, thumbStyle]}
-            pointerEvents="none"
-          />
+          <View style={styles.rail}>
+            <Animated.View style={[styles.railFill, fillStyle]} />
+          </View>
+          {MOOD_FACES.map((face, index) => (
+            <View
+              key={face}
+              style={[styles.tick, { left: THUMB_SIZE / 2 - TICK_SIZE / 2 + index * segment }]}
+              pointerEvents="none"
+            />
+          ))}
+          <Animated.View style={[styles.thumb, thumbStyle]} pointerEvents="none">
+            <Animated.View style={[styles.thumbFace, thumbFaceStyle]} />
+          </Animated.View>
         </View>
       </GestureDetector>
 
@@ -191,58 +198,50 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
-  bubbleRow: {
-    height: 36 + BUBBLE_TAIL,
-  },
-  bubble: {
-    position: 'absolute',
-    left: 0,
-    width: BUBBLE_WIDTH,
-    alignItems: 'center',
-  },
-  bubbleBody: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: colors.background.card,
-  },
-  bubbleTail: {
-    width: BUBBLE_TAIL * 1.6,
-    height: BUBBLE_TAIL * 1.6,
-    marginTop: -BUBBLE_TAIL,
-    borderRadius: 3,
-    transform: [{ rotate: '45deg' }],
-    backgroundColor: colors.background.card,
-  },
   label: {
-    fontSize: 15,
-    lineHeight: 20,
-    fontFamily: fonts.semibold,
+    ...typography.title.title2,
+    textAlign: 'center',
     color: colors.text.secondary,
+    marginBottom: spacing.md,
   },
   labelAnswered: {
     color: colors.text.primary,
   },
   track: {
-    height: THUMB_SIZE + spacing.md,
+    height: TRACK_HEIGHT,
     justifyContent: 'center',
   },
   rail: {
-    height: TRACK_HEIGHT,
-    borderRadius: TRACK_HEIGHT / 2,
+    height: RAIL_HEIGHT,
+    borderRadius: RAIL_HEIGHT / 2,
+    overflow: 'hidden',
     backgroundColor: colors.background.card,
   },
+  railFill: {
+    height: '100%',
+  },
+  tick: {
+    position: 'absolute',
+    top: (TRACK_HEIGHT - TICK_SIZE) / 2,
+    width: TICK_SIZE,
+    height: TICK_SIZE,
+    borderRadius: TICK_SIZE / 2,
+    backgroundColor: colors.neutral[300],
+  },
   thumb: {
-    ...card.shadow,
     position: 'absolute',
     left: 0,
+    top: (TRACK_HEIGHT - THUMB_SIZE - THUMB_LIP) / 2,
+    width: THUMB_SIZE,
+    height: THUMB_SIZE + THUMB_LIP,
+    borderRadius: THUMB_SIZE / 2,
+    backgroundColor: colors.neutral[300],
+  },
+  thumbFace: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
-    borderWidth: 4,
-    borderColor: colors.background.card,
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.background.card,
   },
   ends: {
     flexDirection: 'row',
@@ -250,8 +249,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   endLabel: {
-    fontSize: 14,
-    fontFamily: fonts.semibold,
+    ...typography.body.small,
     color: colors.text.tertiary,
   },
 });

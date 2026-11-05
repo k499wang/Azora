@@ -10,6 +10,7 @@ import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { loadTourSeen } from '../../services/preferences/tourSeenPreference';
 import TourOverlay from '../../features/tour/TourOverlay';
+import { useCountCoachingOfferVisit } from '../../features/coaching/useCoachingOffer';
 import HiddenTabFreeze from './HiddenTabFreeze';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
@@ -19,6 +20,7 @@ interface MainTabsProps {
 }
 
 export function MainTabs({ tourEnabled }: MainTabsProps) {
+  useCountCoachingOfferVisit();
   // The native tab bar emits tabPress even when re-tapping the active tab;
   // only buzz when the user actually switches tabs.
   const lastActiveTabRef = useRef<keyof MainTabParamList>('Plan');

@@ -9,13 +9,8 @@ const compiled = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
 
-function createEnvironment({
-  isPro = true,
-  forced = false,
-  trialEndsAt = null,
-  lastEarnedLocalDate = '2026-10-21',
-} = {}) {
-  const saved = { discount: false, feedback: false };
+function createEnvironment({ forced = false } = {}) {
+  const saved = { feedback: false };
   const calls = [];
 
   async function mount(onOpenFeedback = () => calls.push('feedback')) {
@@ -40,23 +35,11 @@ function createEnvironment({
             if (!mounted) cleanups.push(effect());
           },
         };
-        if (name === 'react-native') return {
-          Linking: { openURL: (url) => { calls.push(['url', url]); return Promise.resolve(); } },
-        };
-        if (name === '../stores/authStore') return {
-          useAuthStore: (select) => select({ user: { id: 'user-1' } }),
-        };
-        if (name === '../queries/subscriptions/useUserEntitlementQuery') return {
-          useUserEntitlementQuery: () => ({ data: { isPro, trialEndsAt }, isPending: false }),
-        };
-        if (name === '../queries/room/useCurrentRoomQuery') return {
-          useCurrentRoomQuery: () => ({ data: { lastEarnedLocalDate } }),
-        };
         if (name === '../services/preferences/surveyOfferPreference') return {
-          loadSurveyOfferDismissed: async (kind) => saved[kind],
-          setSurveyOfferDismissed: async (kind) => {
-            calls.push(['save', kind]);
-            saved[kind] = true;
+          loadSurveyOfferDismissed: async () => saved.feedback,
+          setSurveyOfferDismissed: async () => {
+            calls.push(['save', 'feedback']);
+            saved.feedback = true;
           },
         };
         if (name === './devSurveyOfferOverride') return {
@@ -101,26 +84,9 @@ test('opening feedback retires the offer before navigation unmounts the notice',
     assert.equal(returnedHome.render().visible, false);
     returnedHome.unmount();
   }
-  assert.equal(environment.saved.discount, false);
 });
 
-test('opening the discount survey retires only that offer before opening its URL', async () => {
-  const environment = createEnvironment({ isPro: false });
-  const hook = await environment.mount();
-  assert.equal(hook.render().visible, true);
-  hook.render().open();
-  assert.equal(hook.render().visible, false);
-  assert.deepEqual(environment.calls[0], ['save', 'discount']);
-  assert.equal(environment.calls[1][0], 'url');
-  assert.match(environment.calls[1][1], /^https:\/\/docs\.google\.com\/forms\//);
-  assert.equal(environment.saved.feedback, false);
-  hook.unmount();
-  const returnedHome = await environment.mount();
-  assert.equal(returnedHome.render().visible, false);
-  returnedHome.unmount();
-});
-
-test('closing an offer persists dismissal without opening feedback or a URL', async () => {
+test('closing an offer persists dismissal without opening feedback', async () => {
   const environment = createEnvironment();
   const hook = await environment.mount();
   hook.render().dismiss();
@@ -144,19 +110,9 @@ test('preempting an offer only hides it for the current Home instance', async ()
   returnedHome.unmount();
 });
 
-test('a Pro member on a trial with a completed day is offered the feedback form', async () => {
-  const trialEndsAt = new Date(Date.now() + 86_400_000).toISOString();
-  const environment = createEnvironment({ trialEndsAt });
+test('anyone who opens the app is offered the feedback form', async () => {
+  const environment = createEnvironment();
   const hook = await environment.mount();
-  const state = hook.render();
-  assert.equal(state.visible, true);
-  assert.equal(state.kind, 'feedback');
-  hook.unmount();
-});
-
-test('a Pro member without a completed day is not offered the feedback form', async () => {
-  const environment = createEnvironment({ lastEarnedLocalDate: null });
-  const hook = await environment.mount();
-  assert.equal(hook.render().visible, false);
+  assert.equal(hook.render().visible, true);
   hook.unmount();
 });

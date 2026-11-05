@@ -128,13 +128,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             onEditDisplayName={profileEditing.editDisplayName}
           />
 
-          <AzoIdCard
-            movedInLocalDate={joinedLocalDate}
-            humanName={displayName}
-            daysTogether={createdAt == null ? null : daysWithAzo(createdAt, todayLocalDate)}
-          />
-
-          <CoachingCard surface="white" />
+          <View style={styles.section}>
+            <AzoIdCard
+              movedInLocalDate={joinedLocalDate}
+              humanName={displayName}
+              daysTogether={createdAt == null ? null : daysWithAzo(createdAt, todayLocalDate)}
+            />
+            <CoachingCard surface="white" />
+          </View>
 
           {planPosition == null || planTotalDays == null ? null : (
             <View style={styles.section}>
