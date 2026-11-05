@@ -4,11 +4,12 @@ import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDelay,
 import { useReducedMotionSetting } from '../../hooks/useReducedMotionSetting';
 import { Text } from '../common/Text';
 import Icon, { type IconName } from '../common/icons/Icon';
-import TaskIllustration from '../common/icons/TaskIllustration';
 import Skeleton from '../common/Skeleton';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { resolveExerciseTitle } from '../../features/exercise/guidedBreathing/exerciseTitles';
 import { ATTENTION_GLYPH, CATEGORY_STYLE, TECHNIQUE_GLYPH, type CategoryStyle, type GlyphShape } from '../../features/exercise/guidedBreathing/categoryPalette';
+import RoutineTaskIcon from '../../features/selfCare/RoutineTaskIcon';
+import CoinWorth from '../common/CoinWorth';
 import { card } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerSoftHaptic, triggerTapHaptic } from '../../native/tapHaptics';
@@ -367,6 +368,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   completed, locked, loading = false, coins, claim = false, isArranging, onPress, onMove, actionTarget }: DailyTaskRowProps) {
   const disabled = onPress == null || loading;
   const claiming = claim && !completed && !locked && !disabled;
+  const shownCoins = claiming ? undefined : coins;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   const worth = coins == null ? '' : `, worth ${coins} coins`;
   const illustration = style === LESSON_ROW_STYLE ? 'book'
@@ -376,14 +378,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   return (
     <View style={styles.taskRow}>
       <View style={[taskCard.surface, taskCard.face, styles.card]}>
-        <TaskCardBody
-          coins={claiming ? undefined : coins}
-          icon={
-            <View style={card.taskIcon}>
-              <TaskIllustration name={illustration} size={36} done={completed} />
-            </View>
-          }
-        >
+        <TaskCardBody icon={<RoutineTaskIcon name={illustration} done={completed} />}>
           {/* A name it does not have yet is not a name to print. Until the
               technique resolves, `title` is a generic stand-in and the row
               cannot be started — so the row says it is still loading rather
@@ -396,10 +391,15 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           ) : (
             <TaskHeading detailLabel={detailLabel} title={title} completed={completed} />
           )}
-          {scheduledTime == null ? null : (
-            <View style={styles.metadataRow}>
-              <Icon bold name="clock" size={14} color={colors.text.tertiary} />
-              <Text style={taskCard.detail}>{scheduledTime}</Text>
+          {shownCoins == null && scheduledTime == null ? null : (
+            <View style={styles.metadataLine}>
+              {shownCoins == null ? null : <CoinWorth coins={shownCoins} />}
+              {scheduledTime == null ? null : (
+                <View style={styles.metadataRow}>
+                  <Icon bold name="clock" size={14} color={colors.text.tertiary} />
+                  <Text style={taskCard.detail}>{scheduledTime}</Text>
+                </View>
+              )}
             </View>
           )}
         </TaskCardBody>
@@ -490,9 +490,7 @@ export function RoomPieceRow({ state }: { state: RoomPieceState }) {
     <>
       <TaskCardBody
         icon={
-          <View style={card.taskIcon}>
-            <TaskIllustration name="room-hex" size={36} done={onPress == null} />
-          </View>
+          <RoutineTaskIcon name="room-hex" done={onPress == null} />
         }
       >
         <TaskHeading detailLabel={null} title={title} completed={placed} />
@@ -534,6 +532,8 @@ const styles = StyleSheet.create({
   taskRow: { flex: 1, minHeight: TODAY_JOURNEY_CARD_MIN_HEIGHT },
   card: { flex: 1 },
   taskHeading: { gap: 6 },
+  // One detail line tall, like a to-do's time, so the taller coin doesn't push the title up.
+  metadataLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, height: typography.label.detail.lineHeight },
   metadataRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
   startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },

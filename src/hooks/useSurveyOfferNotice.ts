@@ -30,7 +30,7 @@ export interface SurveyOfferNoticeState {
 }
 
 /**
- * The survey Home asks for. A free account is offered the discount survey; a
+ * The survey Routine asks for. A free account is offered the discount survey; a
  * Pro member, trial included, with at least one completed day (every completed
  * day earns a room object) is offered the in-app feedback form. Each is shown
  * once storage has answered and never again once taken or closed.

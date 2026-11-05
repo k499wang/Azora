@@ -35,7 +35,7 @@ interface SurveyOfferNoticeProps {
 }
 
 /**
- * A grey bar that rises from the bottom of Home with a standing offer. Unlike
+ * A grey bar that rises from the bottom of Routine with a standing offer. Unlike
  * the celebration bar it waits rather than expiring: it leaves when it is
  * answered, closed, or pushed aside by something the app would rather say.
  */

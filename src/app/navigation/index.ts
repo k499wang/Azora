@@ -53,6 +53,7 @@ export type {
   AzoSecretLayerScreenProps,
   AccountManagementScreenProps,
   ProFeedbackScreenProps,
+  CoachingSurveyScreenProps,
   SkillsInPracticeScreenProps,
   PlanScreenProps,
   HistoryScreenProps,

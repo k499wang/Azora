@@ -21,6 +21,7 @@ import ProfileStatsGrid, { type ProfileStatTile } from '../components/profile/Pr
 import PlanAnalyticsSection from '../features/plan/PlanAnalyticsSection';
 import PlanProgressCard from '../features/plan/PlanProgressCard';
 import { MOOD_INSIGHT_HISTORY_LIMIT, useMoodInsights } from '../features/plan/useMoodInsights';
+import CoachingCard from '../features/coaching/CoachingCard';
 import AzoIdCard from '../features/room/AzoIdCard';
 import DecorationCollectionCard from '../features/room/DecorationCollectionCard';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
@@ -132,6 +133,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             humanName={displayName}
             daysTogether={createdAt == null ? null : daysWithAzo(createdAt, todayLocalDate)}
           />
+
+          <CoachingCard surface="white" />
 
           {planPosition == null || planTotalDays == null ? null : (
             <View style={styles.section}>

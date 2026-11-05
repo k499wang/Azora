@@ -55,7 +55,7 @@ function setup() {
     Text: 'Text',
     colors: { playful: { amber: hue, violet: hue, blush: hue, sky: hue, stone: hue }, success: {}, text: {} },
     spacing: { sm: 8, md: 12 },
-    typography: { label: { medium: {} } },
+    typography: { label: { medium: {}, detail: {} } },
     fonts: { semibold: 'semibold' },
     card: { taskKey: { width: 42, height: 38 } },
     radius: { full: 999 },

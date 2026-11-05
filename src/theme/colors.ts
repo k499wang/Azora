@@ -498,10 +498,17 @@ export const colors = {
   // toast's near-black: it waits to be answered, so it reads as quieter than
   // the bar that confirms something already happened.
   notice: {
-    fill: 'rgba(51,65,85,0.94)',
+    fill: '#334155',
     label: '#FFFFFF',
     detail: 'rgba(255,255,255,0.70)',
     dismiss: 'rgba(255,255,255,0.60)',
+  },
+
+  // Home's coaching card: a grey wash the page shows through, with the page's
+  // own ink on top.
+  coachingOffer: {
+    fill: 'rgba(71,85,105,0.20)',
+    dismissFill: 'rgba(71,85,105,0.22)',
   },
 
   // Translucent action banners pinned over photography. Kept on the same

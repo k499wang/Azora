@@ -26,6 +26,7 @@ import { triggerMediumHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 
 /** How far the face sits above its lip — and so how far it drops when pressed. */
 export const CHUNKY_LIP_DEPTH = 5;
+const COMPACT_LIP_DEPTH = 3;
 const DEFAULT_MIN_HEIGHT = 56;
 
 export interface ChunkyTone {
@@ -63,6 +64,13 @@ export const CHUNKY_TONE_QUIET: ChunkyTone = {
   label: colors.primary.blue700,
 };
 
+/** White face, grey lip, ink label. For a button sitting on a grey scrim. */
+export const CHUNKY_TONE_NEUTRAL: ChunkyTone = {
+  face: colors.background.card,
+  lip: colors.neutral[300],
+  label: colors.text.primary,
+};
+
 /**
  * Tinted blue face, blue label. The quiet tone for buttons sitting *on* a card:
  * a white face on a white surface has no edge of its own, so the pair reads as
@@ -93,7 +101,9 @@ interface ChunkyButtonProps {
   disabled?: boolean;
   loading?: boolean;
   minHeight?: number;
-  labelSize?: 'large' | 'xlarge';
+  labelSize?: 'medium' | 'large' | 'xlarge';
+  /** Tighter padding and a shallower lip, for a button sharing a row with other content. */
+  compact?: boolean;
   icon?: ReactNode;
   trailingIcon?: ReactNode;
   haptic?: 'medium' | 'tap' | 'none';
@@ -112,13 +122,15 @@ export default function ChunkyButton({
   loading = false,
   minHeight = DEFAULT_MIN_HEIGHT,
   labelSize = 'large',
+  compact = false,
   icon,
   trailingIcon,
   haptic = 'medium',
   style,
 }: ChunkyButtonProps) {
   const isDisabled = disabled || loading;
-  const shapeStyle = shape === 'pill' ? styles.pill : styles.card;
+  const cardStyle = compact ? styles.cardCompact : styles.card;
+  const shapeStyle = shape === 'pill' ? styles.pill : cardStyle;
 
   const handlePress = () => {
     if (isDisabled) return;
@@ -137,6 +149,7 @@ export default function ChunkyButton({
       style={[
         styles.lip,
         shapeStyle,
+        compact && styles.lipCompact,
         { backgroundColor: tone.lip },
         isDisabled && styles.disabled,
         style,
@@ -147,8 +160,9 @@ export default function ChunkyButton({
           style={[
             styles.face,
             shapeStyle,
+            compact && styles.faceCompact,
             { backgroundColor: tone.face, minHeight },
-            pressed && styles.facePressed,
+            pressed && (compact ? styles.facePressedCompact : styles.facePressed),
           ]}
         >
           {loading ? (
@@ -183,6 +197,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingBottom: CHUNKY_LIP_DEPTH,
   },
+  lipCompact: {
+    paddingBottom: COMPACT_LIP_DEPTH,
+  },
   face: {
     flexGrow: 1,
     flexDirection: 'row',
@@ -192,16 +209,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
+  faceCompact: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   // Exactly the lip's depth, so the face lands flush with its bottom edge and
   // the button reads as fully depressed rather than nudged.
   facePressed: {
     transform: [{ translateY: CHUNKY_LIP_DEPTH }],
+  },
+  facePressedCompact: {
+    transform: [{ translateY: COMPACT_LIP_DEPTH }],
   },
   pill: {
     borderRadius: 999,
   },
   card: {
     borderRadius: radius.card,
+    borderCurve: 'continuous',
+  },
+  cardCompact: {
+    borderRadius: radius.small,
     borderCurve: 'continuous',
   },
   disabled: {

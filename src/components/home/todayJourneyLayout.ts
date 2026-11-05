@@ -10,7 +10,7 @@ import { spacing } from '../../theme/spacing';
 export const TODAY_JOURNEY_GROUP_GAP = spacing.lg;
 
 /** Shared minimum height for exercise and to-do cards on Home. */
-export const TODAY_JOURNEY_CARD_MIN_HEIGHT = 82;
+export const TODAY_JOURNEY_CARD_MIN_HEIGHT = 92;
 
 /**
  * How close a group's label sits to the first row it names. Tighter than the

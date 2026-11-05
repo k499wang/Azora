@@ -24,6 +24,7 @@ import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPr
 import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
 import { forceEnjoymentPrompt } from '../features/enjoymentPrompt/useEnjoymentPrompt';
 import CoachingInvitationDialog from '../features/coaching/CoachingInvitationDialog';
+import { setCoachingOfferForced } from '../features/coaching/useCoachingOffer';
 import { forceNextDayComplete } from '../features/room/devDayCompleteOverride';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import { publishRevenueCatEntitlement } from '../queries/subscriptions/entitlementCache';
@@ -563,6 +564,14 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => setCoachingPreviewVisible(true)}
                 />
                 <SettingsRow
+                  label="Preview coaching survey (dev)"
+                  onPress={() => navigation.navigate('CoachingSurvey', { preview: true })}
+                />
+                <SettingsRow
+                  label="Show coaching card on Home (dev)"
+                  onPress={() => setCoachingOfferForced(true)}
+                />
+                <SettingsRow
                   label="Reset routine first-todo streak (dev)"
                   onPress={() => {
                     if (user?.id == null) return;
@@ -690,7 +699,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           />
           <CoachingInvitationDialog
             visible={coachingPreviewVisible}
-            onExplore={() => setCoachingPreviewVisible(false)}
+            onExplore={() => {
+              setCoachingPreviewVisible(false);
+              navigation.navigate('CoachingSurvey', { preview: true });
+            }}
             onClose={() => setCoachingPreviewVisible(false)}
           />
         </>

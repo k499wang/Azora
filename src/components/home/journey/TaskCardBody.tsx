@@ -4,10 +4,11 @@ import CoinWorth from '../../common/CoinWorth';
 import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography, wrappedLineHeight } from '../../../theme/typography';
+import { fonts, scaleType, typography, wrappedLineHeight } from '../../../theme/typography';
 import { TODAY_JOURNEY_CARD_MIN_HEIGHT } from '../todayJourneyLayout';
 
-export const TASK_TITLE_LINE_HEIGHT = wrappedLineHeight(typography.body.large.fontSize);
+const TASK_TITLE_FONT_SIZE = scaleType(19);
+export const TASK_TITLE_LINE_HEIGHT = wrappedLineHeight(TASK_TITLE_FONT_SIZE);
 /** A long task gets the room it needs instead of being cut off at two lines. */
 export const TASK_TITLE_MAX_LINES = 3;
 
@@ -55,6 +56,7 @@ export const taskCard = StyleSheet.create({
   },
   icon: {
     width: spacing['3xl'] + spacing.lg,
+    marginHorizontal: spacing.sm,
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
@@ -75,6 +77,7 @@ export const taskCard = StyleSheet.create({
   },
   title: {
     ...typography.body.large,
+    fontSize: TASK_TITLE_FONT_SIZE,
     lineHeight: TASK_TITLE_LINE_HEIGHT,
     fontFamily: fonts.semibold,
     color: colors.text.primary,

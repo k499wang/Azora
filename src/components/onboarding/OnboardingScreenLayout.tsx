@@ -1,5 +1,5 @@
 import { Text } from '../common/Text';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, RefObject, useEffect, useRef, useState } from 'react';
 import {
   Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleProp, StyleSheet, TextStyle, View } from 'react-native';
 import Reanimated, {
@@ -50,6 +50,8 @@ interface OnboardingScreenLayoutProps {
   footer: ReactNode;
   children: ReactNode;
   keyboardAvoiding?: boolean;
+  /** for a screen with several fields: it scrolls to the focused one, in place of scrolling to the end */
+  scrollRef?: RefObject<ScrollView | null>;
   centerBody?: boolean;
   centerOnScreen?: boolean;
   centerCopy?: boolean;
@@ -77,6 +79,7 @@ export default function OnboardingScreenLayout({
   footer,
   children,
   keyboardAvoiding = false,
+  scrollRef: screenScrollRef,
   centerBody = false,
   centerOnScreen = false,
   centerCopy = false,
@@ -98,7 +101,8 @@ export default function OnboardingScreenLayout({
   const fade = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
   const titleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const subtitleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
-  const scrollRef = useRef<ScrollView>(null);
+  const ownScrollRef = useRef<ScrollView>(null);
+  const scrollRef = screenScrollRef ?? ownScrollRef;
 
   // centerBody centres the body inside its own box, which sits lower than the
   // screen's centre because the header block is taller than the footer. Measure
@@ -204,12 +208,12 @@ export default function OnboardingScreenLayout({
   }, [scrollResetKey]);
 
   useEffect(() => {
-    if (!keyboardAvoiding) return;
+    if (!keyboardAvoiding || screenScrollRef != null) return;
     const show = Keyboard.addListener('keyboardDidShow', () => {
       scrollRef.current?.scrollToEnd({ animated: true });
     });
     return () => show.remove();
-  }, [keyboardAvoiding]);
+  }, [keyboardAvoiding, screenScrollRef, scrollRef]);
 
   useEffect(() => {
     if (!animateEntrance) return;

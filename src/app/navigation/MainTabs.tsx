@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import HomeScreen from '../../screens/HomeScreen';
 import PlanScreen from '../../screens/PlanScreen';
@@ -8,6 +8,7 @@ import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { loadTourSeen } from '../../services/preferences/tourSeenPreference';
 import TourOverlay from '../../features/tour/TourOverlay';
 import HiddenTabFreeze from './HiddenTabFreeze';
 
@@ -20,12 +21,30 @@ interface MainTabsProps {
 export function MainTabs({ tourEnabled }: MainTabsProps) {
   // The native tab bar emits tabPress even when re-tapping the active tab;
   // only buzz when the user actually switches tabs.
-  const lastActiveTabRef = useRef<keyof MainTabParamList>('Home');
+  const lastActiveTabRef = useRef<keyof MainTabParamList>('Plan');
+  // The app opens on Routine, except that the tour runs on Home. Mounting the
+  // tabs before the flag is known would show Routine for a moment first.
+  const [initialTab, setInitialTab] = useState<keyof MainTabParamList | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadTourSeen().then((seen) => {
+      if (cancelled) return;
+      const tab = seen ? 'Plan' : 'Home';
+      lastActiveTabRef.current = tab;
+      setInitialTab(tab);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (initialTab == null) return null;
 
   return (
     <>
       <Tab.Navigator
-        initialRouteName="Home"
+        initialRouteName={initialTab}
         screenOptions={{
           headerShown: false,
           // Sidebar-adaptable: UIKit draws a sidebar at regular width (iPad,

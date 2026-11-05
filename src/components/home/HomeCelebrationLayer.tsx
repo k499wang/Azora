@@ -30,6 +30,7 @@ const CELEBRATION_COLORS = [
 ] as const;
 /** clear of the tab bar without floating away from it */
 const TOAST_LIFT = spacing.sm;
+const NOTICE_ELEVATION = 24;
 const TOAST_TITLES = [
   'Nice work!',
   'A little win!',
@@ -75,6 +76,8 @@ interface HomeCelebrationLayerProps {
   notice?: ReactNode;
   /** the notice was pushed aside by a confirmation */
   onNoticePreempted?: () => void;
+  /** where the notice stands, for a page with its own control in the bar's slot */
+  noticeInsets?: { bottom: number; left: number; right: number };
 }
 
 /**
@@ -91,7 +94,7 @@ const HomeCelebrationLayer = forwardRef<
   HomeCelebrationHandle,
   HomeCelebrationLayerProps
 >(function HomeCelebrationLayer(
-  { tabBarHeight, active = true, notice, onNoticePreempted },
+  { tabBarHeight, active = true, notice, onNoticePreempted, noticeInsets },
   ref,
 ) {
   // Two canvases, mounted with the screen and fired in turn, so firing costs a
@@ -233,7 +236,7 @@ const HomeCelebrationLayer = forwardRef<
       )}
 
       {!active || notice == null || toast.visible ? null : (
-        <View style={[styles.bar, { bottom: tabBarHeight + TOAST_LIFT }]}>
+        <View style={[styles.bar, styles.notice, noticeInsets ?? { bottom: tabBarHeight + TOAST_LIFT }]}>
           {notice}
         </View>
       )}
@@ -260,5 +263,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
+  },
+  // Android draws by elevation, so a page's elevated control would otherwise
+  // sit on top of a notice placed over it.
+  notice: {
+    elevation: NOTICE_ELEVATION,
   },
 });

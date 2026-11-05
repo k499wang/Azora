@@ -49,6 +49,7 @@ import GardenScreen from '../../screens/GardenScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import AccountManagementScreen from '../../screens/AccountManagementScreen';
 import ProFeedbackScreen from '../../screens/ProFeedbackScreen';
+import CoachingSurveyScreen from '../../screens/CoachingSurveyScreen';
 import SkillsInPracticeScreen from '../../screens/SkillsInPracticeScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
@@ -480,6 +481,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
         }}
       />
       <Stack.Screen
+        name="CoachingSurvey"
+        component={CoachingSurveyScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
         name="ProFeedback"
         component={ProFeedbackScreen}
         options={{
@@ -632,7 +641,7 @@ function ExitOfferPresenter() {
     if (hasPresentedRef.current) return;
     hasPresentedRef.current = true;
 
-    // Let Home paint first, then slide the offer up over it.
+    // Let the first tab paint, then slide the offer up over it.
     const id = setTimeout(() => {
       setPending(false);
       navigation.navigate('ExitOffer');

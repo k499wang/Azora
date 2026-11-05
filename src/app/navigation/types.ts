@@ -172,6 +172,8 @@ export type RootStackParamList = {
   AzoSecretLayer: undefined;
   /** Sean Ellis question + one improvement, offered to Pro members, trial included, from Home. */
   ProFeedback: undefined;
+  /** Fit questions for coaching, then the link to book a free call. `preview` is dev-only and saves nothing. */
+  CoachingSurvey: { preview?: boolean } | undefined;
   AccountManagement: undefined;
   /** Every lesson skill the user reported trying; `preview` is a dev-only sample list. */
   SkillsInPractice: { preview?: boolean } | undefined;
@@ -245,6 +247,7 @@ export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type AzoSecretLayerScreenProps = RootStackScreenProps<'AzoSecretLayer'>;
 export type AccountManagementScreenProps = RootStackScreenProps<'AccountManagement'>;
 export type ProFeedbackScreenProps = RootStackScreenProps<'ProFeedback'>;
+export type CoachingSurveyScreenProps = RootStackScreenProps<'CoachingSurvey'>;
 export type SkillsInPracticeScreenProps = RootStackScreenProps<'SkillsInPractice'>;
 export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;

@@ -52,9 +52,6 @@ import { useStartDaily } from '../hooks/useStartDaily';
 import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 import type { TourTargetId } from '../features/tour/tourSteps';
 import { useIsFocused } from '@react-navigation/native';
-import { useQueryClient } from '@tanstack/react-query';
-import { getSelfCareGoalsQueryOptions } from '../queries/selfCare/useSelfCareGoalsQuery';
-import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyRewardStage } from '../features/room/useDailyRewardStage';
@@ -63,10 +60,8 @@ import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanSche
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import TodoListSection from '../features/selfCare/TodoListSection';
-import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
-import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
+import CoachingOfferCard from '../features/coaching/CoachingOfferCard';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
-import EnjoymentPromptPresenter from '../features/enjoymentPrompt/EnjoymentPromptPresenter';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -132,15 +127,6 @@ function planAccessRow(
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
-  const queryClient = useQueryClient();
-  const todayLocalDate = useTodayLocalDate();
-  // Today's to-dos, fetched ahead of the Routine tab so it opens with them
-  // rather than on a skeleton swapped out a moment later. Fetched, not
-  // watched: Home does not re-render as they change.
-  useEffect(() => {
-    if (userId == null) return;
-    void queryClient.prefetchQuery(getSelfCareGoalsQueryOptions(userId, todayLocalDate));
-  }, [queryClient, userId, todayLocalDate]);
   const profileSummary = useProfileSummaryQuery(userId).data;
   const futureSelfLetter = useFutureSelfLetter(userId);
   const { score, isLoading: scoreLoading } = useAzoraScore(userId);
@@ -211,8 +197,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const isRegularWidth = useIsRegularWidth();
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const celebrations = useRef<HomeCelebrationHandle>(null);
-  const openProFeedback = useCallback(() => navigation.navigate('ProFeedback'), [navigation]);
-  const surveyOffer = useSurveyOfferNotice(openProFeedback);
 
   const { width: windowWidth } = useWindowDimensions();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -443,6 +427,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
+          <CoachingOfferCard userId={userId} />
           <View style={styles.todayList} {...dailiesTarget}>
             <TodoListSection
               dailyRows={gatedDailyRows}
@@ -522,21 +507,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         }
         ref={celebrations}
         tabBarHeight={tabBarHeight}
-        notice={
-          surveyOffer.visible ? (
-            <SurveyOfferNotice
-              kind={surveyOffer.kind}
-              onPress={surveyOffer.open}
-              onDismiss={surveyOffer.dismiss}
-            />
-          ) : null
-        }
-        onNoticePreempted={surveyOffer.preempt}
-      />
-      <EnjoymentPromptPresenter
-        active={
-          isFocused && !rewardVisible && !rewardPresented && dayCompleteHandoff.stage === 'idle'
-        }
       />
     </View>
   );
@@ -584,7 +554,6 @@ const styles = StyleSheet.create({
     marginTop: margin.itemGap + spacing['2xl'],
     paddingTop: spacing.lg,
     paddingBottom: spacing['7xl'] + spacing.xl,
-    gap: spacing.md,
     borderTopLeftRadius: radius.hero,
     borderTopRightRadius: radius.hero,
     borderCurve: 'continuous',

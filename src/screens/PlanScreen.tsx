@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type Ref } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +13,7 @@ import TabTitleRow from '../components/common/TabTitleRow';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
+import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
 import CoinFlightLayer, {
   COIN_FLIGHT_MS,
   type CoinFlightHandle,
@@ -25,8 +26,10 @@ import AddGoalSheet from '../features/selfCare/AddGoalSheet';
 import { useAddGoalSheet } from '../features/selfCare/useAddGoalSheet';
 import RoutineAddMenu, { ROUTINE_ADD_BUTTON_SIZE } from '../features/selfCare/RoutineAddMenu';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
+import EnjoymentPromptPresenter from '../features/enjoymentPrompt/EnjoymentPromptPresenter';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
+import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { getActiveSelfCareGoalsQueryOptions } from '../queries/selfCare/useActiveSelfCareGoalsQuery';
 import { getSelfCareGoalsQueryOptions } from '../queries/selfCare/useSelfCareGoalsQuery';
@@ -185,13 +188,20 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
       <AddGoalSheet {...addGoal.sheet} />
       {/* Both mounted with the screen, not with focus, so the confetti canvases
           and the coin pool are built once rather than on every return. */}
-      <HomeCelebrationLayer
-        ref={celebrations}
+      <RoutineCelebrations
+        layerRef={celebrations}
+        navigation={navigation}
         active={isFocused}
         tabBarHeight={tabBarHeight}
+        noticeInsets={{
+          bottom: addButtonBottom - spacing.xs,
+          left: padding.screen.horizontal,
+          right: padding.screen.horizontal,
+        }}
       />
       <CoinFlightLayer ref={coinFlights} targetRef={coinPill} />
       <FirstWinOfDayPresenter active={isFocused} />
+      <EnjoymentPromptPresenter active={isFocused} />
       {isFocused ? <StatusBar style="light" /> : null}
     </View>
   );
@@ -206,6 +216,37 @@ function routineTitle(localDate: string, todayLocalDate: string): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+// The offer's queries refresh on completion, so they are observed here rather
+// than by the screen, for the same reason as the streak chip below.
+function RoutineCelebrations({ layerRef, navigation, active, tabBarHeight, noticeInsets }: {
+  layerRef: Ref<HomeCelebrationHandle>;
+  navigation: PlanScreenProps['navigation'];
+  active: boolean;
+  tabBarHeight: number;
+  noticeInsets: { bottom: number; left: number; right: number };
+}) {
+  const openFeedback = useCallback(() => navigation.navigate('ProFeedback'), [navigation]);
+  const surveyOffer = useSurveyOfferNotice(openFeedback);
+  return (
+    <HomeCelebrationLayer
+      ref={layerRef}
+      active={active}
+      tabBarHeight={tabBarHeight}
+      noticeInsets={noticeInsets}
+      notice={
+        surveyOffer.visible ? (
+          <SurveyOfferNotice
+            kind={surveyOffer.kind}
+            onPress={surveyOffer.open}
+            onDismiss={surveyOffer.dismiss}
+          />
+        ) : null
+      }
+      onNoticePreempted={surveyOffer.preempt}
+    />
+  );
 }
 
 function RoutineStreak({ userId, navigation }: {

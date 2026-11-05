@@ -60,6 +60,8 @@ export const TASK_KEY_WIDTH = 42;
 export const TASK_KEY_HEIGHT = 38;
 export const TASK_ICON_SIZE = 48;
 export const TASK_GLYPH_SIZE = 26;
+export const TASK_ROW_ICON_SIZE = 56;
+export const TASK_ROW_GLYPH_SIZE = 42;
 
 export const card: {
   base: ViewStyle;
@@ -69,6 +71,7 @@ export const card: {
   blockShadow: ViewStyle;
   well: ViewStyle;
   shadow: ViewStyle;
+  shadowSubtle: ViewStyle;
   shadowElevated: ViewStyle;
   shadowBrand: ViewStyle;
   trayShadow: ViewStyle;
@@ -78,6 +81,7 @@ export const card: {
   glassTint: ViewStyle;
   taskKey: ViewStyle;
   taskIcon: ViewStyle;
+  taskIconRow: ViewStyle;
 } = {
   // Elevated surface: borderless, like Apple's cards — depth comes from the
   // canvas contrast and shadow, never an outline.
@@ -130,6 +134,14 @@ export const card: {
     justifyContent: 'center',
     flexShrink: 0,
   },
+  // Layer over `taskIcon` on to-do rows: larger and slightly askew. Its children
+  // tilt with it, so use `RoutineTaskIcon`, which keeps the glyph upright.
+  taskIconRow: {
+    width: TASK_ROW_ICON_SIZE,
+    height: TASK_ROW_ICON_SIZE,
+    borderRadius: radius.card,
+    transform: [{ rotate: '-8deg' }],
+  },
   // Color-block shape: deep radius and clipped decoration. Add fill and its
   // own-color line with `coloredCard`; pair with `blockShadow` when it must lift.
   block: {
@@ -164,6 +176,14 @@ export const card: {
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 2,
+  },
+  // A fainter lift for small pills, where the standard shadow reads heavy.
+  shadowSubtle: {
+    shadowColor: colors.shadowInk,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   // A brand-blue floating button: its shadow carries its own colour, so the
   // lift reads under a saturated fill where the neutral ink disappears.

@@ -11,7 +11,7 @@ import {
   type EnjoymentPromptRecord,
 } from './enjoymentPromptState';
 
-// Lets Home land, and lets a modal that just closed finish its native dismissal.
+// Lets Routine land, and lets a modal that just closed finish its native dismissal.
 const SETTLE_MS = 800;
 // Off until the sheet is ready for users. The dev preview in Settings still works.
 const LIVE_FOR_USERS = false;
@@ -36,7 +36,7 @@ function readForced(): boolean {
 }
 
 /**
- * Asks once, on the first Home visit of a later day. Being "due" looks only at
+ * Asks once, on the first Routine visit of a later day. Being "due" looks only at
  * the calendar. `active` only delays the sheet until nothing else is on screen.
  */
 export function useEnjoymentPrompt({

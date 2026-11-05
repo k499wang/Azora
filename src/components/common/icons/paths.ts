@@ -447,6 +447,10 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 9V6M5.6 11.6l2.1 2.1M18.4 11.6l-2.1 2.1M3 17h3M18 17h3M8.2 17a3.8 3.8 0 0 1 7.6 0M3 21h18"/>
   `,
 
+  'star-white-outline': `
+    <path fill="currentColor" stroke="#FFF" stroke-width="2" stroke-linejoin="round" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>
+  `,
+
   'star-outline': `
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3.4l2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 17.93l-5.3 2.78 1.01-5.9-4.29-4.18 5.93-.86z"/>
   `,

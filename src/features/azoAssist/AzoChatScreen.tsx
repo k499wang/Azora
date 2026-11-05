@@ -36,6 +36,7 @@ import AzoGlow from './AzoGlow';
 import type { SuggestedTodo } from './domain/suggestedTodo';
 import { removesRepeat, todoChangeNote, type TodoChange } from './domain/todoChange';
 import FreeMessagesCaption from './FreeMessagesCaption';
+import StarterMarquee from './StarterMarquee';
 import SuggestedTodoRow from './SuggestedTodoRow';
 import TodoChangeRow from './TodoChangeRow';
 import { useAzoAssist } from './useAzoAssist';
@@ -201,7 +202,13 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <AzoChatHeader onBack={() => navigation.goBack()} columnStyle={styles.headerColumn} />
+      <AzoChatHeader
+        onBack={() => {
+          triggerTapHaptic();
+          navigation.goBack();
+        }}
+        columnStyle={styles.headerColumn}
+      />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           ref={scroll}
@@ -223,7 +230,16 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
                 <RiseUnlessReducedMotion reducedMotion={reducedMotion} delay={stagger.base}>
                   <Text style={styles.heading}>{copy.chatHeading}</Text>
                 </RiseUnlessReducedMotion>
-                <View style={styles.welcomeSide} />
+                <View style={[styles.welcomeSide, styles.welcomeBelow]}>
+                  <StarterMarquee
+                    rows={copy.starters}
+                    delay={stagger.base * 2}
+                    onPick={(starter) => {
+                      triggerTapHaptic();
+                      void send(starter);
+                    }}
+                  />
+                </View>
               </View>
             ) : null}
 
@@ -309,34 +325,6 @@ export default function AzoChatScreen({ navigation, route }: AzoChatScreenProps)
         </ScrollView>
 
         <View style={[styles.composerTray, { paddingBottom: insets.bottom + spacing.sm }]}>
-          {messages.length === 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              style={styles.starters}
-              contentContainerStyle={styles.startersContent}
-            >
-              {copy.starters.map((starter, index) => (
-                <RiseUnlessReducedMotion
-                  key={starter}
-                  reducedMotion={reducedMotion}
-                  delay={stagger.base * 2 + stagger.tight * index}
-                >
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => {
-                      triggerTapHaptic();
-                      void send(starter);
-                    }}
-                    style={({ pressed }) => [card.base, card.shadow, styles.starter, pressed && pressable.control]}
-                  >
-                    <Text style={styles.starterText}>{starter}</Text>
-                  </Pressable>
-                </RiseUnlessReducedMotion>
-              ))}
-            </ScrollView>
-          ) : null}
           <ScreenContent width="grouped" style={styles.trayContent}>
             {assist.freeMessagesLeft != null ? (
               <FreeMessagesCaption left={assist.freeMessagesLeft} onUpgrade={upgrade} />
@@ -474,8 +462,6 @@ function AzoReply({ text, streaming, onDone }: { text: string; streaming: boolea
 }
 
 const WELCOME_SIDE_MIN_HEIGHT = 150;
-/** Narrow enough that the next card shows at the screen's edge, which is what says it scrolls. */
-const STARTER_WIDTH = 176;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.canvas },
@@ -489,41 +475,18 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   headerColumn: { paddingHorizontal: padding.screen.horizontal },
-  welcome: { flex: 1, alignItems: 'center', gap: spacing.sm },
+  // The margin evens out `content`'s larger bottom padding, so the heading stays centred.
+  welcome: { flex: 1, alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg - spacing.md },
   // Equal sides hold the heading on the page's vertical centre, whatever each side contains.
   welcomeSide: { flex: 1, minHeight: WELCOME_SIDE_MIN_HEIGHT, alignSelf: 'stretch' },
   welcomeAbove: { alignItems: 'center', justifyContent: 'flex-end' },
+  welcomeBelow: { marginHorizontal: -padding.screen.horizontal },
   heading: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
     maxWidth: 300,
-  },
-  starters: {
-    flexGrow: 0,
-    marginHorizontal: -padding.screen.horizontal,
-    marginBottom: spacing.xs,
-  },
-  // The vertical padding leaves the cards' shadows room inside the scroller's clip.
-  startersContent: {
-    gap: spacing.sm,
-    paddingHorizontal: padding.screen.horizontal,
-    paddingVertical: spacing.xs,
-  },
-  starter: {
-    flex: 1,
-    width: STARTER_WIDTH,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + spacing.xs,
-    borderRadius: radius.xl,
-    borderCurve: 'continuous',
-  },
-  starterText: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
   bubble: {
     maxWidth: '85%',

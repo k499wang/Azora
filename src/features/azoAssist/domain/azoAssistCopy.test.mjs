@@ -13,3 +13,13 @@ test('every plan opener keeps the question the server reads as a plan request', 
     assert.ok(azoAssistCopyFor(planId).planOpener.startsWith('What’s on your mind today?'));
   }
 });
+
+test('every plan has several rows of distinct starters for the sliding pills', () => {
+  for (const planId of ['home', 'focus', null]) {
+    const { starters } = azoAssistCopyFor(planId);
+    assert.ok(starters.length >= 2);
+    const all = starters.flat();
+    assert.equal(new Set(all).size, all.length);
+    assert.ok(all.every((starter) => starter.trim().length > 0));
+  }
+});

@@ -137,10 +137,22 @@ test('profile shortcuts select Profile without stacking main tab routes', () => 
   }
 });
 
-test('the app always opens on Home', () => {
+test('the app opens on Routine, or on Home when the tour is still to run', () => {
   const mainTabs = readFileSync(join(here, 'MainTabs.tsx'), 'utf8');
   const rootNavigator = readFileSync(join(here, 'RootNavigator.tsx'), 'utf8');
 
-  assert.match(mainTabs, /initialRouteName="Home"/);
+  assert.match(mainTabs, /seen \? 'Plan' : 'Home'/);
+  assert.match(mainTabs, /if \(initialTab == null\) return null;/);
+  assert.match(mainTabs, /initialRouteName=\{initialTab\}/);
   assert.doesNotMatch(rootNavigator, /initialTab/);
+});
+
+test('the prompts for an arriving user live on Routine, not Home', () => {
+  const routine = readFileSync(join(here, '../../screens/PlanScreen.tsx'), 'utf8');
+  const home = readFileSync(join(here, '../../screens/HomeScreen.tsx'), 'utf8');
+
+  for (const prompt of [/useSurveyOfferNotice\(/, /<EnjoymentPromptPresenter/]) {
+    assert.match(routine, prompt);
+    assert.doesNotMatch(home, prompt);
+  }
 });
