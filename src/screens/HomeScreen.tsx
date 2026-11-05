@@ -66,6 +66,7 @@ import TodoListSection from '../features/selfCare/TodoListSection';
 import SurveyOfferNotice from '../components/home/SurveyOfferNotice';
 import { useSurveyOfferNotice } from '../hooks/useSurveyOfferNotice';
 import FirstWinOfDayPresenter from '../features/selfCare/FirstWinOfDayPresenter';
+import EnjoymentPromptPresenter from '../features/enjoymentPrompt/EnjoymentPromptPresenter';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { usePlanPosition } from '../hooks/usePlanPosition';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -531,6 +532,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ) : null
         }
         onNoticePreempted={surveyOffer.preempt}
+      />
+      <EnjoymentPromptPresenter
+        active={
+          isFocused && !rewardVisible && !rewardPresented && dayCompleteHandoff.stage === 'idle'
+        }
       />
     </View>
   );

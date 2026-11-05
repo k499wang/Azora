@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { selfCareGoalClearsDay } from './domain/selfCareGoal.ts';
 import { useFirstWinOfDayStore } from './firstWinOfDayStore.ts';
 
 const source = ts.createSourceFile(
@@ -31,13 +32,19 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-function setup(goal = { id: 'goal', title: 'Drink water', completedToday: false, recurrence: 'daily' }) {
+function setup(
+  goal = { id: 'goal', title: 'Drink water', completedToday: false, recurrence: 'daily' },
+  otherGoals = [],
+  claimedDay = null,
+) {
   const write = deferred();
   const motion = deferred();
   const focused = { current: true };
   const feedback = [];
+  const holds = [];
+  const releases = [];
   const store = useFirstWinOfDayStore;
-  store.setState({ claimedDay: null, showing: false, heldForClose: false, forced: false });
+  store.setState({ claimedDay, showing: false, heldForClose: false, forced: false });
   const toggle = vm.runInNewContext(`${compiled}\ntoggle;`, {
     readOnly: false,
     togglesInFlight: { current: new Set() },
@@ -50,7 +57,14 @@ function setup(goal = { id: 'goal', title: 'Drink water', completedToday: false,
       release: () => store.getState().release('user:2026-10-05'),
     },
     toggleGoal: { toggle: () => write.promise },
-    settlingGoals: { hold() {}, release() {} },
+    goals: [goal, ...otherGoals],
+    selfCareGoalClearsDay,
+    DAY_CLEARED_TIMING: 'cleared',
+    DAY_CLEARED_UNDER_POPUP_TIMING: 'under-popup',
+    settlingGoals: {
+      hold(id, timing) { holds.push(timing); },
+      release(id) { releases.push(id); },
+    },
     holdMotionQuiet() {},
     GOAL_SETTLED_MS: 0,
     selfCareGoalCoins: () => 1,
@@ -60,7 +74,11 @@ function setup(goal = { id: 'goal', title: 'Drink water', completedToday: false,
     useFirstWinOfDayStore: store,
   });
   toggle(goal);
-  return { write, motion, focused, feedback, store };
+  return { write, motion, focused, feedback, holds, releases, store };
+}
+
+function setupAfterFirstWin(otherGoals = []) {
+  return setup(undefined, otherGoals, 'user:2026-10-05');
 }
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -106,4 +124,25 @@ test('undoing a completed habit does not claim a win or show completion feedback
   assert.equal(state.feedback.length, 0);
   assert.equal(state.store.getState().showing, false);
   assert.equal(state.store.getState().claimedDay, null);
+});
+
+test('the first win that clears the day holds the list until the popup closes', async () => {
+  const state = setup();
+  assert.deepEqual(state.holds, ['under-popup']);
+  state.write.reject(new Error('offline'));
+  await flush();
+  assert.deepEqual(state.releases, ['goal']);
+});
+
+test('a later tick that clears the day crosses over and keeps its feedback', () => {
+  const state = setupAfterFirstWin();
+  assert.deepEqual(state.holds, ['cleared']);
+  assert.equal(state.feedback.length, 1);
+});
+
+test('a tick that leaves to-dos open keeps the usual hold', () => {
+  const state = setupAfterFirstWin([
+    { id: 'other', title: 'Stretch', completedToday: false, recurrence: 'daily' },
+  ]);
+  assert.deepEqual(state.holds, [undefined]);
 });

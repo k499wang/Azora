@@ -315,6 +315,16 @@ export function trackReviewPromptRequested(props: {
   });
 }
 
+export type EnjoymentPromptAnswer = 'like' | 'not_really' | 'dismissed';
+
+export function trackEnjoymentPromptShown() {
+  posthog.capture(AnalyticsEvent.EnjoymentPromptShown);
+}
+
+export function trackEnjoymentPromptAnswered(answer: EnjoymentPromptAnswer) {
+  posthog.capture(AnalyticsEvent.EnjoymentPromptAnswered, { answer });
+}
+
 export function trackReviewPromptSuppressed(props: {
   trigger: string;
   reason: string;

@@ -425,6 +425,11 @@ export function leavingSelfCareGoalIds(
   ).map((goal) => goal.id));
 }
 
+/** Whether ticking this goal finishes everything left on the day. */
+export function selfCareGoalClearsDay(goals: SelfCareGoal[], goalId: string): boolean {
+  return goals.every((goal) => goal.id === goalId || goal.completedToday);
+}
+
 export function selfCareGoalTargetOpacity(leaving: boolean): 0 | 1 {
   'worklet';
   return leaving ? 0 : 1;

@@ -5,6 +5,12 @@ type Phase = 'holding' | 'leaving';
 
 const NONE: ReadonlyMap<string, Phase> = new Map();
 
+interface HoldTiming {
+  /** null holds until `leave` is called */
+  holdMs?: number | null;
+  leaveMs?: number;
+}
+
 interface Options {
   /** how long the list stays put after the last tick, showing it */
   holdMs: number;
@@ -48,7 +54,8 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
     [],
   );
 
-  const leaveAll = useCallback(() => {
+  const leave = useCallback((leavingFor: number = leaveMs) => {
+    cancelHold.current?.();
     cancelHold.current = null;
     const leaving = held.current;
     held.current = new Set();
@@ -72,23 +79,26 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
         });
         return changed ? next : current;
       });
-    }, leaveMs);
+    }, leavingFor);
     const cancel = () => clearTimeout(timer);
     cancelLeaves.current.add(cancel);
   }, [leaveMs]);
 
   const hold = useCallback(
-    (goalId: string) => {
+    (goalId: string, timing: HoldTiming = {}) => {
       held.current.add(goalId);
       setPhases((current) => {
         if (current.get(goalId) === 'holding') return current;
         return new Map(current).set(goalId, 'holding');
       });
       cancelHold.current?.();
-      const holdTimer = setTimeout(leaveAll, holdMs);
+      cancelHold.current = null;
+      const heldFor = timing.holdMs === undefined ? holdMs : timing.holdMs;
+      if (heldFor == null) return;
+      const holdTimer = setTimeout(() => leave(timing.leaveMs), heldFor);
       cancelHold.current = () => clearTimeout(holdTimer);
     },
-    [holdMs, leaveAll],
+    [holdMs, leave],
   );
 
   const release = useCallback((goalId: string) => {
@@ -111,5 +121,5 @@ export function useSettlingGoals({ holdMs, leaveMs }: Options) {
     return { settling, holding };
   }, [phases]);
 
-  return { ...sets, hold, release };
+  return { ...sets, hold, leave, release };
 }

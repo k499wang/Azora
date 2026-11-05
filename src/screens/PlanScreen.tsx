@@ -169,7 +169,6 @@ export default function PlanScreen({ navigation }: PlanScreenProps) {
               upcoming={viewingLaterDay}
               tourOverviewTarget
               scrollRef={routineScroll}
-              onAddHabit={addGoal.open}
               onAddAt={addGoal.openAt}
               onBrowseRoutines={browseRoutines}
               onCoinsEarned={launchCoins}

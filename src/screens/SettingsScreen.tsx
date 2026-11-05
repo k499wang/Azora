@@ -22,6 +22,7 @@ import { restorePaywallPurchases } from '../services/paywall';
 import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
 import { clearSurveyOfferDismissed } from '../services/preferences/surveyOfferPreference';
 import { setSurveyOfferForced } from '../hooks/devSurveyOfferOverride';
+import { forceEnjoymentPrompt } from '../features/enjoymentPrompt/useEnjoymentPrompt';
 import CoachingInvitationDialog from '../features/coaching/CoachingInvitationDialog';
 import { forceNextDayComplete } from '../features/room/devDayCompleteOverride';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
@@ -371,6 +372,13 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                     void resetFutureSelfLetterSeen(queryClient, user.id).then(() =>
                       returnToHome(navigation),
                     );
+                  }}
+                />
+                <SettingsRow
+                  label="Preview enjoying Azora (dev)"
+                  onPress={() => {
+                    forceEnjoymentPrompt();
+                    returnToHome(navigation);
                   }}
                 />
                 <SettingsRow

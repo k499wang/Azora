@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Animated, {
   FadeIn,
+  FadeInDown,
   ReduceMotion,
   cancelAnimation,
   useAnimatedStyle,
@@ -66,6 +67,7 @@ import {
   selfCareGoalRecurrenceLabel,
   planSelfCareGoalList,
   leavingSelfCareGoalIds,
+  selfCareGoalClearsDay,
   reorderedSelfCareGoalPlaces,
   type SelfCareGoal,
   type SelfCareGoalPlaces,
@@ -161,6 +163,13 @@ const GOAL_HOLD_MS = GOAL_COMPLETION_MOTION_MS + 200;
 const GOAL_LEAVE_MS = Math.max(GOAL_FILING_MS, TODAY_JOURNEY_RAIL_TIMING.duration);
 /** from a tick until its card has been filed and the list is still */
 const GOAL_SETTLED_MS = GOAL_HOLD_MS + GOAL_LEAVE_MS;
+/** The last tick's strike has all but landed, leaving time to cross over to the all-done state. */
+const DAY_CLEARED_TIMING = { holdMs: GOAL_COMPLETION_MOTION_MS - 100, leaveMs: GOAL_FILING_MS };
+/** A first win that clears the day holds the list under its popup until that closes. */
+const DAY_CLEARED_UNDER_POPUP_TIMING = { holdMs: null, leaveMs: GOAL_FILING_MS };
+const DAY_CLEARED_ENTERING = FadeInDown.duration(duration.slow)
+  .easing(easing.enter)
+  .withInitialValues({ transform: [{ translateY: spacing.md }] });
 const JOURNEY_ROW_GAP = 12;
 const FOLDED_HEADER_SPACE = JOURNEY_ROW_GAP + spacing.md;
 const FOLD_TIMING = { duration: duration.fast, easing: easing.enter, reduceMotion: ReduceMotion.Never } as const;
@@ -238,8 +247,6 @@ type TodoListSectionProps = JourneyTodoListSectionProps | {
   readOnly?: boolean;
   /** A later day, read-only for ticking, where a planned to-do can still be edited or removed. */
   upcoming?: boolean;
-  /** Opens the add sheet. */
-  onAddHabit: () => void;
   /** Opens the add sheet already set to a part of the day; null is Anytime. */
   onAddAt: (scheduledTime: string | null) => void;
   /** Opens the curated routine starting points. */
@@ -496,72 +503,76 @@ function goalSlotProps(rows: TodoListRow[], index: number) {
 }
 
 function AllDoneState({
-  celebrate = false,
+  clearedFromHeight = null,
   fillAvailableSpace = false,
-  onAddHabit,
 }: {
-  /** a tick here cleared the day, rather than the day loading already done */
-  celebrate?: boolean;
+  /** the height of the list a tick here just cleared; null if the day loaded already done */
+  clearedFromHeight?: number | null;
   fillAvailableSpace?: boolean;
-  onAddHabit?: () => void;
 }) {
   const reducedMotion = useReducedMotionSetting();
   const burst = useSharedValue(0);
-  const [celebrates] = useState(celebrate);
+  const [celebrates] = useState(clearedFromHeight != null);
+  const easesHeight = celebrates && !reducedMotion;
+  const height = useSharedValue(easesHeight ? clearedFromHeight : null);
+  const heightStyle = useAnimatedStyle(() => (height.value == null ? {} : { height: height.value }));
 
   useEffect(() => {
     if (!celebrates) return undefined;
-    triggerMediumHaptic();
-    if (reducedMotion) return undefined;
-    burst.value = withTiming(1, { duration: duration.slower, easing: easing.burst });
-    return () => cancelAnimation(burst);
+    if (reducedMotion) {
+      triggerMediumHaptic();
+      return undefined;
+    }
+    const arrived = setTimeout(() => {
+      triggerMediumHaptic();
+      burst.value = withTiming(1, { duration: duration.slower, easing: easing.burst });
+    }, duration.slow);
+    return () => {
+      clearTimeout(arrived);
+      cancelAnimation(burst);
+    };
   }, [burst, celebrates, reducedMotion]);
 
+  const entering = celebrates ? DAY_CLEARED_ENTERING : FadeIn.duration(duration.fast).easing(easing.enter);
+
   return (
-    <Animated.View
-      entering={reducedMotion ? undefined : FadeIn.duration(duration.fast).easing(easing.enter)}
-      style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
-    >
-      <View>
-        <TaskIllustration
-          name="celebration"
-          size={DAY_DONE_ICON_SIZE}
-        />
-        {celebrates && !reducedMotion
-          ? DAY_DONE_BURST.map((star, index) => (
-              <BurstStar
-                key={index}
-                angle={star.angle}
-                burst={burst}
-                color={star.color}
-                distance={star.distance}
-                size={star.size}
-                x={DAY_DONE_ICON_SIZE / 2}
-                y={DAY_DONE_ICON_SIZE / 2}
-              />
-            ))
-          : null}
-      </View>
-      <Text style={styles.dayDoneTitle}>
-        Woohoo! You’re all completed for the day!
-      </Text>
-      {onAddHabit == null ? null : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add a new habit"
-          onPress={() => {
-            triggerTapHaptic();
-            onAddHabit();
-          }}
-          style={({ pressed }) => [
-            styles.dayDoneAddHabit,
-            pressed && pressable.surface,
-          ]}
-        >
-          <Icon bold name="plus" size={16} color={colors.text.brand} />
-          <Text style={styles.dayDoneAddHabitLabel}>Add a new habit</Text>
-        </Pressable>
-      )}
+    <Animated.View style={heightStyle}>
+      <Animated.View
+        entering={reducedMotion ? undefined : entering}
+        onLayout={easesHeight
+          ? ({ nativeEvent }) => {
+              height.value = withTiming(nativeEvent.layout.height, {
+                duration: duration.base,
+                easing: easing.enter,
+              });
+            }
+          : undefined}
+        style={[styles.dayDone, fillAvailableSpace && styles.dayDoneFill]}
+      >
+        <View>
+          <TaskIllustration
+            name="celebration"
+            size={DAY_DONE_ICON_SIZE}
+          />
+          {celebrates && !reducedMotion
+            ? DAY_DONE_BURST.map((star, index) => (
+                <BurstStar
+                  key={index}
+                  angle={star.angle}
+                  burst={burst}
+                  color={star.color}
+                  distance={star.distance}
+                  size={star.size}
+                  x={DAY_DONE_ICON_SIZE / 2}
+                  y={DAY_DONE_ICON_SIZE / 2}
+                />
+              ))
+            : null}
+        </View>
+        <Text style={styles.dayDoneTitle}>
+          Woohoo! You’re all completed for the day!
+        </Text>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -777,11 +788,14 @@ function TodoListSection(props: TodoListSectionProps) {
     allGoalsCompleted &&
     settlingGoals.settling.size > 0 &&
     settlingGoals.holding.size === 0;
-  const [clearedDayHere, setClearedDayHere] = useState(false);
+  const [clearedFromHeight, setClearedFromHeight] = useState<number | null>(null);
+  const firstWinShowing = useFirstWinOfDayStore((state) => state.showing);
+  const firstWinWasShowing = useRef(firstWinShowing);
+  const leaveSettlingGoals = settlingGoals.leave;
   useEffect(() => {
-    if (clearingForAllDone) setClearedDayHere(true);
-    else if (!allGoalsCompleted) setClearedDayHere(false);
-  }, [allGoalsCompleted, clearingForAllDone]);
+    if (firstWinWasShowing.current && !firstWinShowing) leaveSettlingGoals(GOAL_FILING_MS);
+    firstWinWasShowing.current = firstWinShowing;
+  }, [firstWinShowing, leaveSettlingGoals]);
   const filingIds = useMemo(
     () => readOnly ? EMPTY_IDS : leavingSelfCareGoalIds(goals, settlingGoals.settling, settlingGoals.holding),
     [goals, settlingGoals.settling, settlingGoals.holding, readOnly],
@@ -877,6 +891,7 @@ function TodoListSection(props: TodoListSectionProps) {
     if (readOnly || togglesInFlight.current.has(goal.id)) return false;
     togglesInFlight.current.add(goal.id);
     const completed = !goal.completedToday;
+    const clearsDay = completed && selfCareGoalClearsDay(goals, goal.id);
     if (completed) playCompletionSound();
     const isFirstWinToday =
       tasksOnly &&
@@ -887,7 +902,9 @@ function TodoListSection(props: TodoListSectionProps) {
     const write = toggleGoal.toggle({ goalId: goal.id, completed });
     // The mutation owns rollback and the inline error message.
     write.catch(() => {
-      if (isFirstWinToday) firstWin.release();
+      if (!isFirstWinToday) return;
+      firstWin.release();
+      settlingGoals.release(goal.id);
     }).finally(() => togglesInFlight.current.delete(goal.id));
     // Feedback belongs to this user action, never to a cache refresh or a
     // completion made elsewhere while this screen is mounted.
@@ -896,7 +913,8 @@ function TodoListSection(props: TodoListSectionProps) {
       settlingGoals.release(goal.id);
       return true;
     }
-    settlingGoals.hold(goal.id);
+    if (clearsDay) settlingGoals.hold(goal.id, isFirstWinToday ? DAY_CLEARED_UNDER_POPUP_TIMING : DAY_CLEARED_TIMING);
+    else settlingGoals.hold(goal.id);
     holdMotionQuiet(GOAL_SETTLED_MS);
     props.onCoinsEarned?.({ coins: selfCareGoalCoins(goal.recurrence), from });
     const completion = { goalId: goal.id, goalTitle: goal.title, isFirstWinToday };
@@ -1049,6 +1067,17 @@ function TodoListSection(props: TodoListSectionProps) {
   }, [targetExtent, releaseHiddenExtent]);
   useAnimatedReaction(() => pageOffset.value, () => releaseHiddenExtent(), [releaseHiddenExtent]);
   const listExtentStyle = useAnimatedStyle(() => ({ height: listExtent.value }));
+  const listClearingStyle = useAnimatedStyle(() => ({
+    opacity: !clearingForAllDone
+      ? 1
+      : reducedMotion
+        ? 0
+        : withTiming(0, { duration: GOAL_FILING_MS, easing: easing.enter }),
+  }), [clearingForAllDone, reducedMotion]);
+  useEffect(() => {
+    if (clearingForAllDone) setClearedFromHeight(listExtent.value);
+    else if (!allGoalsCompleted) setClearedFromHeight(null);
+  }, [allGoalsCompleted, clearingForAllDone, listExtent]);
 
   const railShape = destination == null ? railToLastMarker : railToDestination;
   const railStyle = useJourneyRail({
@@ -1089,8 +1118,6 @@ function TodoListSection(props: TodoListSectionProps) {
     if (!tasksOnly && schedule == null && scheduleError) props.onRetrySchedule();
     if (tasksOnly && goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
   };
-
-  const openSheet = props.mode === 'tasks' ? props.onAddHabit : undefined;
 
   return (
     <Animated.View
@@ -1150,14 +1177,13 @@ function TodoListSection(props: TodoListSectionProps) {
       ) : null}
       {initialLoading || initialLoadError ? null : showAllDone ? (
         <AllDoneState
-          celebrate={clearedDayHere}
+          clearedFromHeight={clearedFromHeight}
           fillAvailableSpace
-          onAddHabit={openSheet}
         />
       ) : tasksOnly ? (
         <Animated.View
           ref={listRef}
-          style={[styles.journey, styles.tasksJourney, taskLayoutIds.length > 0 && listExtentStyle]}
+          style={[styles.journey, styles.tasksJourney, taskLayoutIds.length > 0 && listExtentStyle, listClearingStyle]}
         >
           {listRows.map((row: TodoListRow, index) => row.kind === 'header' ? (
             <JourneyDragRow
@@ -1466,21 +1492,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   daypartNow: {
-    ...typography.label.detail,
-    fontFamily: fonts.semibold,
-    color: colors.text.brand,
-  },
-  dayDoneAddHabit: {
-    minHeight: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.background.accentSoft,
-  },
-  dayDoneAddHabitLabel: {
     ...typography.label.detail,
     fontFamily: fonts.semibold,
     color: colors.text.brand,

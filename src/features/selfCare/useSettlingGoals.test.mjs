@@ -171,3 +171,24 @@ test('ten blur and reentry cycles discard old phases and timers during either ph
     assert.equal(harness.render().settling.size, 0);
   }
 });
+
+test('a hold can use its own timing for the group', () => {
+  const harness = setup();
+  harness.render().hold('a', { holdMs: 30, leaveMs: 10 });
+  harness.advance(30);
+  assert.equal(harness.render().holding.size, 0);
+  assert.equal(harness.render().settling.size, 1);
+  harness.advance(10);
+  assert.equal(harness.render().settling.size, 0);
+});
+
+test('an untimed hold stays until leave is called', () => {
+  const harness = setup();
+  harness.render().hold('a', { holdMs: null });
+  harness.advance(10000);
+  assert.deepEqual([...harness.render().holding], ['a']);
+  harness.render().leave(10);
+  assert.equal(harness.render().holding.size, 0);
+  harness.advance(10);
+  assert.equal(harness.render().settling.size, 0);
+});

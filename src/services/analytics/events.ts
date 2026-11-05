@@ -101,6 +101,8 @@ export const AnalyticsEvent = {
 
   ReviewPromptRequested: 'review_prompt_requested',
   ReviewPromptSuppressed: 'review_prompt_suppressed',
+  EnjoymentPromptShown: 'enjoyment_prompt_shown',
+  EnjoymentPromptAnswered: 'enjoyment_prompt_answered',
 
   NotificationScheduled: 'notification_scheduled',
   NotificationTapped: 'notification_tapped',
