@@ -3,13 +3,19 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { recordCoachingOfferVisit } from '../features/coaching/domain/coachingOfferVisits.ts';
 
 const compiled = ts.transpileModule(
   readFileSync(new URL('./useSurveyOfferNotice.ts', import.meta.url), 'utf8'),
   { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText;
 
-function createEnvironment({ forced = false } = {}) {
+const TODAY = '2026-11-05';
+
+function createEnvironment({
+  forced = false,
+  visits = { lastLocalDate: '2026-11-04', daysVisited: 1, dismissed: false },
+} = {}) {
   const saved = { feedback: false };
   const calls = [];
 
@@ -34,6 +40,16 @@ function createEnvironment({ forced = false } = {}) {
           useEffect(effect) {
             if (!mounted) cleanups.push(effect());
           },
+        };
+        if (name === '../stores/authStore') return {
+          useAuthStore: (select) => select({ user: { id: 'user-1' } }),
+        };
+        if (name === './useTodayLocalDate') return { useTodayLocalDate: () => TODAY };
+        if (name === '../services/preferences/coachingOfferPreference') return {
+          loadCoachingOfferVisits: async () => visits,
+        };
+        if (name === '../features/coaching/domain/coachingOfferVisits') return {
+          recordCoachingOfferVisit,
         };
         if (name === '../services/preferences/surveyOfferPreference') return {
           loadSurveyOfferDismissed: async () => saved.feedback,
@@ -110,9 +126,21 @@ test('preempting an offer only hides it for the current Home instance', async ()
   returnedHome.unmount();
 });
 
-test('anyone who opens the app is offered the feedback form', async () => {
-  const environment = createEnvironment();
-  const hook = await environment.mount();
-  assert.equal(hook.render().visible, true);
-  hook.unmount();
+test('the form is not offered on the first day with the app', async () => {
+  for (const visits of [null, { lastLocalDate: TODAY, daysVisited: 1, dismissed: false }]) {
+    const hook = await createEnvironment({ visits }).mount();
+    assert.equal(hook.render().visible, false);
+    hook.unmount();
+  }
+});
+
+test('the form is offered from the second day, even before that visit is saved', async () => {
+  for (const visits of [
+    { lastLocalDate: '2026-11-01', daysVisited: 1, dismissed: false },
+    { lastLocalDate: TODAY, daysVisited: 2, dismissed: false },
+  ]) {
+    const hook = await createEnvironment({ visits }).mount();
+    assert.equal(hook.render().visible, true);
+    hook.unmount();
+  }
 });

@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
+import { recordCoachingOfferVisit } from '../features/coaching/domain/coachingOfferVisits';
+import { loadCoachingOfferVisits } from '../services/preferences/coachingOfferPreference';
 import {
   loadSurveyOfferDismissed,
   setSurveyOfferDismissed,
 } from '../services/preferences/surveyOfferPreference';
+import { useAuthStore } from '../stores/authStore';
 import {
   setSurveyOfferForced,
   useSurveyOfferForced,
 } from './devSurveyOfferOverride';
+import { useTodayLocalDate } from './useTodayLocalDate';
+
+/** Someone needs a day with the app before they can say how it is going. */
+const FEEDBACK_OFFER_DAYS = 2;
 
 export interface SurveyOfferNoticeState {
   /** the offer has not been answered */
@@ -20,25 +27,38 @@ export interface SurveyOfferNoticeState {
 }
 
 /**
- * The feedback form Routine asks for, offered to everyone who opens the app. It
- * is shown once storage has answered and never again once taken or closed.
+ * The feedback form Routine asks for, offered to everyone from their second day
+ * with the app open. It is never shown again once taken or closed.
  */
 export function useSurveyOfferNotice(openFeedback: () => void): SurveyOfferNoticeState {
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const todayLocalDate = useTodayLocalDate();
   const [dismissed, setDismissed] = useState<boolean | null>(null);
+  const [dayReached, setDayReached] = useState(false);
   const [preempted, setPreempted] = useState(false);
   const forced = useSurveyOfferForced();
 
   useEffect(() => {
+    if (userId == null) return;
     let cancelled = false;
 
-    loadSurveyOfferDismissed().then((stored) => {
-      if (!cancelled) setDismissed(stored);
-    });
+    // Today is applied here because the app's own count may not be saved yet.
+    Promise.all([loadSurveyOfferDismissed(), loadCoachingOfferVisits(userId)])
+      .then(([stored, visits]) => {
+        if (cancelled) return;
+        setDismissed(stored);
+        setDayReached(
+          recordCoachingOfferVisit(visits, todayLocalDate).daysVisited >= FEEDBACK_OFFER_DAYS,
+        );
+      })
+      .catch(() => {
+        // Unreadable storage must not ask someone who may already have answered.
+      });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId, todayLocalDate]);
 
   const retire = useCallback(() => {
     setDismissed(true);
@@ -53,7 +73,7 @@ export function useSurveyOfferNotice(openFeedback: () => void): SurveyOfferNotic
   }, [openFeedback, retire]);
 
   return {
-    visible: !preempted && (forced || dismissed === false),
+    visible: !preempted && (forced || (dayReached && dismissed === false)),
     open,
     dismiss: retire,
     preempt: useCallback(() => setPreempted(true), []),
