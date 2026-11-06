@@ -172,6 +172,24 @@ test('annual + weekly paid-trial offerings use their own weekly and the annual p
   assert.equal(result.revenueCatPackages.monthly, paidWeekly);
 });
 
+test('a weekly free trial in the offering is kept and shown instead of the paid-trial offering', async () => {
+  const freeWeekly = packageWithOffer('WEEKLY', 'free-weekly', {
+    price: 0, priceString: '$0.00', periodUnit: 'WEEK', periodNumberOfUnits: 1,
+  });
+  const placementOffering = { identifier: 'weekly-only', metadata: {}, availablePackages: [freeWeekly] };
+  const harness = setup([trialMonthly], { placementOffering });
+  const result = await harness.exports.getPaywallOffering('onboarding_complete');
+  assert.equal(result.revenueCatPackages.monthly, freeWeekly);
+  assert.deepEqual(harness.offeringLookups, []);
+  const [weekly] = result.offering.packages;
+  assert.equal(`${weekly.id} ${weekly.billingPeriod} ${weekly.trialLabel} ${weekly.trialDays}`, 'monthly week 7-day free trial 7');
+  assert.equal(weekly.introOffer, null);
+
+  const ineligible = await setup([trialMonthly], { placementOffering, eligible: false }).exports.getPaywallOffering('onboarding_complete');
+  assert.equal(ineligible.offering.packages[0].trialLabel, null);
+  assert.equal(ineligible.revenueCatPackages.monthly, freeWeekly);
+});
+
 test('explicit offering access displays and purchases that offering’s own products', async () => {
   const ownAnnual = packageWithOffer('ANNUAL', 'review-annual');
   const ownMonthly = packageWithOffer('MONTHLY', 'review-monthly');

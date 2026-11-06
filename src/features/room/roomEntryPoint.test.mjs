@@ -492,3 +492,10 @@ test('reward surface keeps its native host through dismissal and resets presenta
   assert.match(surface, /value=\{visible && presented\}/);
   assert.match(surface, /onDismiss=\{\(\) => \{\s*setPresented\(false\);\s*onDismiss\?\.\(\);/);
 });
+
+test('the loading bar and every loaded state hold the same height', () => {
+  const card = read('features/room/RoomProgressCard.tsx');
+  assert.match(card, /const STRIP_HEIGHT = CTA_MIN_HEIGHT \+ CHUNKY_LIP_DEPTH;/);
+  assert.match(card, /strip: \{[\s\S]{0,160}minHeight: STRIP_HEIGHT,/);
+  assert.equal((card.match(/style=\{styles\.strip\}/g) ?? []).length, 2);
+});

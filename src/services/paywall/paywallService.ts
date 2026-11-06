@@ -149,10 +149,10 @@ export async function getPaywallOffering(
         packageIdentifier: pkg.identifier,
         hasIntroOffer: pkg.product.introPrice != null,
         introOfferEligibilityStatus:
-          pkg === annual ? annualTrialEligibilityStatus : null,
+          pkg === annual ? annualTrialEligibilityStatus : monthlyIntroEligibilityStatus,
         introOfferLabel: formatEligibleTrialLabel({
           introPrice: pkg.product.introPrice,
-          eligibilityStatus: pkg === annual ? annualTrialEligibilityStatus : null,
+          eligibilityStatus: pkg === annual ? annualTrialEligibilityStatus : monthlyIntroEligibilityStatus,
         }),
       })),
   });
@@ -310,7 +310,7 @@ async function findPaidTrialMonthlyPackage(
   placementOffering: PurchasesOffering,
 ): Promise<PurchasesPackage | null> {
   const ownShortPlan = placementOffering.availablePackages.find(isShortPlanPackage);
-  if ((ownShortPlan?.product.introPrice?.price ?? 0) > 0) return ownShortPlan ?? null;
+  if (ownShortPlan?.product.introPrice != null) return ownShortPlan;
 
   try {
     const paidTrial = await getRevenueCatOffering(PAID_TRIAL_MONTHLY_OFFERING);
@@ -333,12 +333,10 @@ function toPaywallPackageOption(
 ): PaywallPackageOption {
   const isAnnual = pkg.packageType === PACKAGE_TYPE.ANNUAL;
   const isWeekly = pkg.packageType === PACKAGE_TYPE.WEEKLY;
-  const trialLabel = isAnnual
-    ? formatEligibleTrialLabel({
-        introPrice: pkg.product.introPrice,
-        eligibilityStatus: trialEligibilityStatus,
-      })
-    : null;
+  const trialLabel = formatEligibleTrialLabel({
+    introPrice: pkg.product.introPrice,
+    eligibilityStatus: trialEligibilityStatus,
+  });
 
   return {
     id,
@@ -354,7 +352,7 @@ function toPaywallPackageOption(
     subscriptionPeriod: pkg.product.subscriptionPeriod,
     billingPeriod: isAnnual ? 'year' : isWeekly ? 'week' : 'month',
     trialLabel,
-    trialDays: isAnnual && trialLabel != null
+    trialDays: trialLabel != null
       ? trialLengthDays(pkg.product.introPrice)
       : null,
     introOffer: eligiblePaidIntroOffer({

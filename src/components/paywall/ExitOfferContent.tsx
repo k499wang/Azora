@@ -1,16 +1,16 @@
 import { Text } from '../common/Text';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
-  ActivityIndicator, Alert, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import Animated, { FadeIn, FadeInDown, ReduceMotion, ZoomIn } from 'react-native-reanimated';
 import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
-import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
+import { PaywallFooterLinks } from './PaywallFooterLinks';
 import {
   formatCurrencyLike,
   packagePriceCents,
@@ -23,14 +23,13 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { duration, easing, spring, stagger } from '../../theme/motion';
-import { secondsUntilDeadline } from '../../lib/paywall/exitOfferCountdown';
 import ScreenContent from '../common/ScreenContent';
 import OfferGiftArt from './OfferGiftArt';
 import OfferPlanCard from './OfferPlanCard';
 import { paywallStepStyles } from '../onboarding/paywall/paywallStepStyles';
 
-const OFFER_DURATION_SECONDS = 5 * 60;
 const GIFT_BOX_SIZE = 320;
+const OFFER_MAIN_MIN_HEIGHT = 386;
 /** Taller than the standard primary — this is the one button on the screen. */
 const CTA_MIN_HEIGHT = 60;
 // The modal slides up first; the card waits for it to land so its fade is seen.
@@ -63,23 +62,6 @@ export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
 
 export type ExitOfferVariant = 'priceDrop' | 'gift';
 
-export function confirmExitOffer(
-  onConfirm: () => void,
-  discountPercent?: number | null,
-) {
-  Alert.alert(
-    'Are you sure?',
-    discountPercent != null
-      ? `This ${discountPercent}% discount is only offered once. If you leave now, you won't see it again.`
-      : "This offer is only shown once. If you leave now, you won't see it again.",
-    [
-      { text: 'Keep My Discount', style: 'cancel' },
-      { text: 'Leave Offer', style: 'destructive', onPress: onConfirm },
-    ],
-    { cancelable: true },
-  );
-}
-
 interface ExitOfferContentProps {
   variant: ExitOfferVariant;
   paywall: ExitOfferPaywall;
@@ -94,39 +76,12 @@ export function ExitOfferContent({
   paywall,
   anchorPaywall,
   onPurchase,
+  onRestore,
   onDecline,
 }: ExitOfferContentProps) {
   const insets = useSafeAreaInsets();
   const reduceMotion = useAnimationReduceMotion();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-
-  const [offerDeadlineMs] = useState(
-    () => Date.now() + OFFER_DURATION_SECONDS * 1000,
-  );
-  const [secondsLeft, setSecondsLeft] = useState(() =>
-    secondsUntilDeadline(offerDeadlineMs, Date.now()),
-  );
-
-  useWhileVisible(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    const syncCountdown = () => {
-      const next = secondsUntilDeadline(offerDeadlineMs, Date.now());
-      setSecondsLeft(next);
-      if (next === 0 && interval != null) {
-        clearInterval(interval);
-        interval = null;
-      }
-      return next;
-    };
-
-    if (syncCountdown() > 0) {
-      interval = setInterval(syncCountdown, 1000);
-    }
-
-    return () => {
-      if (interval != null) clearInterval(interval);
-    };
-  }, [offerDeadlineMs]);
 
   const annual = useMemo(
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
@@ -162,9 +117,9 @@ export function ExitOfferContent({
     ? 'Start my free trial'
     : variant === 'gift' ? 'Claim My Welcome Gift' : 'Get My Discount';
 
-  const confirmDecline = () => {
-    if (isBusy || onDecline == null) return;
-    confirmExitOffer(onDecline, discountPercent);
+  const decline = () => {
+    if (isBusy) return;
+    onDecline?.();
   };
 
   return (
@@ -181,7 +136,7 @@ export function ExitOfferContent({
         {onDecline != null ? (
           <CloseButton
             accessibilityLabel="Close offer"
-            onPress={confirmDecline}
+            onPress={decline}
           />
         ) : null}
       </View>
@@ -190,11 +145,6 @@ export function ExitOfferContent({
         <ScreenContent style={styles.column}>
           {variant === 'gift' ? (
             <>
-              <View style={styles.timerRow}>
-                <Icon name="timer" size={16} color={colors.text.secondary} />
-                <Text style={styles.timerLabel}>Offer ends in</Text>
-                <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
-              </View>
               <Animated.View entering={cardEntrance(reduceMotion)} style={styles.offerWrap}>
                 <LinearGradient
                   colors={[colors.primary.blue300, colors.primary.blue200, colors.primary.blue100]}
@@ -227,17 +177,13 @@ export function ExitOfferContent({
                             </Text>
                           </Animated.View>
                         ) : null}
-                        {monthly ? (
-                          <Animated.View entering={contentEntrance(2, reduceMotion)} style={styles.monthlyPill}>
-                            <Text style={styles.monthlyPrice} numberOfLines={1}>
-                              {monthly} / month
+                        {annual ? (
+                          <Animated.View entering={contentEntrance(2, reduceMotion)} style={styles.billedPill}>
+                            <Text style={styles.billedPrice} numberOfLines={1}>
+                              {annual.priceString} / {annual.billingPeriod}
                             </Text>
                           </Animated.View>
                         ) : null}
-                        <Animated.View entering={contentEntrance(3, reduceMotion)} style={styles.reassuranceRow}>
-                          <Icon name="check" size={18} color={colors.primary.blue700} />
-                          <Text style={styles.reassuranceText}>One-time offer</Text>
-                        </Animated.View>
                       </>
                     )}
                   </View>
@@ -257,7 +203,9 @@ export function ExitOfferContent({
                         ) : null}
                         <Text style={styles.annualPrice}>{annual.priceString}</Text>
                       </View>
-                      <Text style={styles.annualCaption}>For annual plan</Text>
+                      <Text style={styles.annualCaption}>
+                        {hasTrial ? `After your ${annual.trialLabel}` : monthly ? `About ${monthly}/month` : 'For annual plan'}
+                      </Text>
                     </Animated.View>
                   ) : null}
                 </LinearGradient>
@@ -305,7 +253,12 @@ export function ExitOfferContent({
               loading={paywall.isPurchasing}
             />
           )}
-          <Text style={styles.commitmentText}>No commitment. Cancel anytime</Text>
+          <Text style={styles.commitmentText}>Renews automatically until canceled. Cancel anytime</Text>
+          <PaywallFooterLinks
+            isRestoring={paywall.isRestoring}
+            restoreDisabled={isBusy}
+            onRestore={onRestore}
+          />
         </ScreenContent>
       </View>
     </LinearGradient>
@@ -334,12 +287,6 @@ function PrimaryButton({
       shape="pill"
     />
   );
-}
-
-function formatClock(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function computeMonthly(pkg: PaywallPackageOption): string | null {
@@ -371,19 +318,13 @@ const styles = StyleSheet.create({
   },
   giftScroll: { paddingHorizontal: spacing.md },
   column: { alignItems: 'stretch', gap: spacing.md },
-  timerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm },
-  timerLabel: { ...typography.caption.caption1, color: colors.text.secondary },
-  timerValue: {
-    ...typography.caption.caption1, fontFamily: fonts.semibold,
-    color: colors.text.secondary, fontVariant: ['tabular-nums'],
-  },
   offerWrap: { paddingTop: 48 },
   offerCard: {
     borderRadius: 44, borderCurve: 'continuous', overflow: 'hidden',
   },
   offerMain: {
-    alignItems: 'center', paddingHorizontal: spacing.md,
-    paddingTop: 90, paddingBottom: spacing['3xl'], gap: spacing.md,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md,
+    paddingTop: 90, paddingBottom: spacing['3xl'], gap: spacing.md, minHeight: OFFER_MAIN_MIN_HEIGHT,
   },
   mascotWrap: { position: 'absolute', top: 0, alignSelf: 'center', width: 140, height: 126 },
   mascot: { width: 140, height: 126 },
@@ -395,16 +336,14 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.semibold, fontSize: 27, lineHeight: 35, color: colors.primary.blue900, textAlign: 'center' },
   discountWrap: { alignSelf: 'stretch' },
   discountHeadline: {
-    fontFamily: fonts.heavy, fontSize: 66, lineHeight: 79,
+    fontFamily: fonts.heavy, fontSize: 24, lineHeight: 32,
     color: colors.primary.blue700, textAlign: 'center', alignSelf: 'stretch',
   },
-  monthlyPill: {
+  billedPill: {
     backgroundColor: colors.background.card, borderRadius: 16,
     paddingVertical: spacing.sm, paddingHorizontal: spacing.md, maxWidth: '100%',
   },
-  monthlyPrice: { fontFamily: fonts.heavy, fontSize: 32, lineHeight: 44, color: colors.primary.blue900, textAlign: 'center' },
-  reassuranceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
-  reassuranceText: { ...typography.body.small, color: colors.primary.blue700 },
+  billedPrice: { fontFamily: fonts.heavy, fontSize: 32, lineHeight: 44, color: colors.primary.blue900, textAlign: 'center' },
   annualSummary: {
     alignItems: 'center', gap: spacing.xs, paddingTop: spacing.md,
     paddingHorizontal: spacing.md, paddingBottom: spacing['2xl'],

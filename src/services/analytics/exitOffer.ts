@@ -17,7 +17,7 @@ export type ExitOfferTrigger =
 export type ExitOfferDeclineMethod =
   /** the explicit "no thanks" control */
   | 'button'
-  /** back gesture or hardware back, through the confirm dialog */
+  /** back gesture or hardware back */
   | 'system_close';
 
 /**

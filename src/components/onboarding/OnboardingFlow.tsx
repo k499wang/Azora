@@ -1247,8 +1247,9 @@ function OnboardingFlowSteps({
     paywall.trackDismissed();
 
     // Queue the discounted exit offer to slide up over Home once onboarding
-    // finishes. Never offered to an existing subscriber.
-    if (!isPro) {
+    // finishes. Never offered to an existing subscriber, or to someone who has
+    // already declined it on the paywall: App Review rejects a second offer.
+    if (!isPro && !hasAutoShownExitOfferRef.current) {
       setExitOfferPending(true);
     }
 

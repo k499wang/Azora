@@ -60,6 +60,6 @@ export function buildPaywallEventProperties(options: {
     annual_price: annual?.priceString ?? null,
     annual_price_cents: annual?.priceCents ?? null,
     currency: monthly?.currencyCode ?? annual?.currencyCode ?? null,
-    has_trial: annual?.trialLabel != null,
+    has_trial: options.packages?.some((pkg) => pkg.trialLabel != null) ?? false,
   };
 }

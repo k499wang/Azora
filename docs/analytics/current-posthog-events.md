@@ -380,7 +380,7 @@ points, experiment variant) plus:
 `exit_offer_declined`
 
 - `decline_method` — `button` (the explicit control) | `system_close` (back
-  gesture or hardware back, through the confirm dialog)
+  gesture or hardware back)
 
 `exit_offer_shown` is emitted once only after the offering and paywall view ID
 are ready, so its shared price, experiment, and view properties are complete.

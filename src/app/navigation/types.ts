@@ -140,6 +140,7 @@ export type RootStackParamList = {
     preview?: boolean;
   };
   ExitOffer: { variant?: ExitOfferVariant } | undefined;
+  AiDataConsent: undefined;
   /**
    * `fromLab` is set only by the dev room lab. The room screens are reached one
    * way and left one way in the real flow, so they carry no back arrow — but a
@@ -252,3 +253,4 @@ export type SkillsInPracticeScreenProps = RootStackScreenProps<'SkillsInPractice
 export type PlanScreenProps = MainTabScreenProps<'Plan'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;
+export type AiDataConsentScreenProps = RootStackScreenProps<'AiDataConsent'>;

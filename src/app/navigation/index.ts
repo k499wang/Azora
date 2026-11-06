@@ -14,6 +14,7 @@ export type {
   GardenScreenProps,
   ExerciseSessionScreenProps,
   ExitOfferScreenProps,
+  AiDataConsentScreenProps,
   HeartScreenProps,
   PhotoCleanupScreenProps,
   CleanupRoomsScreenProps,

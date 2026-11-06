@@ -85,6 +85,51 @@ function offerHarness(paywallMode) {
   return { state, shown, finished, welcomes, selected, render, advance, purchase, unmount: () => cleanup?.() };
 }
 
+const continueSource = source.slice(
+  source.indexOf('  const continueWithoutPro = async'),
+  source.indexOf('\n  const enableNotifications = async'),
+);
+
+test('leaving the paywall queues the Home offer only if no offer has been shown', async () => {
+  for (const [isPro, alreadyShown, expected] of [
+    [false, false, [true]],
+    [false, true, []],
+    [true, false, []],
+  ]) {
+    const queued = [];
+    const finished = [];
+    const leave = runSnippet(`${continueSource}\nreturn continueWithoutPro;`, {
+      isSubmitting: false,
+      isPro,
+      paywall: { trackDismissed() {} },
+      hasAutoShownExitOfferRef: { current: alreadyShown },
+      setExitOfferPending: (pending) => queued.push(pending),
+      finish: async (path) => finished.push(path),
+    });
+    await leave();
+    assert.deepEqual(queued, expected);
+    assert.deepEqual(finished, ['continue_without_pro']);
+  }
+});
+
+test('declining the offer leaves with no confirmation prompt', () => {
+  for (const path of [
+    '../paywall/ExitOfferContent.tsx',
+    '../paywall/ExitOfferSheet.tsx',
+    '../../screens/ExitOfferScreen.tsx',
+  ]) {
+    const offer = readFileSync(new URL(path, import.meta.url), 'utf8');
+    assert.doesNotMatch(offer, /Alert\b|confirmExitOffer/, path);
+  }
+});
+
+test('the offer leads with the billed price and carries restore and legal links', () => {
+  const offer = readFileSync(new URL('../paywall/ExitOfferContent.tsx', import.meta.url), 'utf8');
+  assert.match(offer, /<PaywallFooterLinks/);
+  assert.match(offer, /styles\.billedPrice[\s\S]{0,80}\{annual\.priceString\} \/ \{annual\.billingPeriod\}/);
+  assert.doesNotMatch(offer, /One-time offer|Offer ends in/);
+});
+
 for (const mode of ['soft', 'hard']) {
   test(`${mode} onboarding shows the offer immediately after store cancellation, once per session`, async () => {
     const flow = offerHarness(mode);

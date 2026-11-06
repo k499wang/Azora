@@ -62,6 +62,8 @@ export function PlanCard({
   const intro = pkg.introOffer;
   const headline = isAnnual && hasTrial
     ? (balanced ? 'Free' : 'Start for free')
+    : hasTrial
+      ? `${pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)}-Day Trial`
     : intro != null
       ? `${intro.days}-Day Trial`
       : isAnnual
@@ -83,7 +85,9 @@ export function PlanCard({
       : savingsPercent != null
         ? `SAVE ${savingsPercent}%`
         : null
-    : null;
+    : hasTrial
+      ? `${trialDuration} FREE TRIAL`
+      : null;
   const strikePrice = isAnnual && savingsPercent != null ? comparePerMonth : null;
   const priceLabel = perMonth != null ? `${perMonth}/month` : pkg.priceString;
   // The annual card's pill. It leads with the trial rather than the discount:
@@ -239,7 +243,7 @@ export function PlanCard({
                 ? `${intro.priceString}, then ${pkg.priceString}/${pkg.billingPeriod}`
                 : isAnnual
                   ? `${pkg.priceString}/year${hasTrial ? ' after trial' : ''}`
-                  : `${pkg.priceString}/${pkg.billingPeriod}`}
+                  : `${hasTrial ? 'Free, then ' : ''}${pkg.priceString}/${pkg.billingPeriod}`}
             </Text>
           ) : null}
         </View>

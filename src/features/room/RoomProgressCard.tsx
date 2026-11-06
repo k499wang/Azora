@@ -5,6 +5,7 @@ import { Text } from '../../components/common/Text';
 import ProgressBar from '../../components/common/ProgressBar';
 import Skeleton from '../../components/common/Skeleton';
 import ChunkyButton, {
+  CHUNKY_LIP_DEPTH,
   CHUNKY_TONE,
   CHUNKY_TONE_AMBER,
 } from '../../components/common/ChunkyButton';
@@ -21,6 +22,8 @@ const BAR_HEIGHT = 8;
 /** A short pill under the day label, not a full-width rule. */
 const BAR_WIDTH = 100;
 const CTA_MIN_HEIGHT = 28;
+/** Every state holds the button's height, so loading or earning a claim moves nothing below. */
+const STRIP_HEIGHT = CTA_MIN_HEIGHT + CHUNKY_LIP_DEPTH;
 
 export type RoomCardTone = 'waiting' | 'ready' | 'done';
 
@@ -289,6 +292,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: spacing.xs,
+    minHeight: STRIP_HEIGHT,
   },
   barSlot: {
     width: BAR_WIDTH,

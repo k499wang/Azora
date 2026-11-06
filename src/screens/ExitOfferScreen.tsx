@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
-import {
-  ExitOfferContent,
-  confirmExitOffer,
-} from '../components/paywall/ExitOfferContent';
+import { ExitOfferContent } from '../components/paywall/ExitOfferContent';
 import {
   trackExitOfferAccepted,
   trackExitOfferDeclined,
@@ -66,18 +63,16 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
       if (allowDismissRef.current) return;
 
-      event.preventDefault();
-      if (isBusy) return;
+      if (isBusy) {
+        event.preventDefault();
+        return;
+      }
 
-      confirmExitOffer(() => {
-        declineWith('system_close');
-        allowDismissRef.current = true;
-        navigation.dispatch(event.data.action);
-      });
+      declineWith('system_close');
     });
 
     return unsubscribe;
-  }, [isBusy, navigation, paywall]);
+  }, [declineWith, isBusy, navigation]);
 
   // The offer sells exactly one package, so the purchase targets it directly.
   const purchase = useCallback(async () => {

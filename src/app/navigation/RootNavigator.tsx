@@ -42,6 +42,7 @@ import MyRoutineScreen from '../../screens/MyRoutineScreen';
 import RoutineCategoryScreen from '../../screens/RoutineCategoryScreen';
 import PhotoCleanupScreen from '../../features/photoCleanup/PhotoCleanupScreen';
 import CleanupRoomsScreen from '../../features/photoCleanup/CleanupRoomsScreen';
+import AiDataConsentScreen from '../../features/aiConsent/AiDataConsentScreen';
 import AzoChatScreen from '../../features/azoAssist/AzoChatScreen';
 import AzoPlanScreen from '../../features/azoAssist/AzoPlanScreen';
 import RoutineLibraryDetailScreen from '../../screens/RoutineLibraryDetailScreen';
@@ -284,6 +285,11 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           gestureEnabled: true,
           gestureDirection: 'vertical',
         }}
+      />
+      <Stack.Screen
+        name="AiDataConsent"
+        component={AiDataConsentScreen}
+        options={{ presentation: 'pageSheet', animation: 'slide_from_bottom', gestureEnabled: true }}
       />
       <Stack.Screen
         name="HeartRateSessionDetail"

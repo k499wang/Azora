@@ -1,3 +1,4 @@
+import { ensureAiDataConsent } from '../aiConsent/ensureAiDataConsent';
 import { useMemo, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -84,10 +85,12 @@ export function useAzoAssist(surface: AzoAssistSurface) {
   };
 
   /**
-   * One answer from Azo, tracked and counted. Null when the server turned it
-   * away for access and the paywall has taken over; other failures throw.
+   * One answer from Azo, tracked and counted. Null when they declined sharing
+   * with the AI, or the server turned it away for access and the paywall has
+   * taken over; other failures throw.
    */
   const ask = async (messages: AzoChatTurn[]) => {
+    if (!(await ensureAiDataConsent(userId, navigation))) return null;
     try {
       const answer = await askAzo({ messages, goals, todayLocalDate: localDate });
       trackAzoAssistRequested({ surface, outcome: 'answered' });

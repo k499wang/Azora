@@ -9,7 +9,7 @@ import {
   type ExitOfferDeclineMethod,
   type ExitOfferTrigger,
 } from '../../services/analytics/exitOffer';
-import { ExitOfferContent, confirmExitOffer } from './ExitOfferContent';
+import { ExitOfferContent } from './ExitOfferContent';
 
 interface ExitOfferSheetProps {
   visible: boolean;
@@ -99,10 +99,7 @@ export default function ExitOfferSheet({
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
-      onRequestClose={() => {
-        if (isBusy) return;
-        confirmExitOffer(() => decline('system_close'));
-      }}
+      onRequestClose={() => decline('system_close')}
       onDismiss={onDismiss}
     >
       <ExitOfferContent

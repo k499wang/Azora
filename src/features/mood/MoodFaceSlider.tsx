@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -27,12 +28,11 @@ export const MOOD_SELECT_SETTLE_MS = 200;
 
 const FACE_SIZE = 190;
 const THUMB_SIZE = 36;
-const THUMB_LIP = 4;
 const THUMB_GRAB_SCALE = 1.1;
 const RAIL_HEIGHT = 14;
 const TICK_SIZE = 6;
 const GRAB_SPRING = { damping: 15, stiffness: 320 };
-const TRACK_HEIGHT = THUMB_SIZE + THUMB_LIP + spacing.md;
+const TRACK_HEIGHT = THUMB_SIZE + spacing.md;
 const STEPS = MOOD_FACES.length - 1;
 const START_RATING = Math.ceil((MOOD_SCALE_MIN + MOOD_SCALE_MAX) / 2);
 
@@ -122,9 +122,6 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
       { scale: 1 + (THUMB_GRAB_SCALE - 1) * grabbed.value },
     ],
   }));
-  const thumbFaceStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: THUMB_LIP * grabbed.value }],
-  }));
   const fillStyle = useAnimatedStyle(() => ({
     width: x.value + THUMB_SIZE / 2,
     backgroundColor: moodAccent(progress.value),
@@ -173,9 +170,7 @@ export default function MoodFaceSlider({ question, value, onChange, onGrab, mood
               pointerEvents="none"
             />
           ))}
-          <Animated.View style={[styles.thumb, thumbStyle]} pointerEvents="none">
-            <Animated.View style={[styles.thumbFace, thumbFaceStyle]} />
-          </Animated.View>
+          <Animated.View style={[styles.thumb, thumbStyle]} pointerEvents="none" />
         </View>
       </GestureDetector>
 
@@ -229,15 +224,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[300],
   },
   thumb: {
+    ...card.shadow,
     position: 'absolute',
     left: 0,
-    top: (TRACK_HEIGHT - THUMB_SIZE - THUMB_LIP) / 2,
-    width: THUMB_SIZE,
-    height: THUMB_SIZE + THUMB_LIP,
-    borderRadius: THUMB_SIZE / 2,
-    backgroundColor: colors.neutral[300],
-  },
-  thumbFace: {
+    top: (TRACK_HEIGHT - THUMB_SIZE) / 2,
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,

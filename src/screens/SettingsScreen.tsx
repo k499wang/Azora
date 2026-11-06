@@ -35,6 +35,8 @@ import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance'
 import ScreenContent from '../components/common/ScreenContent';
 import { useFirstWinOfDayStore } from '../features/selfCare/firstWinOfDayStore';
 import { useExitOfferStore } from '../stores/exitOfferStore';
+import { askAiDataConsent } from '../features/aiConsent/ensureAiDataConsent';
+import { useAiDataConsentSetting } from '../features/aiConsent/useAiDataConsentSetting';
 import { resetRoutineFirstTodoDevState } from '../services/debug/resetRoutineFirstTodoDevState';
 import { getSelfCareGoalsQueryKey } from '../queries/selfCare/useSelfCareGoalsQuery';
 import { invalidateStreakQueries } from '../queries/tracking/invalidateStreakQueries';
@@ -59,6 +61,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const todayLocalDate = useTodayLocalDate();
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const { preferences: audioPreferences, setSoundEffects } = useAudioPreferences();
+  const aiDataConsent = useAiDataConsentSetting(user?.id ?? null, navigation);
   const playStreakPreviewSound = useCompletionSound('streak', { active: streakPreviewVisible });
 
   const handleRestorePurchases = async () => {
@@ -290,6 +293,23 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 }
               />
               <SettingsRow
+                icon="shield-lock-outline"
+                label="AI features (Google Gemini)"
+                showChevron={false}
+                rightSlot={
+                  <Switch
+                    accessibilityLabel="AI features (Google Gemini)"
+                    value={aiDataConsent.allowed}
+                    onValueChange={(next) => { void aiDataConsent.change(next); }}
+                    trackColor={{
+                      false: colors.neutral[300],
+                      true: colors.primary.blue300,
+                    }}
+                    thumbColor={aiDataConsent.allowed ? colors.primary.blue500 : colors.neutral[50]}
+                  />
+                }
+              />
+              <SettingsRow
                 icon="lock-outline"
                 label="Azo’s Secret Layer"
                 onPress={() => navigation.navigate('AzoSecretLayer')}
@@ -357,6 +377,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           {__DEV__ ? (
             <View style={styles.section}>
               <SettingsGroup>
+                <SettingsRow
+                  label="Preview AI consent prompt (dev)"
+                  onPress={() => { void askAiDataConsent(navigation); }}
+                />
                 <SettingsRow
                   label="Show future-you letter again (dev)"
                   onPress={() => {

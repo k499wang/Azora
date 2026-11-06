@@ -1,3 +1,4 @@
+import { ensureAiDataConsent } from '../aiConsent/ensureAiDataConsent';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
@@ -165,6 +166,10 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   }, [access.isPro, queryClient, userId]);
 
   const generatePlan = useCallback(async (imageBase64: string) => {
+    if (!(await ensureAiDataConsent(userId, navigation))) {
+      setStage('capture');
+      return;
+    }
     setStage('loading');
     setError(null);
     try {
@@ -183,7 +188,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       }
       setError(access.reason === 'within_free_limit' ? FREE_RETRY_MESSAGE : errorMessage(nextError));
     }
-  }, [access.reason, markFreeCleanupUsed, openPhotoCleanupPaywall]);
+  }, [access.reason, markFreeCleanupUsed, navigation, openPhotoCleanupPaywall, userId]);
 
   const prepareAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
     const result = await ImageManipulator.manipulateAsync(
@@ -231,6 +236,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
   }, [access.allowed, access.isLoading, openPhotoCleanupPaywall, prepareAsset, selectedAsset, stage]);
 
   const chooseFromLibrary = useCallback(async () => {
+    if (!(await ensureAiDataConsent(userId, navigation))) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Photo access needed', 'Allow photo access in Settings to choose a room photo.', [
@@ -244,9 +250,10 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0] != null) handleSelectedAsset(result.assets[0]);
-  }, [handleSelectedAsset]);
+  }, [handleSelectedAsset, navigation, userId]);
 
   const takePhoto = useCallback(async () => {
+    if (!(await ensureAiDataConsent(userId, navigation))) return;
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Camera access needed', 'Allow camera access in Settings to photograph the space you want help with.', [
@@ -261,7 +268,7 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
       cameraType: ImagePicker.CameraType.back,
     });
     if (!result.canceled && result.assets[0] != null) handleSelectedAsset(result.assets[0]);
-  }, [handleSelectedAsset]);
+  }, [handleSelectedAsset, navigation, userId]);
 
   const endCleanup = useCallback(() => {
     setElapsedMinutes(startedAt == null ? null : Math.max(1, Math.round((Date.now() - startedAt) / 60_000)));

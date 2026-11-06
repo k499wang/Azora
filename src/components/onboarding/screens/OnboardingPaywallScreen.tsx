@@ -122,12 +122,10 @@ function TrialDeck({
   onOfferReached,
   onStepViewed,
   onExit,
-  showTrialPriceInButton = true,
 }: Omit<OnboardingPaywallScreenProps, 'selectedIntents' | 'stepIndex' | 'stepCount'> & {
   onOfferReached?: () => void;
   /** Shows a back control on the first step that leaves the deck. */
   onExit?: () => void;
-  showTrialPriceInButton?: boolean;
 }) {
   const reduceMotion = useAnimationReduceMotion();
   const insets = useSafeAreaInsets();
@@ -145,10 +143,11 @@ function TrialDeck({
     ? undefined
     : offering?.packages.find((pkg) => pkg.id === 'monthly');
   const isOnlyOption = annualPackage == null || monthlyPackage == null;
-  const hasAnnualTrial = annualPackage?.trialLabel != null;
-  const annualTrialDays = annualPackage?.trialDays ?? trialDaysFromLabel(annualPackage?.trialLabel);
+  const freeTrialPackage = [annualPackage, monthlyPackage].find((pkg) => pkg?.trialLabel != null);
+  const hasFreeTrial = freeTrialPackage != null;
+  const freeTrialDays = freeTrialPackage?.trialDays ?? trialDaysFromLabel(freeTrialPackage?.trialLabel);
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
-  const showFreeTrialIntro = hasAnnualTrial;
+  const showFreeTrialIntro = hasFreeTrial;
   const savingsPercent = useMemo(
     () => computeAnnualSavings(annualPackage, monthlyPackage),
     [annualPackage, monthlyPackage],
@@ -158,7 +157,7 @@ function TrialDeck({
 
   // Step state
   const [step, setStep] = useState(0);
-  const steps: PaywallStepKey[] = hasAnnualTrial && initialStep !== 'plan'
+  const steps: PaywallStepKey[] = hasFreeTrial && initialStep !== 'plan'
     ? TRIAL_STEPS
     : ['plan'];
   const stepCount = steps.length;
@@ -436,7 +435,7 @@ function TrialDeck({
   // Set by what the offering includes, not the selected plan, so it never changes on a tap.
   const planStepTitle = isOnlyOption
     ? undefined
-    : hasAnnualTrial
+    : hasFreeTrial
       ? 'Design Your Free Trial Experience'
       : (annualPackage?.introOffer ?? monthlyPackage?.introOffer) != null
         ? 'Design Your Trial Experience'
@@ -476,9 +475,7 @@ function TrialDeck({
   };
   const ctaLabel =
     selectedPackageHasTrial
-      ? showTrialPriceInButton
-        ? `Redeem ${selectedTrialDays}-days for $0.00`
-        : `Redeem ${selectedTrialDays}-day trial`
+      ? `Redeem ${selectedTrialDays}-day trial`
       : selectedIntro != null
         ? `Redeem ${selectedIntro.days}-day trial`
         : isAnnualSelected
@@ -577,7 +574,7 @@ function TrialDeck({
                     stakesBenefit={stakesBenefit}
                   />
                 ) : null}
-                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={annualTrialDays} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
+                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={freeTrialDays} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
                 {activeStep === 'plan' ? (
                   <View style={styles.finalStepContent}>
                     <PaywallTrialStep
@@ -591,7 +588,7 @@ function TrialDeck({
                       onlyOption={isOnlyOption}
                       onlyOptionTitle={offering?.trialTitle}
                     />
-                    {hasAnnualTrial || paidTrial != null ? (
+                    {hasFreeTrial || paidTrial != null ? (
                       <View style={paywallStepStyles.reminderToggleWrap}>
                         <PaywallTrialReminderControl
                           reminder={finalReminder}
@@ -608,7 +605,7 @@ function TrialDeck({
                         onSelectPackage={(packageId) => { if (!isBusy) onSelectPackage(packageId); }}
                         savingsPercent={savingsPercent}
                         planPicker={offering?.planPicker ?? 'stacked'}
-                        followsReminder={hasAnnualTrial || paidTrial != null}
+                        followsReminder={hasFreeTrial || paidTrial != null}
                       />
                     ) : null}
                     {sideBySide && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
@@ -715,7 +712,7 @@ function LongThenTrialPaywall(props: OnboardingPaywallScreenProps) {
           exiting={SlideOutDown.duration(TRIAL_SHEET_MS).reduceMotion(reduceMotion)}
           style={StyleSheet.absoluteFill}
         >
-          <TrialDeck {...props} initialStep="plan" showTrialPriceInButton={false} onExit={() => setAtTrial(false)} />
+          <TrialDeck {...props} initialStep="plan" onExit={() => setAtTrial(false)} />
         </Reanimated.View>
       ) : null}
     </View>
