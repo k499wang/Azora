@@ -18,6 +18,7 @@ import type { RoutineLibraryId } from '../../data/routineLibrary';
 import type { RoutineShelfId } from '../../data/routineShelves';
 import type { LessonId } from '../../features/lessons/domain/lessonCatalogue';
 import type { ExitOfferVariant } from '../../components/paywall/ExitOfferContent';
+import type { ExitOfferPreview } from '../../lib/paywall/exitOffer';
 import type { CleanupRoomId } from '../../features/photoCleanup/domain/roomCleanupPlans';
 
 export type MainTabParamList = {
@@ -139,7 +140,8 @@ export type RootStackParamList = {
     /** dev-only preview from Settings: no celebration, review prompt or saved feedback */
     preview?: boolean;
   };
-  ExitOffer: { variant?: ExitOfferVariant } | undefined;
+  /** `preview` is set only by Settings' dev rows: it dresses the offer as that plan and buys nothing. */
+  ExitOffer: { variant?: ExitOfferVariant; preview?: ExitOfferPreview } | undefined;
   AiDataConsent: undefined;
   /**
    * `fromLab` is set only by the dev room lab. The room screens are reached one

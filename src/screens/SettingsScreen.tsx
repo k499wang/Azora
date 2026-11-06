@@ -49,6 +49,19 @@ import RewardAnimationPreload from '../features/plan/RewardAnimationPreload';
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
 
+const EXIT_OFFER_PREVIEWS = [
+  { label: 'Preview post-tour offer, free trial (dev)', variant: 'gift', preview: { trial: 'free' } },
+  { label: 'Preview cancel offer, free trial (dev)', variant: 'priceDrop', preview: { trial: 'free' } },
+  { label: 'Preview post-tour offer, monthly paid trial (dev)', variant: 'gift', preview: { period: 'month', trial: 'paid' } },
+  { label: 'Preview cancel offer, monthly paid trial (dev)', variant: 'priceDrop', preview: { period: 'month', trial: 'paid' } },
+  { label: 'Preview post-tour offer, weekly paid trial (dev)', variant: 'gift', preview: { period: 'week', trial: 'paid' } },
+  { label: 'Preview cancel offer, weekly paid trial (dev)', variant: 'priceDrop', preview: { period: 'week', trial: 'paid' } },
+  { label: 'Preview post-tour offer, monthly (dev)', variant: 'gift', preview: { period: 'month' } },
+  { label: 'Preview cancel offer, monthly (dev)', variant: 'priceDrop', preview: { period: 'month' } },
+  { label: 'Preview post-tour offer, weekly (dev)', variant: 'gift', preview: { period: 'week' } },
+  { label: 'Preview cancel offer, weekly (dev)', variant: 'priceDrop', preview: { period: 'week' } },
+] as const;
+
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { scrollY, onScroll } = useCollapsingTitle();
   const user = useAuthStore((s) => s.user);
@@ -405,6 +418,13 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   label="Preview cancel offer (dev)"
                   onPress={() => navigation.navigate('ExitOffer', { variant: 'priceDrop' })}
                 />
+                {EXIT_OFFER_PREVIEWS.map(({ label, variant, preview }) => (
+                  <SettingsRow
+                    key={label}
+                    label={label}
+                    onPress={() => navigation.navigate('ExitOffer', { variant, preview })}
+                  />
+                ))}
                 <SettingsRow
                   label="Room lab (dev)"
                   onPress={() => navigation.navigate('RoomLab')}

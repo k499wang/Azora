@@ -8,6 +8,7 @@ import {
   trackExitOfferShown,
   type ExitOfferDeclineMethod,
 } from '../services/analytics/exitOffer';
+import { exitOfferPackage } from '../lib/paywall/exitOffer';
 import type { ExitOfferScreenProps } from '../app/navigation';
 
 export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
@@ -21,6 +22,7 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
     sourceScreen: 'exit_offer_anchor',
   });
 
+  const offer = exitOfferPackage(paywall.offering?.packages);
   const allowDismissRef = useRef(false);
   const shownRef = useRef(false);
 
@@ -37,10 +39,10 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
   // This screen only ever exists for the queued post-onboarding offer: it is
   // navigated to once by `ExitOfferPresenter` after Home paints.
   useEffect(() => {
-    if (!paywall.isEventMetadataReady || shownRef.current) return;
+    if (!paywall.isEventMetadataReady || shownRef.current || offer == null) return;
     shownRef.current = true;
     trackExitOfferShown(paywall.trackEvent, 'post_onboarding');
-  }, [paywall.isEventMetadataReady, paywall.trackEvent]);
+  }, [offer, paywall.isEventMetadataReady, paywall.trackEvent]);
 
   const isWaitingForAnchorPricing =
     paywall.offering != null &&
@@ -75,8 +77,10 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
   }, [declineWith, isBusy, navigation]);
 
   // The offer sells exactly one package, so the purchase targets it directly.
+  const preview = route.params?.preview;
   const purchase = useCallback(async () => {
-    const result = await paywall.purchaseSelectedPackage('annual');
+    if (preview != null || offer == null) return;
+    const result = await paywall.purchaseSelectedPackage(offer.id);
     if (result.status === 'purchased' && result.isPro) {
       if (paywall.isEventMetadataReady) {
         trackExitOfferAccepted(
@@ -88,7 +92,7 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
       allowDismissRef.current = true;
       navigation.goBack();
     }
-  }, [navigation, paywall]);
+  }, [navigation, offer, paywall, preview]);
 
   const restore = useCallback(async () => {
     const result = await paywall.restorePurchases();
@@ -104,6 +108,11 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
       navigation.goBack();
     }
   }, [navigation, paywall]);
+
+  const leaveUnavailable = useCallback(() => {
+    allowDismissRef.current = true;
+    navigation.goBack();
+  }, [navigation]);
 
   const decline = useCallback(() => {
     if (isBusy) return;
@@ -124,6 +133,8 @@ export function ExitOfferScreen({ navigation, route }: ExitOfferScreenProps) {
         void restore();
       }}
       onDecline={decline}
+      onUnavailable={leaveUnavailable}
+      preview={preview}
     />
   );
 }

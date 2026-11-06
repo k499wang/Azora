@@ -54,7 +54,7 @@ function setup(paidTrialPackages, {
   const dependencies = {
     ...eligibility,
     PACKAGE_TYPE: { ANNUAL: 'ANNUAL', MONTHLY: 'MONTHLY', WEEKLY: 'WEEKLY' },
-    PaywallPlacement: { OnboardingComplete: 'onboarding_complete' },
+    PaywallPlacement: { OnboardingComplete: 'onboarding_complete', ExitDiscount: 'exit_discount' },
     RevenueCatSignedOutError,
     isRevenueCatReady: () => ready,
     hasCurrentRevenueCatIdentity: () => appUserId != null,
@@ -188,6 +188,15 @@ test('a weekly free trial in the offering is kept and shown instead of the paid-
   const ineligible = await setup([trialMonthly], { placementOffering, eligible: false }).exports.getPaywallOffering('onboarding_complete');
   assert.equal(ineligible.offering.packages[0].trialLabel, null);
   assert.equal(ineligible.revenueCatPackages.monthly, freeWeekly);
+});
+
+test('the exit offer sells its own short plan, never the paid-trial swap', async () => {
+  const plainMonthly = packageWithOffer('MONTHLY', 'exit-monthly');
+  const placementOffering = { identifier: 'exit', metadata: {}, availablePackages: [plainMonthly] };
+  const harness = setup([trialMonthly], { placementOffering });
+  const result = await harness.exports.getPaywallOffering('exit_discount');
+  assert.equal(result.revenueCatPackages.monthly, plainMonthly);
+  assert.deepEqual(harness.offeringLookups, []);
 });
 
 test('explicit offering access displays and purchases that offering’s own products', async () => {

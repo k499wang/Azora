@@ -9,6 +9,7 @@ import {
   type ExitOfferDeclineMethod,
   type ExitOfferTrigger,
 } from '../../services/analytics/exitOffer';
+import { exitOfferPackage } from '../../lib/paywall/exitOffer';
 import { ExitOfferContent } from './ExitOfferContent';
 
 interface ExitOfferSheetProps {
@@ -44,6 +45,7 @@ export default function ExitOfferSheet({
     enabled: visible,
   });
 
+  const offer = exitOfferPackage(paywall.offering?.packages);
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
   // Once per presentation. `visible` can flip back on for a second exit intent
@@ -54,10 +56,11 @@ export default function ExitOfferSheet({
       shownRef.current = false;
       return;
     }
-    if (!paywall.isEventMetadataReady || shownRef.current) return;
+    if (!paywall.isEventMetadataReady || shownRef.current || offer == null) return;
     shownRef.current = true;
     trackExitOfferShown(paywall.trackEvent, trigger);
   }, [
+    offer,
     paywall.isEventMetadataReady,
     paywall.trackEvent,
     trigger,
@@ -66,7 +69,8 @@ export default function ExitOfferSheet({
 
   // The offer sells exactly one package, so the purchase targets it directly.
   const purchase = async () => {
-    const result = await paywall.purchaseSelectedPackage('annual');
+    if (offer == null) return;
+    const result = await paywall.purchaseSelectedPackage(offer.id);
     if (result.status === 'purchased' && result.isPro) {
       if (paywall.isEventMetadataReady) {
         trackExitOfferAccepted(paywall.trackEvent, trigger, 'purchased');
@@ -113,6 +117,7 @@ export default function ExitOfferSheet({
           void restore();
         }}
         onDecline={() => decline('button')}
+        onUnavailable={onDismiss}
       />
     </Modal>
   );

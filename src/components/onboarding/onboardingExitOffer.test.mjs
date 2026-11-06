@@ -123,11 +123,21 @@ test('declining the offer leaves with no confirmation prompt', () => {
   }
 });
 
+test('offer previews come only from dev rows and buy nothing', () => {
+  const settings = readFileSync(new URL('../../screens/SettingsScreen.tsx', import.meta.url), 'utf8');
+  const devSection = settings.slice(settings.indexOf('{__DEV__ ? ('));
+  assert.equal((settings.match(/EXIT_OFFER_PREVIEWS\.map/g) ?? []).length, 1);
+  assert.match(devSection, /EXIT_OFFER_PREVIEWS\.map/);
+  const screen = readFileSync(new URL('../../screens/ExitOfferScreen.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /const purchase = useCallback\(async \(\) => \{\s+if \(preview != null \|\| offer == null\) return;\s+const result = await paywall\.purchaseSelectedPackage\(offer\.id\);/);
+});
+
 test('the offer leads with the billed price and carries restore and legal links', () => {
   const offer = readFileSync(new URL('../paywall/ExitOfferContent.tsx', import.meta.url), 'utf8');
   assert.match(offer, /<PaywallFooterLinks/);
-  assert.match(offer, /styles\.billedPrice[\s\S]{0,80}\{annual\.priceString\} \/ \{annual\.billingPeriod\}/);
+  assert.match(offer, /styles\.billedPrice[\s\S]{0,80}\{offer\.priceString\} \/ \{offer\.billingPeriod\}/);
   assert.doesNotMatch(offer, /One-time offer|Offer ends in/);
+  assert.match(offer, /hasTrial \|\| offer\.introOffer != null\) && !showInitialLoading \? <PaywallTrialReminderToggle/);
 });
 
 for (const mode of ['soft', 'hard']) {

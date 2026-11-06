@@ -1,5 +1,5 @@
 import { Text } from '../common/Text';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,13 @@ import Animated, { FadeIn, FadeInDown, ReduceMotion, ZoomIn } from 'react-native
 import { useAnimationReduceMotion } from '../../hooks/useReducedMotionSetting';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
+import {
+  exitOfferAnchor,
+  exitOfferCaption,
+  exitOfferPackage,
+  previewExitOfferPackage,
+  type ExitOfferPreview,
+} from '../../lib/paywall/exitOffer';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
 import { PaywallFooterLinks } from './PaywallFooterLinks';
 import {
@@ -69,6 +76,10 @@ interface ExitOfferContentProps {
   onPurchase: () => void;
   onRestore: () => void;
   onDecline?: () => void;
+  /** The offering loaded with nothing in it, so there is no offer to make. */
+  onUnavailable?: () => void;
+  /** Dev preview: dresses the offer's package as the plan being checked. */
+  preview?: ExitOfferPreview;
 }
 
 export function ExitOfferContent({
@@ -78,30 +89,35 @@ export function ExitOfferContent({
   onPurchase,
   onRestore,
   onDecline,
+  onUnavailable,
+  preview,
 }: ExitOfferContentProps) {
   const insets = useSafeAreaInsets();
   const reduceMotion = useAnimationReduceMotion();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
-  const annual = useMemo(
-    () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
-    [paywall.offering],
+  const offer = useMemo(() => {
+    const pkg = exitOfferPackage(paywall.offering?.packages);
+    return pkg != null && preview != null ? previewExitOfferPackage(pkg, preview) : pkg;
+  }, [paywall.offering, preview]);
+  const anchor = useMemo(
+    () => exitOfferAnchor(anchorPaywall.offering?.packages, offer),
+    [anchorPaywall.offering, offer],
   );
-  const anchorAnnual = useMemo(
-    () =>
-      anchorPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
-    [anchorPaywall.offering],
-  );
+  const isUnavailable = paywall.offering != null && offer == null && !paywall.isLoading;
+  useEffect(() => {
+    if (isUnavailable) onUnavailable?.();
+  }, [isUnavailable, onUnavailable]);
   const discountPercent = useMemo(
-    () => computeDiscountPercent(anchorAnnual, annual),
-    [anchorAnnual, annual],
+    () => computeDiscountPercent(anchor, offer),
+    [anchor, offer],
   );
-  const monthly = useMemo(() => (annual ? computeMonthly(annual) : null), [annual]);
-  const anchorPriceString = anchorAnnual?.priceString ?? null;
+  const perMonth = useMemo(() => (offer ? computeMonthly(offer) : null), [offer]);
+  const anchorPriceString = anchor?.priceString ?? null;
 
-  const hasTrial = annual?.trialLabel != null;
+  const hasTrial = offer?.trialLabel != null;
   const isWaitingForAnchorPricing =
-    annual != null && anchorAnnual == null && anchorPaywall.isLoading;
+    offer != null && anchorPaywall.offering == null && anchorPaywall.isLoading;
   const showInitialLoading =
     (paywall.isLoading && paywall.offering == null) || isWaitingForAnchorPricing;
   const isBusy =
@@ -109,9 +125,8 @@ export function ExitOfferContent({
     paywall.isLoading ||
     paywall.isPurchasing ||
     paywall.isRestoring;
-  // The offer sells exactly one package, so the CTA buys annual directly —
-  // there is no plan selection step to read state from.
-  const canBuy = annual != null;
+  // The offer sells exactly one package, so there is no plan selection step.
+  const canBuy = offer != null;
 
   const ctaLabel = hasTrial
     ? 'Start my free trial'
@@ -166,28 +181,30 @@ export function ExitOfferContent({
                     <Animated.View entering={contentEntrance(0, reduceMotion)}>
                       <Text style={styles.title}>Your welcome gift</Text>
                     </Animated.View>
-                    {showInitialLoading ? (
-                      <ActivityIndicator color={colors.primary.blue700} style={styles.loading} />
-                    ) : (
-                      <>
-                        {discountPercent != null ? (
-                          <Animated.View entering={contentEntrance(1, reduceMotion)} style={styles.discountWrap}>
-                            <Text style={styles.discountHeadline} numberOfLines={1}>
-                              {discountPercent}% OFF
-                            </Text>
-                          </Animated.View>
-                        ) : null}
-                        {annual ? (
-                          <Animated.View entering={contentEntrance(2, reduceMotion)} style={styles.billedPill}>
-                            <Text style={styles.billedPrice} numberOfLines={1}>
-                              {annual.priceString} / {annual.billingPeriod}
-                            </Text>
-                          </Animated.View>
-                        ) : null}
-                      </>
-                    )}
+                    <View style={styles.offerBody}>
+                      {showInitialLoading ? (
+                        <ActivityIndicator color={colors.primary.blue700} style={styles.loading} />
+                      ) : (
+                        <>
+                          {discountPercent != null ? (
+                            <Animated.View entering={contentEntrance(1, reduceMotion)} style={styles.discountWrap}>
+                              <Text style={styles.discountHeadline} numberOfLines={1}>
+                                {discountPercent}% OFF
+                              </Text>
+                            </Animated.View>
+                          ) : null}
+                          {offer ? (
+                            <Animated.View entering={contentEntrance(2, reduceMotion)} style={styles.billedPill}>
+                              <Text style={styles.billedPrice} numberOfLines={1}>
+                                {offer.priceString} / {offer.billingPeriod}
+                              </Text>
+                            </Animated.View>
+                          ) : null}
+                        </>
+                      )}
+                    </View>
                   </View>
-                  {annual && !showInitialLoading ? (
+                  {offer && !showInitialLoading ? (
                     <Animated.View
                       entering={FadeIn.delay(CONTENT_DELAY + 5 * stagger.base)
                         .duration(duration.slow)
@@ -201,10 +218,10 @@ export function ExitOfferContent({
                             <Icon name="arrow-right" size={22} color={colors.primary.blue800} />
                           </>
                         ) : null}
-                        <Text style={styles.annualPrice}>{annual.priceString}</Text>
+                        <Text style={styles.annualPrice}>{offer.priceString}</Text>
                       </View>
                       <Text style={styles.annualCaption}>
-                        {hasTrial ? `After your ${annual.trialLabel}` : monthly ? `About ${monthly}/month` : 'For annual plan'}
+                        {exitOfferCaption(offer, perMonth)}
                       </Text>
                     </Animated.View>
                   ) : null}
@@ -230,20 +247,20 @@ export function ExitOfferContent({
               <Animated.View entering={cardEntrance(reduceMotion)}>
                 {showInitialLoading ? (
                   <ActivityIndicator color={colors.text.primary} style={styles.loading} />
-                ) : annual ? (
-                  <OfferPlanCard pkg={annual} anchor={anchorAnnual} savingsPercent={discountPercent} />
+                ) : offer ? (
+                  <OfferPlanCard pkg={offer} anchor={anchor} savingsPercent={discountPercent} />
                 ) : null}
               </Animated.View>
             </>
           )}
           {paywall.errorMessage ? <Text style={styles.error}>{paywall.errorMessage}</Text> : null}
-          {hasTrial && annual && !showInitialLoading ? <PaywallTrialReminderToggle /> : null}
+          {offer && (hasTrial || offer.introOffer != null) && !showInitialLoading ? <PaywallTrialReminderToggle /> : null}
         </ScreenContent>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <ScreenContent style={styles.footerColumn}>
-          {annual == null && !paywall.isLoading ? (
+          {offer == null && !paywall.isLoading ? (
             <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
           ) : (
             <PrimaryButton
@@ -323,9 +340,10 @@ const styles = StyleSheet.create({
     borderRadius: 44, borderCurve: 'continuous', overflow: 'hidden',
   },
   offerMain: {
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.md,
+    alignItems: 'center', paddingHorizontal: spacing.md,
     paddingTop: 90, paddingBottom: spacing['3xl'], gap: spacing.md, minHeight: OFFER_MAIN_MIN_HEIGHT,
   },
+  offerBody: { flexGrow: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   mascotWrap: { position: 'absolute', top: 0, alignSelf: 'center', width: 140, height: 126 },
   mascot: { width: 140, height: 126 },
   percentMark: { position: 'absolute', fontFamily: fonts.heavy, fontSize: 54, lineHeight: 64, color: colors.primary.blue700, opacity: 0.08 },
@@ -333,7 +351,7 @@ const styles = StyleSheet.create({
   percentTopRight: { top: 23, right: 15, transform: [{ rotate: '18deg' }] },
   percentMiddleLeft: { top: 163, left: -16, transform: [{ rotate: '20deg' }] },
   percentMiddleRight: { top: 209, right: -12, transform: [{ rotate: '-18deg' }] },
-  title: { fontFamily: fonts.semibold, fontSize: 27, lineHeight: 35, color: colors.primary.blue900, textAlign: 'center' },
+  title: { fontFamily: fonts.semibold, fontSize: 34, lineHeight: 42, color: colors.primary.blue900, textAlign: 'center' },
   discountWrap: { alignSelf: 'stretch' },
   discountHeadline: {
     fontFamily: fonts.heavy, fontSize: 24, lineHeight: 32,

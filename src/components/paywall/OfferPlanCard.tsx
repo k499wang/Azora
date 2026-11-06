@@ -8,7 +8,7 @@ import { card } from '../../theme/card';
 
 interface Props {
   pkg: PaywallPackageOption;
-  /** The regular annual plan the offer is measured against. */
+  /** The regular plan of the same billing period the offer is measured against. */
   anchor: PaywallPackageOption | null;
   savingsPercent: number | null;
 }
@@ -33,15 +33,17 @@ export default function OfferPlanCard({ pkg, anchor, savingsPercent }: Props) {
 
       <View style={styles.body}>
         <View style={styles.copy}>
-          <Text style={styles.title}>Yearly</Text>
+          <Text style={styles.title}>{pkg.billingPeriod === 'year' ? 'Yearly' : pkg.title}</Text>
           <View style={styles.priceRow}>
             {savingsPercent != null && anchor ? (
               <Text style={styles.anchorPrice}>{anchor.priceString}</Text>
             ) : null}
-            <Text style={styles.price}>{pkg.priceString}/year</Text>
+            <Text style={styles.price}>{pkg.priceString}/{pkg.billingPeriod}</Text>
           </View>
           {trialDuration ? (
             <Text style={styles.detail}>after your {pkg.trialLabel}</Text>
+          ) : pkg.introOffer != null ? (
+            <Text style={styles.detail}>after {pkg.introOffer.days} days for {pkg.introOffer.priceString}</Text>
           ) : null}
         </View>
         <View style={styles.radio}>

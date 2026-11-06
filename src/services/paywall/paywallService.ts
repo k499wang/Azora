@@ -120,7 +120,8 @@ export async function getPaywallOffering(
   // Explicit offering access must show its own products for App Review.
   const monthly = pairsShortPlans
     ? ownWeekly
-    : offeringIdentifier != null
+    // So must the exit offer: it may only sell what its own offering holds.
+    : offeringIdentifier != null || placement === PaywallPlacement.ExitDiscount
       ? findPackage(offering, 'monthly')
       : await findPaidTrialMonthlyPackage(offering);
   const [annualTrialEligibilityStatus, monthlyIntroEligibilityStatus] = await Promise.all([
