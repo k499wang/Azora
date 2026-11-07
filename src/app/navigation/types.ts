@@ -35,7 +35,19 @@ export type MainTabParamList = {
 export type RoomScreenParams = { fromLab?: boolean } | undefined;
 
 /** Sample plan pairs for the dev paywall preview. */
-export type PreviewPlans = 'annualWeekly' | 'monthlyWeekly';
+export type PreviewPlans =
+  | 'annualWeekly'
+  | 'monthlyWeekly'
+  | 'weeklyFreeTrial'
+  | 'annualFreeTrialWeekly'
+  | 'annualFreeTrialWeeklyPaidTrial'
+  | 'monthlyPaidTrialWeeklyFreeTrial'
+  | 'weeklyPaidTrial'
+  | 'monthlyPaidTrial'
+  | 'annualPaidTrial'
+  | 'weeklyNoTrial'
+  | 'monthlyNoTrial'
+  | 'annualNoTrial';
 
 export interface PaywallReviewOptions {
   offeringIdentifier: string;
@@ -167,6 +179,8 @@ export type RootStackParamList = {
   PactPreview: undefined;
   /** dev-only run of the welcome shown after a Pro purchase */
   ProWelcomePreview: { trialDays: number | null };
+  /** dev-only picker for any paywall layout with any plan shape */
+  PaywallPlanPreviews: undefined;
   /** dev-only preview of the personalized scrolling paywall */
   OnboardingPaywallPreview: { layout: PaywallLayout; initialStep?: 'plan'; cleaning?: boolean; onlyPackageId?: PaywallPackageId; plans?: PreviewPlans; planPicker?: PaywallPlanPicker };
   /** dev-only Hotel preview opened from RoomLab */
@@ -243,6 +257,7 @@ export type PactCelebrationPreviewScreenProps = RootStackScreenProps<'PactCelebr
 export type PactPreviewScreenProps = RootStackScreenProps<'PactPreview'>;
 export type ProWelcomePreviewScreenProps = RootStackScreenProps<'ProWelcomePreview'>;
 export type OnboardingPaywallPreviewScreenProps = RootStackScreenProps<'OnboardingPaywallPreview'>;
+export type PaywallPlanPreviewsScreenProps = RootStackScreenProps<'PaywallPlanPreviews'>;
 export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;

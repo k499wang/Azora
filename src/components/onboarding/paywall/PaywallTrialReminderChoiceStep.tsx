@@ -13,13 +13,20 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
   disabled?: boolean;
 }) {
   const choices = availableTrialReminderDays(trialDays);
+  // With one possible day there is nothing to ask; Continue sets it up.
+  const onlyDays = choices.length === 1 ? choices[0] : null;
+  const title = onlyDays == null
+    ? 'When should we remind you before your trial ends?'
+    : reminder.denied
+      ? `Turn on notifications and we’ll remind you ${onlyDays} days before your trial ends`
+      : `We’ll remind you ${onlyDays} days before your trial ends`;
   return (
     <View style={styles.heroContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>When should we remind you before your trial ends?</Text>
+        <Text style={styles.stepTitle}>{title}</Text>
       </View>
       <View style={styles.bellWrap}><TrialReminderBell /></View>
-      <View accessibilityRole="radiogroup" style={styles.reminderChoices}>
+      {onlyDays == null ? <View accessibilityRole="radiogroup" style={styles.reminderChoices}>
         {choices.map((days) => {
           const selected = reminder.selectedDaysBeforeEnd === days;
           const choiceDisabled = disabled || reminder.unavailable;
@@ -41,7 +48,7 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
             />
           );
         })}
-      </View>
+      </View> : null}
       {choices.length === 0 ? (
         <Text style={styles.reminderChoiceHint}>This trial is too short for a two-day reminder.</Text>
       ) : null}

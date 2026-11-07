@@ -37,6 +37,7 @@ function setup() {
     getState: () => identity,
   });
   const dependencies = {
+    defaultPackageId: (packages) => packages[0]?.id ?? null,
     useAuthStore,
     useRevenueCatIdentityStore,
     useQueryClient: () => client,

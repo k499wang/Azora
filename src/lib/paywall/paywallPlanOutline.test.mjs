@@ -11,22 +11,17 @@ const INTENTS = ['cleaning', 'sleep', 'energy', 'focus', 'stress_relief', 'calm_
   'emotional_balance', 'self_care', 'self_acceptance', 'daily_habit', 'burnout', 'scrolling',
   'procrastination', 'spiritual', 'yoga', 'heart_health', 'other'];
 
-test('every goal outlines seven real days with its milestones between them', () => {
+test('every goal outlines seven real days', () => {
   for (const intent of INTENTS) {
-    const outline = paywallPlanOutline(onboardingPresetFor(intent), intent, 'feel better');
-    const days = outline.filter((item) => item.kind === 'day');
+    const days = paywallPlanOutline(onboardingPresetFor(intent), intent).filter((item) => item.kind === 'day');
     assert.deepEqual(days.map((item) => item.day), [1, 2, 3, 4, 5, 6, 7], intent);
     for (const day of days) assert.ok(day.title && day.line, `${intent} day ${day.day}`);
-    const dreams = outline.filter((item) => item.kind === 'dream');
-    assert.ok(dreams.length >= 2, intent);
-    assert.equal(outline[2].kind, 'dream', intent);
-    assert.deepEqual(dreams.map((item) => item.day), [...dreams.map((item) => item.day)].sort((a, b) => a - b), intent);
   }
 });
 
 test('outline copy never uses the words kept out of plan copy', () => {
   for (const intent of INTENTS) {
-    for (const item of paywallPlanOutline(onboardingPresetFor(intent), intent, 'feel better')) {
+    for (const item of paywallPlanOutline(onboardingPresetFor(intent), intent)) {
       const copy = item.kind === 'day' ? `${item.title} ${item.line}` : item.outcome;
       assert.doesNotMatch(copy, /\breset\b|breathwork/i, `${intent}: ${copy}`);
     }
@@ -55,14 +50,14 @@ test('sales copy fits its card and each plan reads as seven different days', () 
     assert.match(line, /\.$/, line);
   }
   for (const [intent, preset] of PRESETS) {
-    const titles = paywallPlanOutline(preset, intent, null).filter((item) => item.kind === 'day').map((item) => item.title);
+    const titles = paywallPlanOutline(preset, intent).filter((item) => item.kind === 'day').map((item) => item.title);
     assert.equal(new Set(titles).size, 7, `${intent}: ${titles.join(', ')}`);
   }
 });
 
-test('first-week variant puts its callouts right after days 3, 5, and 7', () => {
+test('callouts sit right after days 3, 5, and 7 and never look past the first week', () => {
   for (const [intent, preset] of PRESETS) {
-    const outline = paywallPlanOutline(preset, intent, null, 'firstWeek');
+    const outline = paywallPlanOutline(preset, intent);
     const dreams = outline.filter((item) => item.kind === 'dream');
     assert.deepEqual(dreams.map((item) => item.day), [3, 5, 7], intent);
     for (const dream of dreams) {

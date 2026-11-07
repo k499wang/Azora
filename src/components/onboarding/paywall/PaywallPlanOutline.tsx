@@ -3,18 +3,16 @@ import { Text } from '../../common/Text';
 import Icon from '../../common/icons/Icon';
 import PlanDayCard from '../PlanDayCard';
 import type { OnboardingPreset } from '../../../lib/onboardingPreset';
-import { paywallPlanOutline, type PlanOutlineDreams } from '../../../lib/paywall/paywallPlanOutline';
+import { paywallPlanOutline } from '../../../lib/paywall/paywallPlanOutline';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import type { OnboardingIntent } from '../types';
 import { paywallStepStyles } from './paywallStepStyles';
 
-export function PaywallPlanOutline({ preset, intent, goalPhrase, dreams }: {
+export function PaywallPlanOutline({ preset, intent }: {
   preset: OnboardingPreset;
   intent: OnboardingIntent;
-  goalPhrase?: string | null;
-  dreams: PlanOutlineDreams;
 }) {
   return (
     <View style={styles.container}>
@@ -26,7 +24,7 @@ export function PaywallPlanOutline({ preset, intent, goalPhrase, dreams }: {
         Your Personalized Plan guides you one small step at a time, built from your answers.
       </Text>
       <Text style={styles.sectionLabel}>Here’s what your first 7 days look like:</Text>
-      {paywallPlanOutline(preset, intent, goalPhrase, dreams).map((item) => {
+      {paywallPlanOutline(preset, intent).map((item) => {
         if (item.kind === 'dream') {
           return (
             <View key={`dream-${item.day}`} style={styles.dream}>

@@ -61,3 +61,25 @@ test('reminder choices stay interactive while an earlier choice saves', () => {
   const unavailable = nodes(PaywallTrialReminderChoiceStep({ trialDays: 7, reminder, disabled: true }), 'Choice');
   assert.ok(unavailable.every(choice => choice.props.disabled));
 });
+
+test('one possible reminder is promised with no choices, and turns honest when notifications are off', () => {
+  const { PaywallTrialReminderChoiceStep } = load('./PaywallTrialReminderChoiceStep.tsx', {
+    ...dependencies,
+    '../../common/Text': { Text: 'Text' },
+    './paywallStepStyles': { paywallStepStyles: {} },
+    '../../../native/tapHaptics': { triggerTapHaptic() {} },
+    '../../paywall/PaywallChoiceCard': { PaywallChoiceCard: 'Choice' },
+    './TrialReminderBell': { TrialReminderBell: 'Bell' },
+    '../../../lib/paywall/trialReminder': {
+      availableTrialReminderDays: () => [2],
+      formatTrialDate: () => 'October 26',
+      trialTimelineDates: () => ({ reminder: new Date() }),
+    },
+  });
+  const reminder = { enabled: false, daysBeforeEnd: 2, selectedDaysBeforeEnd: null, busy: false, unavailable: false };
+  const promised = PaywallTrialReminderChoiceStep({ trialDays: 3, reminder });
+  assert.equal(nodes(promised, 'Choice').length, 0);
+  assert.equal(nodes(promised, 'Text')[0].props.children, 'We’ll remind you 2 days before your trial ends');
+  const denied = PaywallTrialReminderChoiceStep({ trialDays: 3, reminder: { ...reminder, denied: true } });
+  assert.equal(nodes(denied, 'Text')[0].props.children, 'Turn on notifications and we’ll remind you 2 days before your trial ends');
+});

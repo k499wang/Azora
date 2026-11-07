@@ -29,7 +29,7 @@ function handoff(patch = {}) {
     celebrationFinishedRef: { current: noop }, saveProfileAndSeal: noop, goBack: noop,
     plan: { intent: 'focus' }, onboardingPreset: {}, selectedIntents: [], primaryIntent: 'focus',
     intentFollowUpAnswers: {}, planMindMap: { scores: [] }, chosenGoalPhrase: noop, stakesBenefitFor: noop,
-    paywallMode: 'hard', isPro: false, continueWithoutPro: noop,
+    paywallMode: 'hard', isPro: false, sellsFromHomeCard: false, continueWithoutPro: noop,
     purchaseSelectedPackage: noop, restorePurchases: noop, finish: noop, proWelcome: null, setProWelcome: noop,
     isExitOfferVisible: false, exitOfferTrigger: null, setIsExitOfferVisible: noop, setHasReachedPlanStep: noop,
     paywall: { offering: null, isLoading: true, errorMessage: null, selectPackage: noop, retryRevenueCatSync: noop, trackStepViewed: noop },
@@ -92,4 +92,13 @@ test('loading recovery and offer errors expose the paywall while retaining the c
     assert.equal(screen(child(tree, 1)).type, 'Paywall');
     assert.equal(flow.state.showPactDuringHandoff, true);
   }
+});
+
+test('a home card offering holds the handoff instead of flashing the deck, unless finishing failed', () => {
+  const offering = { paywallLayout: 'home_card' };
+  const held = handoff({ step: 'paywall', showPactDuringHandoff: true, sellsFromHomeCard: true });
+  held.state.paywall = { ...held.state.paywall, offering, isLoading: false };
+  assert.equal(child(held.render(), 1), null);
+  held.state.errorMessage = 'Could not finish';
+  assert.equal(screen(child(held.render(), 1)).type, 'Paywall');
 });

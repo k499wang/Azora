@@ -32,10 +32,10 @@ export type PaywallMode = 'hard' | 'soft';
 // Remote-controlled via the offering's `paywall_layout` metadata key. 'long'
 // shows the single scrolling page; 'long_then_trial' shows that page and sends
 // its Continue to the deck's trial step; 'plan' outlines the first week above a
-// single package, with callouts looking ahead to the whole plan, and
-// 'plan_first_week' keeps those callouts inside the seven days; anything else
+// single package; 'deck_plan' opens the step deck on that same outline;
+// 'home_card' finishes onboarding and sells from a card over Home; anything else
 // keeps the step deck.
-export type PaywallLayout = 'long' | 'long_then_trial' | 'plan' | 'plan_first_week' | 'deck';
+export type PaywallLayout = 'long' | 'long_then_trial' | 'plan' | 'deck_plan' | 'home_card' | 'deck';
 
 // Remote-controlled via `plan_picker` metadata: 'side_by_side' shows the two
 // plans as compact cards in a row; anything else keeps the stacked cards.

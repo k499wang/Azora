@@ -7,7 +7,8 @@ type OnboardingAnalyticsProperties = Record<string, OnboardingAnalyticsValue>;
 export type OnboardingCompletionPath =
   | 'purchase'
   | 'restore'
-  | 'continue_without_pro';
+  | 'continue_without_pro'
+  | 'home_card_paywall';
 
 type StepEventInput = {
   step: string;

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { posthog } from '../config/posthog';
+import { defaultPackageId } from '../lib/paywall/singlePackage';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { logRevenueCatDebugSnapshot } from '../services/debug/revenueCatDebugSnapshot';
 import {
@@ -70,11 +71,13 @@ export function usePaywall({
     Record<PaywallPackageId, PurchasesPackage | null>
   >(cachedOffering?.revenueCatPackages ?? { annual: null, monthly: null });
   const [selectedPackageId, setSelectedPackageId] =
-    useState<PaywallPackageId>('annual');
+    useState<PaywallPackageId>(() => defaultPackageId(cachedOffering?.offering?.packages ?? []) ?? 'annual');
+  const hasChosenPackageRef = useRef(false);
   useEffect(() => {
     const packages = offering?.packages;
-    if (packages?.length && !packages.some((pkg) => pkg.id === selectedPackageId)) {
-      setSelectedPackageId(packages[0].id);
+    if (!packages?.length) return;
+    if (!hasChosenPackageRef.current || !packages.some((pkg) => pkg.id === selectedPackageId)) {
+      setSelectedPackageId(defaultPackageId(packages) ?? packages[0].id);
     }
   }, [offering, selectedPackageId]);
   const [paywallViewId, setPaywallViewId] = useState<string | null>(null);
@@ -332,6 +335,7 @@ export function usePaywall({
   ]);
 
   const selectPackage = (packageId: PaywallPackageId) => {
+    hasChosenPackageRef.current = true;
     if (packageId === selectedPackageId) {
       return;
     }

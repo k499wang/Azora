@@ -2,6 +2,7 @@ import { Fragment, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../common/Text';
 import { JOURNEY_MARKS } from '../../paywall/PaywallPlanJourney';
+import type { OnboardingMode } from '../../../lib/onboardingMode';
 import type { OnboardingPreset } from '../../../lib/onboardingPreset';
 import { paywallPlanOutline } from '../../../lib/paywall/paywallPlanOutline';
 import { card, radius } from '../../../theme/card';
@@ -16,6 +17,7 @@ import type { OnboardingIntent } from '../types';
 interface PlanPromiseScreenProps {
   preset: OnboardingPreset;
   intent: OnboardingIntent;
+  mode?: OnboardingMode;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -30,6 +32,7 @@ const BADGE_GLYPH_SIZE = 26;
 export default function PlanPromiseScreen({
   preset,
   intent,
+  mode = 'standard',
   stepIndex,
   stepCount,
   onContinue,
@@ -37,20 +40,29 @@ export default function PlanPromiseScreen({
 }: PlanPromiseScreenProps) {
   const days = useMemo(
     () =>
-      paywallPlanOutline(preset, intent, null)
+      paywallPlanOutline(preset, intent)
         .flatMap((item) => (item.kind === 'day' ? [item] : []))
         .slice(0, PREVIEW_DAYS),
     [preset, intent],
   );
 
+  const cleaning = mode === 'cleaning_mode';
+
   return (
     <OnboardingScreenLayout
-      title="Let us build you a plan!"
+      title={cleaning ? 'Let us build you a cleaning plan!' : 'Let us build you a plan!'}
       subtitle={
-        <>
-          Get <Text style={styles.emphasis}>personalized feedback</Text> and a plan designed to{' '}
-          <Text style={styles.emphasis}>unlock the potential</Text> within you.
-        </>
+        cleaning ? (
+          <>
+            Get <Text style={styles.emphasis}>personalized feedback</Text> and a plan designed to help you{' '}
+            <Text style={styles.emphasis}>create a home you love</Text>.
+          </>
+        ) : (
+          <>
+            Get <Text style={styles.emphasis}>personalized feedback</Text> and a plan designed to{' '}
+            <Text style={styles.emphasis}>unlock the potential</Text> within you.
+          </>
+        )
       }
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -71,7 +83,7 @@ export default function PlanPromiseScreen({
         </View>
 
         <View style={[styles.card, styles.planCard]}>
-          <Text style={styles.cardLabel}>Your Plan</Text>
+          <Text style={styles.cardLabel}>{cleaning ? 'Your Cleaning Plan' : 'Your Plan'}</Text>
           {days.map((day, index) => {
             const { icon, hue } = JOURNEY_MARKS[index % JOURNEY_MARKS.length];
             return (

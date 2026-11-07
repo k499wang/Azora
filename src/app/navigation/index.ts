@@ -47,6 +47,8 @@ export type {
   PactCelebrationPreviewScreenProps,
   PactPreviewScreenProps,
   ProWelcomePreviewScreenProps,
+  PaywallPlanPreviewsScreenProps,
+  PreviewPlans,
   HotelPreviewScreenProps,
   NextRoomScreenProps,
   ProfileScreenProps,

@@ -3,7 +3,6 @@ import { lessonForDay } from '../../features/lessons/domain/lessonCatalogue';
 import { phoneLessonTrackForIntent } from '../../features/lessons/domain/phoneLessonTrack';
 import { pressureLessonTrackForIntent } from '../../features/lessons/domain/pressureLessonTrack';
 import { planLessonTitle } from '../../features/plan/domain/planLessonTitle';
-import { personalizedPlanJourney } from '../onboardingPlanJourney';
 import type { OnboardingPreset } from '../onboardingPreset';
 import { FIRST_WEEK_DREAMS, PLAN_OUTLINE_COPY } from './paywallPlanOutlineCopy';
 
@@ -12,21 +11,13 @@ export type PlanOutlineItem =
   | { kind: 'dream'; day: number; outcome: string };
 
 const FIRST_WEEK_DAYS = 7;
-/** The plan's milestones, each shown after this many first-week days. */
-const DREAM_AFTER_DAYS = [2, 4, 7];
-const FIRST_WEEK_DREAM_DAYS = [3, 5, 7];
+const DREAM_DAYS = [3, 5, 7];
 
-/** `milestones` looks ahead to the whole plan; `firstWeek` stays inside these seven days. */
-export type PlanOutlineDreams = 'milestones' | 'firstWeek';
-
-/** The lessons subscribers will really get, with the plan's own milestones between them. */
+/** The lessons subscribers will really get, with what they have by then between them. */
 export function paywallPlanOutline(
   preset: OnboardingPreset,
   intent: OnboardingIntent,
-  goalPhrase: string | null | undefined,
-  dreams: PlanOutlineDreams = 'milestones',
 ): PlanOutlineItem[] {
-  const { milestones } = personalizedPlanJourney(preset, intent, null, goalPhrase);
   return Array.from({ length: FIRST_WEEK_DAYS }, (_, index) => index + 1).flatMap((day) => {
     const lesson = lessonForDay(
       preset.id, day, preset.revision,
@@ -41,16 +32,9 @@ export function paywallPlanOutline(
         line: PLAN_OUTLINE_COPY[lesson.id]?.line ?? lesson.step,
       },
     ];
-    const firstWeekDream = FIRST_WEEK_DREAMS[lesson.id];
-    if (dreams === 'firstWeek') {
-      if (FIRST_WEEK_DREAM_DAYS.includes(day) && firstWeekDream != null) {
-        items.push({ kind: 'dream', day, outcome: firstWeekDream });
-      }
-      return items;
-    }
-    const milestone = milestones[DREAM_AFTER_DAYS.indexOf(day)];
-    if (DREAM_AFTER_DAYS.includes(day) && milestone != null) {
-      items.push({ kind: 'dream', day: milestone.day, outcome: milestone.outcome });
+    const dream = FIRST_WEEK_DREAMS[lesson.id];
+    if (DREAM_DAYS.includes(day) && dream != null) {
+      items.push({ kind: 'dream', day, outcome: dream });
     }
     return items;
   });

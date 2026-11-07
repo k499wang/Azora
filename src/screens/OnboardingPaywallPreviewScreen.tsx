@@ -5,12 +5,13 @@ import type { OnboardingPaywallPreviewScreenProps } from '../app/navigation/type
 import OnboardingPaywallScreen from '../components/onboarding/screens/OnboardingPaywallScreen';
 import { onboardingPresetFor } from '../lib/onboardingPreset';
 import { computeMindMap } from '../lib/onboardingScores';
+import { defaultPackageId } from '../lib/paywall/singlePackage';
 import { colors } from '../theme/colors';
 import type { PaywallLayout, PaywallOffering, PaywallPackageId, PaywallPackageOption, PaywallPlanPicker } from '../services/paywall';
 import type { PreviewPlans } from '../app/navigation/types';
 import type { OnboardingIntent } from '../components/onboarding/types';
 
-const PREVIEW_OFFERING: PaywallOffering = {
+export const PREVIEW_OFFERING: PaywallOffering = {
   offeringIdentifier: 'onboarding_paywall_preview',
   experimentId: null,
   experimentVariant: null,
@@ -83,7 +84,24 @@ const PREVIEW_PAID_WEEKLY: PaywallPackageOption = {
   introOffer: { priceString: '$0.99', days: 7 },
 };
 
-const PREVIEW_PLAN_SETS: Record<PreviewPlans, PaywallPackageOption[]> = {
+const PREVIEW_ANNUAL = PREVIEW_OFFERING.packages[0];
+const PREVIEW_MONTHLY = PREVIEW_OFFERING.packages[1];
+const NO_INTRO = { trialLabel: null, trialDays: null, introOffer: null };
+
+export const PREVIEW_PLAN_SETS: Record<PreviewPlans, PaywallPackageOption[]> = {
+  weeklyFreeTrial: [{ ...PREVIEW_PAID_WEEKLY, introOffer: null, trialLabel: '3-day free trial', trialDays: 3 }],
+  annualFreeTrialWeekly: [PREVIEW_ANNUAL, { ...PREVIEW_PAID_WEEKLY, ...NO_INTRO }],
+  annualFreeTrialWeeklyPaidTrial: [PREVIEW_ANNUAL, PREVIEW_PAID_WEEKLY],
+  monthlyPaidTrialWeeklyFreeTrial: [
+    { ...PREVIEW_MONTHLY, id: 'annual' },
+    { ...PREVIEW_PAID_WEEKLY, introOffer: null, trialLabel: '3-day free trial', trialDays: 3 },
+  ],
+  weeklyPaidTrial: [PREVIEW_PAID_WEEKLY],
+  monthlyPaidTrial: [PREVIEW_MONTHLY],
+  annualPaidTrial: [PREVIEW_PAID_ANNUAL_PACKAGES[0]],
+  weeklyNoTrial: [{ ...PREVIEW_PAID_WEEKLY, ...NO_INTRO }],
+  monthlyNoTrial: [{ ...PREVIEW_MONTHLY, ...NO_INTRO }],
+  annualNoTrial: [{ ...PREVIEW_ANNUAL, ...NO_INTRO }],
   annualWeekly: [PREVIEW_PAID_ANNUAL_PACKAGES[0], PREVIEW_PAID_WEEKLY],
   monthlyWeekly: [
     {
@@ -141,7 +159,7 @@ export function OnboardingPaywallPreview({
   goalPhrase,
   onClose,
 }: OnboardingPaywallPreviewProps) {
-  const [selectedPackageId, setSelectedPackageId] = useState<PaywallPackageId>('annual');
+  const [selectedPackageId, setSelectedPackageId] = useState<PaywallPackageId>((plans != null ? defaultPackageId(PREVIEW_PLAN_SETS[plans]) : null) ?? 'annual');
   const previewOnly = () => Alert.alert('Preview only', 'Purchases are unavailable in this preview.');
 
   return (

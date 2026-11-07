@@ -388,7 +388,7 @@ function toPlanPicker(value: string | null): PaywallPlanPicker {
 }
 
 function toPaywallLayout(value: string | null): PaywallLayout {
-  return value === 'long' || value === 'long_then_trial' || value === 'plan' || value === 'plan_first_week' ? value : 'deck';
+  return value === 'long' || value === 'long_then_trial' || value === 'plan' || value === 'deck_plan' || value === 'home_card' ? value : 'deck';
 }
 
 function getMetadataString(

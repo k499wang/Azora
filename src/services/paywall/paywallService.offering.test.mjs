@@ -308,3 +308,20 @@ test('review catalog rejects signed-out, unready, and changed-account requests',
   resolveCatalog({ a: { identifier: 'a', availablePackages: [annual] } });
   await assert.rejects(request, changed.RevenueCatSignedOutError);
 });
+
+test('a weekly free trial pairs with a monthly paid trial, each keeping its own offer', async () => {
+  const freeWeekly = packageWithOffer('WEEKLY', 'free-weekly', {
+    price: 0, priceString: '$0.00', periodUnit: 'DAY', periodNumberOfUnits: 3,
+  });
+  const paidMonthly = packageWithOffer('MONTHLY', 'paid-monthly', {
+    price: 5.99, priceString: '$5.99', periodUnit: 'MONTH', periodNumberOfUnits: 1,
+  });
+  const placementOffering = { identifier: 'pair', metadata: { plan_picker: 'side_by_side' }, availablePackages: [freeWeekly, paidMonthly] };
+  const result = await setup([trialMonthly], { placementOffering }).exports.getPaywallOffering('onboarding_complete');
+  const [first, second] = result.offering.packages;
+  assert.equal(result.offering.planPicker, 'side_by_side');
+  assert.equal(`${first.id} ${first.billingPeriod} ${first.trialLabel} ${first.introOffer.days} ${first.introOffer.priceString}`, 'annual month null 30 $5.99');
+  assert.equal(`${second.id} ${second.billingPeriod} ${second.trialDays} ${second.introOffer}`, 'monthly week 3 null');
+  assert.equal(result.revenueCatPackages.annual, paidMonthly);
+  assert.equal(result.revenueCatPackages.monthly, freeWeekly);
+});

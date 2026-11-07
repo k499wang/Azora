@@ -73,7 +73,7 @@ const PREVIEWS: readonly PreviewEntry[] = [
   {
     id: 'planPromise', title: 'Let us build you a plan',
     render: ({ onSkip: _, ...props }) => (
-      <PlanPromiseScreen {...props} preset={enrolledOrGoalPreset('home', 'cleaning')} intent="cleaning" />
+      <PlanPromiseScreen {...props} preset={enrolledOrGoalPreset('home', 'cleaning')} intent="cleaning" mode="cleaning_mode" />
     ),
   },
   {

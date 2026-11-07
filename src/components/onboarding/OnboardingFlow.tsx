@@ -208,6 +208,7 @@ import { intentFollowUpsFor, stakesBenefitFor, triedEchoFor } from './data/inten
 import { describeStressBand } from '../../lib/onboardingLoad';
 import { buildPiecesTogetherSubtitle } from '../../lib/onboardingPiecesTogether';
 import { useAuthStore } from '../../stores/authStore';
+import { useHomeCardPaywallStore } from '../../stores/homeCardPaywallStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
 import { initAppsFlyer } from '../../services/attribution/appsFlyerClient';
@@ -1206,6 +1207,7 @@ function OnboardingFlowSteps({
 
     setIsSubmitting(true);
     setErrorMessage(null);
+    if (completionPath !== 'home_card_paywall') useHomeCardPaywallStore.getState().clear();
 
     try {
       // Queue the tour for every finished onboarding. The seen flag otherwise
@@ -1256,6 +1258,22 @@ function OnboardingFlowSteps({
       await finish('restore');
     }
   };
+
+  // This layout sells over Home, so onboarding finishes here without a purchase.
+  const sellsFromHomeCard = step === 'paywall' && paywall.offering?.paywallLayout === 'home_card' && !isPro;
+  const canFinishToHomeCard = sellsFromHomeCard && userId != null && !isSubmitting && !isSavingProfile;
+  const finishedToHomeCardRef = useRef(false);
+  useEffect(() => {
+    if (!canFinishToHomeCard || userId == null || finishedToHomeCardRef.current) return;
+    finishedToHomeCardRef.current = true;
+    useHomeCardPaywallStore.getState().show({
+      userId,
+      name: name.trim() || null,
+      goalPhrase: chosenGoalPhrase(primaryIntent, selectedIntents),
+    });
+    void finish('home_card_paywall');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canFinishToHomeCard, userId]);
 
   const continueWithoutPro = async () => {
     if (isSubmitting) return;
@@ -2886,6 +2904,7 @@ function OnboardingFlowSteps({
       <PlanPromiseScreen
         preset={onboardingPreset}
         intent={plan.intent}
+        mode={mode}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goNext('continue')}
@@ -3074,7 +3093,9 @@ function OnboardingFlowSteps({
 
   if (step === 'pact' || step === 'paywall') {
     const keepPact = step === 'pact' || showPactDuringHandoff;
-    const mountPaywall = step === 'paywall' && (
+    // A failed finish falls back to the steps, so nobody is left on the handoff.
+    const holdForHomeCard = sellsFromHomeCard && errorMessage == null;
+    const mountPaywall = step === 'paywall' && !holdForHomeCard && (
       !showPactDuringHandoff || paywall.offering != null || paywall.errorMessage != null || showPaywallLoadingFallback
     );
     return (

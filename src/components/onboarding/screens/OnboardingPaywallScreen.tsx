@@ -33,6 +33,7 @@ import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallPlanOutline } from '../paywall/PaywallPlanOutline';
+import { singlePackage } from '../../../lib/paywall/singlePackage';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import { PlanPriceTerms } from '../../paywall/PlanPriceTerms';
 import { PaywallCheckLine } from '../../paywall/PaywallCheckLine';
@@ -54,6 +55,8 @@ const DECLINE_DELAY_MS = 5000;
 // ── Deck constants ────────────────────────────────────────────────────
 // Trial introductions lead into the same compact plan screen.
 const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'reminder', 'plan'];
+const OUTLINE_TRIAL_STEPS: PaywallStepKey[] = ['outline', 'reminder', 'plan'];
+const OUTLINE_STEPS: PaywallStepKey[] = ['outline', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
@@ -107,7 +110,6 @@ function TrialDeck({
   offering,
   planIntent,
   planPreset,
-  goalPhrase,
   stakesBenefit,
   paywallMode,
   selectedPackageId: chosenPackageId,
@@ -134,9 +136,9 @@ function TrialDeck({
   const insets = useSafeAreaInsets();
   const trialReminder = usePaywallTrialReminder(preview);
 
-  const isPlanLayout = offering?.paywallLayout === 'plan' || offering?.paywallLayout === 'plan_first_week';
+  const isPlanLayout = offering?.paywallLayout === 'plan';
   const onlyPackageId = offering?.onlyPackageId
-    ?? (isPlanLayout ? offering?.packages.find((pkg) => pkg.isRecommended)?.id ?? offering?.packages[0]?.id ?? null : null);
+    ?? (isPlanLayout ? singlePackage(offering)?.id ?? null : null);
   const selectedPackageId: PaywallPackageId = onlyPackageId ?? chosenPackageId;
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
@@ -162,9 +164,12 @@ function TrialDeck({
 
   // Step state
   const [step, setStep] = useState(0);
-  const steps: PaywallStepKey[] = hasFreeTrial && initialStep !== 'plan' && !isPlanLayout
-    ? TRIAL_STEPS
-    : ['plan'];
+  const leadsWithOutline = offering?.paywallLayout === 'deck_plan';
+  const steps: PaywallStepKey[] = leadsWithOutline && initialStep !== 'plan'
+    ? (hasFreeTrial ? OUTLINE_TRIAL_STEPS : OUTLINE_STEPS)
+    : hasFreeTrial && initialStep !== 'plan' && !isPlanLayout
+      ? TRIAL_STEPS
+      : ['plan'];
   const stepCount = steps.length;
   const activeStepIndex = Math.min(step, stepCount - 1);
   const activeStep = steps[activeStepIndex];
@@ -421,9 +426,15 @@ function TrialDeck({
     return startUiTimer(DECLINE_DELAY_MS, () => setDeclineVisible(true));
   }, [isFinal, paywallMode]);
 
+  const reminderChoices = availableTrialReminderDays(freeTrialDays);
+  const loneReminderDays = reminderChoices.length === 1 ? reminderChoices[0] : null;
   const handleNext = useCallback(() => {
+    // That screen promises this reminder rather than asking, so Continue sets it up.
+    if (activeStep === 'reminder' && loneReminderDays != null && trialReminder.selectedDaysBeforeEnd !== loneReminderDays) {
+      void trialReminder.chooseDaysBeforeEnd(loneReminderDays);
+    }
     if (step < stepCount - 1) animateToStep(step + 1, 1);
-  }, [animateToStep, step, stepCount]);
+  }, [activeStep, animateToStep, loneReminderDays, step, stepCount, trialReminder]);
 
   const handleBack = useCallback(() => {
     if (activeStepIndex > 0) animateToStep(activeStepIndex - 1, -1);
@@ -580,13 +591,8 @@ function TrialDeck({
                   />
                 ) : null}
                 {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={freeTrialDays} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
-                {activeStep === 'plan' && isPlanLayout ? (
-                  <PaywallPlanOutline
-                    preset={planPreset}
-                    intent={planIntent ?? 'other'}
-                    goalPhrase={goalPhrase}
-                    dreams={offering?.paywallLayout === 'plan_first_week' ? 'firstWeek' : 'milestones'}
-                  />
+                {activeStep === 'outline' || (activeStep === 'plan' && isPlanLayout) ? (
+                  <PaywallPlanOutline preset={planPreset} intent={planIntent ?? 'other'} />
                 ) : null}
                 {activeStep === 'plan' && !isPlanLayout ? (
                   <View style={styles.finalStepContent}>
@@ -652,7 +658,7 @@ function TrialDeck({
           <View style={styles.footerInner}>
             {!isFinal ? (
               <>
-                {activeStep !== 'benefits' ? (
+                {activeStep !== 'benefits' && hasFreeTrial ? (
                   <PaywallCheckLine label="No Payment Due Now" />
                 ) : null}
                 <OnboardingPrimaryButton

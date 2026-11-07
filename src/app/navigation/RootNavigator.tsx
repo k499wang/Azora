@@ -17,6 +17,8 @@ import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import HeartScreen from '../../screens/HeartScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
+import { HomeCardPaywall } from '../../components/paywall/HomeCardPaywall';
+import { useHomeCardPaywallStore } from '../../stores/homeCardPaywallStore';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import DayCompleteCover from '../../features/room/DayCompleteCover';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
@@ -28,6 +30,7 @@ import PactCelebrationPreviewScreen from '../../screens/PactCelebrationPreviewSc
 import PactPreviewScreen from '../../screens/PactPreviewScreen';
 import ProWelcomePreviewScreen from '../../screens/ProWelcomePreviewScreen';
 import OnboardingPaywallPreviewScreen from '../../screens/OnboardingPaywallPreviewScreen';
+import PaywallPlanPreviewsScreen from '../../screens/PaywallPlanPreviewsScreen';
 import AzoSecretLayerScreen from '../../screens/AzoSecretLayerScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
 import HotelScreen, {
@@ -411,6 +414,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
             }}
           />
           <Stack.Screen
+            name="PaywallPlanPreviews"
+            component={PaywallPlanPreviewsScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
             name="OnboardingPaywallPreview"
             component={OnboardingPaywallPreviewScreen}
             options={{
@@ -517,7 +528,12 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
   );
 }
 
-function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
+function MainTabsRoute({ showBootPaywall, tourEnabled: appReady }: AppStackProps) {
+  // The home card comes before the tour, which starts once the card is gone.
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const homeCardRequest = useHomeCardPaywallStore((state) => state.request);
+  const homeCard = homeCardRequest?.userId === userId ? homeCardRequest : null;
+  const tourEnabled = appReady && (homeCard == null || homeCard.preview != null);
   // A pending exit offer takes precedence over the boot paywall, and still does
   // after it has played, so the just-onboarded user never sees both.
   const exitOfferPending = useExitOfferStore((state) => state.pending);
@@ -558,6 +574,7 @@ function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
         <ExitOfferPresenter />
       ) : null}
       <MainTabs tourEnabled={tourEnabled} />
+      {appReady && homeCard != null ? <HomeCardPaywall request={homeCard} /> : null}
       {/* After MainTabs so the boot paywall can present over the app. */}
       {!hadExitOffer && showBootPaywall && canPresent ? (
         <BootPaywallGate />

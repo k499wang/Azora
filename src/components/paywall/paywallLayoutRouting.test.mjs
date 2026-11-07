@@ -18,7 +18,7 @@ const longPage = read('components', 'paywall', 'NoTrialLongPaywall.tsx');
 test('the layout is read from the offering metadata and defaults to the deck', () => {
   assert.match(
     service,
-    /value === 'long' \|\| value === 'long_then_trial' \|\| value === 'plan' \|\| value === 'plan_first_week' \? value : 'deck'/,
+    /value === 'long' \|\| value === 'long_then_trial' \|\| value === 'plan' \|\| value === 'deck_plan' \|\| value === 'home_card' \? value : 'deck'/,
   );
 });
 
@@ -54,4 +54,17 @@ test('the plan picker is read from offering metadata and defaults to stacked', (
   assert.match(service, /planPicker: toPlanPicker\(getMetadataString\(offering\.metadata, 'plan_picker'\)\)/);
   assert.match(service, /value === 'side_by_side' \? value : 'stacked'/);
   assert.match(paywallScreen, /planPicker=\{offering\?\.planPicker \?\? 'stacked'\}/);
+});
+
+test('home card finishes onboarding, holds the tour, and clears only on a real purchase', () => {
+  const root = read('app', 'navigation', 'RootNavigator.tsx');
+  const homeCard = read('components', 'paywall', 'HomeCardPaywall.tsx');
+  assert.match(flow, /paywall\.offering\?\.paywallLayout === 'home_card' && !isPro/);
+  assert.match(flow, /void finish\('home_card_paywall'\)/);
+  assert.match(flow, /!holdForHomeCard && \(/);
+  assert.match(root, /const tourEnabled = appReady && \(homeCard == null \|\| homeCard\.preview != null\);/);
+  assert.match(root, /homeCardRequest\?\.userId === userId/);
+  assert.match(homeCard, /result\.status === 'purchased' && result\.isPro\) clear\(\)/);
+  assert.match(homeCard, /result\.status === 'restored' && result\.isPro\) clear\(\)/);
+  assert.match(homeCard, /paywallMode \?\? 'soft'\) !== 'hard'/);
 });
