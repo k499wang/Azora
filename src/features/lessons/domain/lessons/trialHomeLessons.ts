@@ -9,51 +9,59 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "Before you clean, choose what you want to do in the space. **Make room to eat breakfast** is a clear goal. It tells you which part of the table to clear and when you have done enough. You can start with one everyday wish: sitting down to eat without moving a pile first."
+        "text": "It’s 7pm. You’re holding your dinner and **there’s nowhere to put it down**. The table now belongs to the mail, a charger, three mugs, and a hoodie nobody remembers taking off. So you eat on the couch. Again."
       },
       {
         "kind": "text",
-        "text": "A messy table can need three different jobs. **Decluttering means deciding what to keep**. Tidying means putting things back where you keep them. Cleaning means removing dirt, such as crumbs or sticky marks. For example, give away a mug you no longer want, put your keys away, then wipe the table."
+        "text": "Then the thought shows up: **I really need to clean this whole place.** Just like that, one table has turned into the entire house. Your brain takes one look and reaches for your phone. Nobody finishes a race with no finish line, and “clean the house” doesn’t have one."
       },
       {
         "kind": "text",
-        "text": "Choose enough space for one plate and cup. Put rubbish in the bin. Put your own things back where you keep them. If something has no place yet, choose a place you can find again. **Clean the cleared part of the table** with a product its label says can be used there. You are finished when you can put down your plate and eat."
+        "text": "So let’s draw one. Forget the house. Tonight’s whole mission is **room for one plate and one cup**. When your dinner fits on the table, you win. You’re allowed to stop right there, even if the other end still looks like a yard sale."
+      },
+      {
+        "kind": "text",
+        "text": "Now look at that pile again. It’s three different jobs wearing one big coat. **Decluttering means deciding what stays**, like that chipped mug you never use. Tidying means putting things back where they live, like your keys. Cleaning means removing the gunk, like crumbs and that sticky ring."
+      },
+      {
+        "kind": "text",
+        "text": "Try all three at once and you end up holding one old receipt for ten minutes, reading it like a mystery novel. Keep it simple instead. **Bin the trash, put your things back, wipe the spot.** If something has no home yet, pick one now, somewhere you’ll remember. Then set your plate down and eat at your own table, like the fancy person you are. **That’s clean enough.** The rest of the table can have its turn another day. Trust us, it isn’t going anywhere."
       },
       {
         "kind": "reveal",
-        "prompt": "See the three different jobs.",
+        "prompt": "Three things on your table. Tap to see which job each one is.",
         "items": [
           {
-            "label": "An extra mug you do not want",
-            "detail": "Declutter: decide whether to keep your mug or give it away to someone who can use it."
+            "label": "The chipped mug you never use",
+            "detail": "Declutter. Keep it or let it go. Either answer is fine, as long as you actually pick one."
           },
           {
-            "label": "Keys on the table",
-            "detail": "Tidy: put the keys in the place where you keep them."
+            "label": "Your keys, hiding under the mail",
+            "detail": "Tidy. You still want them, they’re just in the wrong spot. Back to their hook or bowl they go."
           },
           {
-            "label": "Crumbs on the table",
-            "detail": "Clean: brush away the crumbs, then wipe as the table’s care instructions allow."
+            "label": "Crumbs and a sticky ring",
+            "detail": "Clean. Brush off the crumbs, wipe up the ring, and enjoy feeling a little smug about it."
           }
         ]
       },
       {
         "kind": "choice",
-        "prompt": "The table is covered and you want to eat. What could you finish first?",
+        "prompt": "It’s dinnertime and the table is buried. What do you do first?",
         "options": [
           {
-            "label": "Clear and wipe enough room for one plate and cup",
-            "feedback": "You can check the result: there is room to sit and eat. The rest of the table can be another job."
+            "label": "Clear a spot for one plate and cup",
+            "feedback": "Yes. A few minutes from now you’re sitting down to eat, and the rest of the table can wait its turn."
           },
           {
-            "label": "Buy baskets for every room first",
-            "feedback": "First see what you want to keep and where it belongs. A new basket does not clear your eating space."
+            "label": "Order baskets for every room",
+            "feedback": "So tempting, and so fun to browse. But a basket won’t clear your table tonight, and you don’t know what needs one yet. Dinner first."
           }
         ]
       },
       {
         "kind": "do",
-        "text": "Choose space for one plate and cup. **Then clear it**: put rubbish in the bin, put your things away, and wipe the table as its care instructions allow. Stop when you can sit down to eat."
+        "text": "Go make your spot: **room for one plate and one cup**. Trash in the bin, your things back where they live, one good wipe. Then stop and sit down. You’re done."
       }
     ],
     "source": "https://konmari.com/about-the-konmari-method/ Original Azora teaching and examples; no affiliation or guaranteed outcome."
@@ -65,47 +73,47 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "Marie Kondo is a tidying expert who created the KonMari Method, a way to decide what to keep and where to put it. **She sorts by category**: one type of thing, such as clothes or books. Her order is clothes, books, papers, komono, then sentimental items. Komono means other household things, such as kitchen tools. Sentimental items are things kept for their memories, such as old letters."
+        "text": "Marie Kondo is a tidying expert who created the KonMari Method, a way to decide what to keep and where to put it. She’s known for thanking her clothes before letting them go. Her big move? **She sorts by category**, one type of thing at a time. Her order goes clothes, books, papers, komono, then sentimental items. Komono is everything else around the house, like kitchen tools. Sentimental items, like old letters, come last because they can swallow a whole afternoon."
       },
       {
         "kind": "text",
-        "text": "The method asks whether something sparks joy: **does it bring you pleasure or matter to you?** Also keep things you need, even if they are not exciting. Your work clothes, can opener, and important papers can have a clear use. You do not need to throw away something useful because it does not make you smile."
+        "text": "Then comes her famous question: does it spark joy? Hold something and ask, **does it make you happy or matter to you?** Also keep things you need, even the boring ones. Nobody has ever felt a rush of delight holding a can opener, and you’re still going to want it on soup night."
       },
       {
         "kind": "text",
-        "text": "Today, take only your socks out of one drawer. Match the pairs. Keep the pairs you wear or need. Put those back in the drawer. Check local rules for giving away or recycling unwanted socks. **This small session is an Azora adaptation**, meaning our shorter version. Full KonMari gathers a whole category, such as all clothes, before choosing what stays."
+        "text": "Now open your sock drawer. There’s the lonely one with no partner, and the pair with a hole you’ve been meaning to fix for years. Today it’s just socks. Take them out of one drawer, match the pairs, and put back the ones you wear. **This small session is an Azora adaptation**, our shorter version. Full KonMari gathers a whole category, like every piece of clothing you own, before choosing what stays."
       },
       {
         "kind": "sequence",
-        "prompt": "Put these sock-sorting steps in order.",
+        "prompt": "Put your sock mission in order.",
         "steps": [
           "Take the socks out of one drawer and match the pairs.",
-          "Choose which pairs you wear, need, and want to keep.",
-          "Put those pairs back and choose what to do with the others."
+          "Choose the pairs you wear, need, and want to keep.",
+          "Put those pairs back and decide where the others go."
         ],
-        "feedback": "Put the pairs you keep back before opening another drawer. This leaves the first drawer ready to use."
+        "feedback": "One drawer, finished and ready for tomorrow morning, before you’ve even looked at the next one."
       },
       {
         "kind": "choice",
-        "prompt": "You have ten minutes. Which plan leaves your bed ready to use?",
+        "prompt": "You have ten minutes, and you’d like to sleep in your bed tonight. Which plan do you pick?",
         "options": [
           {
-            "label": "Sort only the socks in one drawer",
-            "feedback": "You can make the decisions and put the socks away before you stop."
+            "label": "Just the socks in one drawer",
+            "feedback": "Nice. You can make every decision and have the socks away before your ten minutes are up."
           },
           {
-            "label": "Empty all your clothes onto the bed",
-            "feedback": "You may run out of time before putting them back. Start with the smaller job today."
+            "label": "Dump all my clothes on the bed",
+            "feedback": "Bold. It’s also a great way to end up sleeping next to a mountain of sweaters. Stick with the socks today."
           }
         ]
       },
       {
         "kind": "text",
-        "text": "Today’s one-minute breathing Reset is a separate pause. **Follow its prompts comfortably**, breathe normally or stop if needed, and let the guide handle the timing."
+        "text": "Today you also have a one-minute breathing Reset, a short guided pause. **Follow along comfortably**, breathe normally, and stop whenever you like. The guide handles the timing, so there’s nothing to keep track of."
       },
       {
         "kind": "do",
-        "text": "**Sort the socks in one drawer**. Match the pairs, choose what to keep, and put those pairs back. Put unwanted socks in a bag while you check where they can go. Finish before opening another drawer."
+        "text": "**Sort the socks in one drawer**. Match the pairs, keep the ones you’ll wear, and put them back. Anything else goes in a bag while you check where it can go. Then close the drawer. You’re done."
       }
     ],
     "source": "https://konmari.com/about-the-konmari-method/ Course structure: https://learn.konmari.com/ Original Azora teaching and examples; no affiliation or guaranteed outcome."
@@ -117,55 +125,59 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "An item’s home means **the place where you keep it**. If you leave your keys on the table every day, they may need a better place. Choose somewhere easy to reach near the door. Put a remote near the sofa, where you use it, rather than in a cupboard across the room."
+        "text": "You’re already late. You pat your pockets, check yesterday’s jacket, and look in the fridge for some reason. The keys turn up under the mail. **Your keys don’t have a home**, so they live wherever you happened to stop walking."
       },
       {
         "kind": "text",
-        "text": "**Use a tray you already own** for your keys. Give your bag a hook or a clear part of a shelf nearby. These places can help you put things away as soon as you come in. Keep old receipts and unrelated papers out of the key tray so you can see and reach the keys."
+        "text": "An item’s home means **the place where you keep it**, and the best one is right where you already use the thing. Keys go by the door. The remote goes by the couch. A cupboard across the room might look neater, but nobody crosses a room to put away a remote."
       },
       {
         "kind": "text",
-        "text": "Try the new place once. Walk in, take your keys out, and put them in the tray. **Check whether putting them away is easy**. If you must move a pile or open a stuck drawer first, clear some space or move the tray. You are finished when you have chosen the place and put the item there."
+        "text": "You don’t need to buy anything for this. **Grab a tray you already own** and set it by the door for your keys. Give your bag a hook or a patch of shelf nearby. Then guard that tray. Let one receipt move in, and soon you can’t find your keys in there either."
+      },
+      {
+        "kind": "text",
+        "text": "Now do a test run. Walk in, take out your keys, and drop them in the tray. **Was that easy?** If you had to move a pile or fight a stuck drawer, clear some space or move the tray. A good home takes no effort to use, which is why you’ll keep using it."
       },
       {
         "kind": "reveal",
-        "prompt": "Choose a place that is easy to use.",
+        "prompt": "Three things make a good home. Tap to see each one.",
         "items": [
           {
-            "label": "Choose a nearby place",
-            "detail": "Use a place you can reach easily when you come in, such as a shelf by the door."
+            "label": "It’s close",
+            "detail": "You can reach it the second you walk in, like a shelf by the door. If it takes a trip upstairs, it won’t happen."
           },
           {
-            "label": "Give it one job",
-            "detail": "Keep the key tray for keys. Choose another place for papers."
+            "label": "It has one job",
+            "detail": "The key tray holds keys. Papers get their own spot, or your tray turns into a tiny version of the pile you just escaped."
           },
           {
-            "label": "Try it once",
-            "detail": "Walk in and put your keys there. Clear anything that makes this difficult."
+            "label": "It passes the test",
+            "detail": "Walk in and drop your keys there. If anything gets in your way, clear it or move the home."
           }
         ]
       },
       {
         "kind": "choice",
-        "prompt": "Your keys end up by the door, but their box is upstairs. What could make putting them away easier?",
+        "prompt": "Your keys always land by the door, but their little box is upstairs. What do you do?",
         "options": [
           {
-            "label": "Give them a clear place near the door",
-            "feedback": "You can put them away as you arrive, without an extra trip upstairs."
+            "label": "Give them a spot by the door",
+            "feedback": "Exactly. They’ve been telling you where they want to live this whole time. Now they get put away on your way in."
           },
           {
-            "label": "Keep telling myself to carry them upstairs",
-            "feedback": "You still need to make the extra trip. First try a place closer to where you leave them."
+            "label": "Keep telling myself to carry them up",
+            "feedback": "You’ve been telling yourself that for a while now, and here we are. Try a spot closer to where they already land."
           }
         ]
       },
       {
         "kind": "text",
-        "text": "Today’s **5-4-3-2-1** is a separate noticing practice. When choosing a place for an item, notice where you already use it or leave it."
+        "text": "Today’s **5-4-3-2-1** is a short practice where you stop and notice what’s around you. Bring the same eyes to your search for a home: where does this thing already end up?"
       },
       {
         "kind": "do",
-        "text": "**Choose one place for your keys** near where you come in. Clear enough room, put the keys there, and try taking them out and putting them back. You are done when that place is ready to use."
+        "text": "**Pick one home for your keys**, close to where you walk in. Clear a little room, drop them there, then take them out and put them back once. That’s the whole job."
       }
     ],
     "source": "https://konmari.com/about-the-konmari-method/ Original Azora teaching and examples; no affiliation or guaranteed outcome."
@@ -177,43 +189,47 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "Use three rounds to clean one small area. **Put things away, clean the surfaces, then clean the floor**. A surface is a part you can wipe, such as a tabletop or shelf. This order helps because dust and crumbs can fall onto the floor while you work above it."
+        "text": "You just mopped. The floor looks amazing and you feel like a real adult. Then you spot the dusty shelf, give it a swipe, and watch a small gray snowfall land on your clean floor. **Gravity doesn’t care how hard you worked**, so the order you clean in matters."
       },
       {
         "kind": "text",
-        "text": "Try the area around one small table. First, **remove the things covering it**. Put rubbish in the bin, take cups to the kitchen, and put other things where you keep them. Leave a big drawer-sorting job for another day. For now, you need room to reach and clean this table."
+        "text": "Here’s the order that saves you. Three rounds: **put things away, clean the surfaces, then clean the floor**. A surface is anything you can wipe, like a tabletop or a shelf. Whatever you knock loose falls down, so the floor goes last and picks it all up."
       },
       {
         "kind": "text",
-        "text": "Next, **clean from high to low**. If there is a shelf above the table, dust that first. Then wipe the table using a product allowed by its label and the table’s care instructions. Last, sweep or vacuum the floor below. Mop only if the floor’s care instructions allow it. Stop when this table area is clean; the rest of the room can wait."
+        "text": "Try it on one small table. Round one is to **get everything off it**. Trash in the bin, cups to the kitchen, and the rest back where it lives. If a drawer starts calling your name, ignore it. That’s a job for another day. Right now you only need room to wipe."
+      },
+      {
+        "kind": "text",
+        "text": "For rounds two and three, **clean from high to low**. Dust the shelf above the table first, then wipe the table with a product whose label says it’s okay there. Finally, sweep or vacuum the floor below, and mop only if that floor can take it. Then stop, even if the rest of the room is giving you a look."
       },
       {
         "kind": "sequence",
-        "prompt": "Put these cleaning steps in order.",
+        "prompt": "Put your three rounds in order.",
         "steps": [
-          "Put rubbish in the bin and put loose things away.",
-          "Dust the shelf first, then wipe the table below it.",
+          "Put trash in the bin and loose things away.",
+          "Dust the shelf, then wipe the table below it.",
           "Sweep or vacuum the floor under the table."
         ],
-        "feedback": "Loose things come off first so you can wipe. Dust the shelf before cleaning the floor so falling dust does not land on a clean floor."
+        "feedback": "Top to bottom, so everything lands right where you’re about to clean. No snowfall on your nice floor."
       },
       {
         "kind": "choice",
-        "prompt": "A shelf needs dusting above a dirty floor. What should you do first?",
+        "prompt": "A dusty shelf sits above a dirty floor. Which comes first?",
         "options": [
           {
-            "label": "Dust the shelf, then clean the floor",
-            "feedback": "Any dust that falls will be picked up when you clean the floor."
+            "label": "Dust the shelf, then do the floor",
+            "feedback": "Right. Whatever falls gets picked up on your way out."
           },
           {
             "label": "Mop the floor, then dust the shelf",
-            "feedback": "Dust may fall onto the floor you just cleaned, so you could need to clean it twice."
+            "feedback": "Hello again, gray snowfall. You’d be cleaning that floor twice."
           }
         ]
       },
       {
         "kind": "do",
-        "text": "**Clean the area around one small table**. Put things away, dust above the table if needed, wipe the table, then clean the floor below. Stop at that area."
+        "text": "**Clean the area around one small table**. Things away, dust up high, wipe the table, then do the floor below. Then put your supplies away and walk off like you own the place."
       }
     ],
     "source": "https://cleanmyspace.com/my-secret-system-to-cleaning-fast-effectively/ Original Azora teaching and examples; no affiliation or guaranteed outcome."
@@ -225,51 +241,55 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "Before buying a basket for a full drawer, **decide what you want to keep**. Take out a few of your own things. For each one, ask: do I use this, need it, or want to keep it? Put the things you keep back in the drawer. You may already have enough room without buying anything."
+        "text": "The drawer won’t close, so now you’re in a store holding a beautiful woven basket and imagining a whole new life. Then it comes home and fills up, and you own a full drawer and a full basket. Before buying a basket, **decide what you want to keep**."
       },
       {
         "kind": "text",
-        "text": "To donate means to give something away, often to a charity or another person. **Only give away things you own**. Ask before moving or throwing away someone else’s things. Your housemate may still use a tool you never touch. Put their things aside safely until you can ask them."
+        "text": "Take a few of your own things out of the drawer. For each one, ask: **do I use this, need it, or want it?** The yeses go back in. A lot of drawers turn out to have plenty of room once the dead pens and ancient takeout menus leave."
       },
       {
         "kind": "text",
-        "text": "**Give the bag of unwanted things a next step**. Check whether a charity accepts those items and what condition they must be in. Choose when you will take the bag there, or arrange a collection. Broken things may need repair, recycling, or the bin; check local rules. If you want to sell an item, choose when to list it and what you will do if it does not sell."
+        "text": "One rule before you get carried away. **Only give away things you own**. To donate means giving something away, usually to a charity or another person. That weird tool you’ve never touched might be your roommate’s favorite thing in the world. Set other people’s stuff aside safely, then ask them."
+      },
+      {
+        "kind": "text",
+        "text": "Now watch out for the donation bag, which can sit by the door until it’s basically furniture. **Give the bag a next step**: check that a charity takes those items, then choose when you will take the bag there, or arrange a collection. Broken things may need repair, recycling, or the trash, so check local rules. Selling something? Pick a day to list it, plus a plan for if nobody bites."
       },
       {
         "kind": "reveal",
-        "prompt": "Choose what happens next.",
+        "prompt": "Everything in the drawer goes one of three ways. Tap to see them.",
         "items": [
           {
             "label": "Keep",
-            "detail": "Put the things you want back where you keep them. Check how much room is left before buying a box."
+            "detail": "It goes back where it lives. Then check how much room is left, because you might not need that basket after all."
           },
           {
             "label": "Give away or sell",
-            "detail": "Choose who can take the item and when you will give it to them or list it for sale."
+            "detail": "Pick who’s taking it and when it’s leaving, so it actually leaves."
           },
           {
             "label": "Someone else’s things",
-            "detail": "Ask the person before giving away, throwing away, or moving their things."
+            "detail": "Ask first, before you give away, toss, or even move them."
           }
         ]
       },
       {
         "kind": "choice",
-        "prompt": "You find your housemate’s screwdriver in a drawer you are sorting. What should you do?",
+        "prompt": "You’re sorting a drawer and find your roommate’s screwdriver. What now?",
         "options": [
           {
-            "label": "Ask them before deciding what happens to it",
-            "feedback": "They may need it even if you have never used it. Decide about your own things while you wait."
+            "label": "Ask them what they want done with it",
+            "feedback": "Good call. They may need it, even if you’ve never touched it. Keep sorting your own things while you wait."
           },
           {
-            "label": "Give it away because I never use it",
-            "feedback": "It belongs to your housemate. Your use of it does not tell you whether they need it."
+            "label": "Give it away, since I never use it",
+            "feedback": "That’s a great way to start an awkward conversation the next time a shelf comes loose. It’s their call, so ask."
           }
         ]
       },
       {
         "kind": "do",
-        "text": "**Sort a few of your own things from one drawer**. Put what you keep back. For things you will give away, check who accepts them and choose when you will take them there."
+        "text": "**Sort a few of your own things from one drawer**. Put the keepers back. For anything leaving, check who accepts it and pick the day it goes. No basket required."
       }
     ],
     "source": "https://konmari.com/about-the-konmari-method/ Category task and maintenance structure: https://cleanmyspace.com/courses/ Original Azora teaching and examples; no affiliation or guaranteed outcome."
@@ -281,54 +301,58 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "You can begin with a few cloths, a cleaner you already have, a brush, and a broom or vacuum. **Choose supplies for the thing you will clean**. For a table, read the cleaner’s label to check whether it can be used on that kind of table. Some products can damage wood or stone."
+        "text": "Open the cupboard under your sink. It may look like a small museum of half-empty bottles, including one left by whoever lived there before you. Good news: you need very little. **A few cloths and a cleaner you already have**, plus a brush and a broom or vacuum, will do."
       },
       {
         "kind": "text",
-        "text": "**Read the label before you start**. It tells you how much to use, whether to add water, and whether you need gloves or an open window. Never mix cleaning products. Keep them in their labelled containers and store them as directed, away from children and pets. Follow the table or floor maker’s care instructions too."
+        "text": "Now picture spraying your nice wooden table with whatever bottle is closest. Some products can damage wood or stone, and you only find out when the mark shows up. So **read the label before you start**. It tells you where the product can go, how much to use, whether to add water, and if you need gloves or an open window."
       },
       {
         "kind": "text",
-        "text": "**Keep toilet cloths separate from kitchen cloths**. Use a fresh cloth when one gets dirty. Cleaning removes dirt. Disinfecting uses a product to kill germs and is a separate job when needed. A disinfectant may need to stay wet on the surface for a stated time. Follow that time and any rinsing instructions on its label."
+        "text": "Here’s the one rule with no wiggle room. **Never mix cleaning products.** They can react and make harmful gases. Keep each one in its labelled bottle, stored as directed, away from children and pets. And **keep toilet cloths separate from kitchen cloths**, for reasons you already know. Grab a fresh cloth whenever yours gets dirty."
+      },
+      {
+        "kind": "text",
+        "text": "One more thing that’s easy to mix up. Cleaning removes dirt. Disinfecting uses a product to kill germs, and it’s a separate job for when you need it. **A disinfectant may need to stay wet on the surface for a stated time**, so a quick spray and wipe can miss the point. Follow the time and any rinsing steps on its label."
       },
       {
         "kind": "list",
         "items": [
           {
             "term": "Check the surface",
-            "text": "Read whether the product can be used on your table or floor. If told to test it first, use a small hidden spot."
+            "text": "See whether the product works on your table or floor. If it says to test it first, try a small hidden spot."
           },
           {
             "term": "Use separate cloths",
-            "text": "Do not use a toilet cloth on kitchen counters or other places where you prepare food."
+            "text": "A toilet cloth never goes near kitchen counters or anywhere you make food."
           },
           {
             "term": "Follow the label",
-            "text": "Use the stated amount. Do not add another cleaner or extra water unless the label says to."
+            "text": "Use the amount it says. No bonus cleaner and no extra water, unless the label tells you to."
           }
         ]
       },
       {
         "kind": "choice",
-        "prompt": "A stain remains after you use a cleaner. What should you do before trying something else?",
+        "prompt": "A stain is still there after you cleaned it. What do you do before trying something else?",
         "options": [
           {
-            "label": "Read the label and the instructions for the thing I am cleaning",
-            "feedback": "Check what is safe to use and how to use it. Adding chemicals can damage things or cause harm."
+            "label": "Read the label and the care instructions",
+            "feedback": "Right. They tell you what’s safe to use on that surface, and how to use it."
           },
           {
             "label": "Add another cleaner to make it stronger",
-            "feedback": "Never mix cleaning products. They can react and produce harmful gases or other dangers."
+            "feedback": "Put the bottle down. Cleaning products can react and make harmful gases, so they never get mixed."
           }
         ]
       },
       {
         "kind": "text",
-        "text": "Today’s **Muscle Release** is a separate guided practice. Follow it comfortably. For cleaning, use the instructions on the product label and for the thing you are cleaning."
+        "text": "Today’s **Muscle Release** is a short guided practice for letting go of tension in your body. Follow along comfortably. All that scrubbing has earned it."
       },
       {
         "kind": "do",
-        "text": "**Get a clean cloth and one cleaner for a table**. Read the label and the table’s care instructions. Check that the product can be used there before cleaning."
+        "text": "**Grab a clean cloth and one cleaner for a table**. Read the label and check the table’s care instructions. Make sure that product belongs on that table before you clean."
       }
     ],
     "source": "https://www.cdc.gov/hygiene/about/when-and-how-to-clean-and-disinfect-your-home.html Original Azora teaching and examples; no affiliation or guaranteed outcome."
@@ -340,51 +364,55 @@ export const TRIAL_HOME_LESSONS = [
     "blocks": [
       {
         "kind": "text",
-        "text": "**Some chores happen often; others can wait longer**. Used dishes may need attention every day. Cleaning a bathroom may fit a weekly plan. Sorting a cupboard can be a separate job for a day when you have time. Change these timings to fit how many people use the space, pets, and how dirty it gets."
+        "text": "You know the big weekend clean. Six hours, one playlist, and the whole place sparkles. By Wednesday there are dishes in the sink and a hoodie on a chair. **Tidy homes rarely come from heroic weekends.** They come from small jobs that keep showing up."
       },
       {
         "kind": "text",
-        "text": "Choose **one job after something you already do**. That daily moment can remind you to start. For example: after dinner, I will wash the dishes I used. Then choose a day and time for one weekly job: on Saturday after breakfast, I will clean the bathroom sink. Give the cupboard its own date instead of adding it to every day."
+        "text": "Start by sorting chores by how often they really come up. Used dishes may need attention every day. Cleaning a bathroom may fit a weekly plan. Sorting a cupboard can wait for a slow afternoon. **Adjust all of this to your home**, because kids, pets, and roommates change the math."
       },
       {
         "kind": "text",
-        "text": "Plan a smaller version for a busy day: wash one cup and clear the sink drain. **After a missed day, start again with the next small job**. Clean up urgent food waste or spills first. You do not have to double every chore to catch up. If you share a home, agree who will do each job and what they will finish."
+        "text": "Next, tie each job to something you already do. **After dinner, I’ll wash the dishes I used.** Now dinner is your reminder, so you have one less thing to remember. Weekly jobs get a day and a time: on Saturday after breakfast, I’ll clean the bathroom sink. The cupboard gets its own date, far away from your daily list."
+      },
+      {
+        "kind": "text",
+        "text": "Here’s the part that saves the whole plan. Some days will fall apart, so make a smaller version for a busy day: wash one cup and clear the sink drain. **Missed a day? Start again with the next small job.** Deal with spills and old food first, but you do not have to double every chore to catch up. If you share your home, agree on who does what."
       },
       {
         "kind": "reveal",
-        "prompt": "Plan when each job will happen.",
+        "prompt": "Every chore has its own rhythm. Tap to see all three.",
         "items": [
           {
             "label": "Every day",
-            "detail": "Choose one job, such as washing the dishes you used after dinner."
+            "detail": "One job tied to something you already do, like washing your dishes after dinner."
           },
           {
             "label": "Each week",
-            "detail": "Choose a day, a time, and a person for one job, such as cleaning the bathroom sink."
+            "detail": "A day, a time, and a person. Saturday morning, bathroom sink, you."
           },
           {
-            "label": "When there is time",
-            "detail": "Give a bigger job, such as sorting a cupboard, its own day. It does not have to join the daily list."
+            "label": "When there’s time",
+            "detail": "Big jobs, like sorting a cupboard, get their own day and stay off your daily list."
           }
         ]
       },
       {
         "kind": "choice",
-        "prompt": "You miss your planned Saturday clean. What helps you begin again?",
+        "prompt": "You miss your big Saturday clean. What gets you back on track?",
         "options": [
           {
-            "label": "Deal with urgent mess, then choose the next time I can do one job",
-            "feedback": "A specific job and time give you a clear way to return. It does not need to become a whole-house clean."
+            "label": "Handle anything urgent, then pick one job and a time",
+            "feedback": "That’s it. One job at one time gets you back in, with no whole-house clean required."
           },
           {
-            "label": "Do twice as many chores before returning to the plan",
-            "feedback": "That makes the next session bigger. Choose the job you can actually fit into the time you have."
+            "label": "Do twice the chores to make up for it",
+            "feedback": "It sounds noble, but a bigger session is harder to start. Pick a job that fits the time you actually have."
           }
         ]
       },
       {
         "kind": "do",
-        "text": "**Write one daily job and one weekly job**. Add when you will do each and a smaller version for busy days. If you share the work, agree who will do it."
+        "text": "**Write down one daily job and one weekly job**, plus when each one happens and a tiny version for busy days. If you share the work, agree who does what. Now your home has a plan."
       }
     ],
     "source": "https://www.flylady.net/morning-musing/babystep-your-way-to-routines Original Azora teaching and examples; no affiliation or guaranteed outcome."
