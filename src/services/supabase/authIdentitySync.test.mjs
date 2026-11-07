@@ -327,6 +327,96 @@ test('registerAuthIdentitySync reports RevenueCat signed out', async () => {
   assert.deepEqual(statuses, [{ status: 'signed_out' }]);
 });
 
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+test('a sign-out during a slow profile save does not identify the old user', async () => {
+  const harness = createHarness(null);
+  const profile = deferred();
+  const synced = [];
+  const signedIn = [];
+  const statuses = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    ensureProfile: () => profile.promise,
+    onUserSignedIn: (user) => signedIn.push(user.id),
+    syncRevenueCatIdentity: async (user) => synced.push(user.id),
+    onRevenueCatSyncStarted: (id) => statuses.push(`syncing:${id}`),
+    onRevenueCatSyncSucceeded: (id) => statuses.push(`synced:${id}`),
+    onRevenueCatSignedOut: () => statuses.push('signed_out'),
+  });
+  await flushMicrotasks();
+  statuses.length = 0;
+
+  harness.emit('SIGNED_IN', createSession('user-a'));
+  await flushMicrotasks();
+  harness.emit('SIGNED_OUT', null);
+  await flushMicrotasks();
+  profile.resolve();
+  await flushMicrotasks();
+
+  assert.deepEqual(signedIn, []);
+  assert.deepEqual(synced, []);
+  assert.deepEqual(statuses, ['signed_out']);
+});
+
+test('the next account keeps RevenueCat when the old account finishes saving last', async () => {
+  const harness = createHarness(null);
+  const profileA = deferred();
+  const synced = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    ensureProfile: (userId) => (userId === 'user-a' ? profileA.promise : Promise.resolve()),
+    syncRevenueCatIdentity: async (user) => synced.push(user.id),
+  });
+  await flushMicrotasks();
+
+  harness.emit('SIGNED_IN', createSession('user-a'));
+  await flushMicrotasks();
+  harness.emit('SIGNED_OUT', null);
+  await flushMicrotasks();
+  harness.emit('SIGNED_IN', createSession('user-b'));
+  await flushMicrotasks();
+  profileA.resolve();
+  await flushMicrotasks();
+
+  assert.deepEqual(synced, ['user-b']);
+});
+
+test('a failure from an abandoned sign-in is not reported as the current state', async () => {
+  const harness = createHarness(null);
+  const revenueCat = deferred();
+  const failures = [];
+  const warnings = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    syncRevenueCatIdentity: () => revenueCat.promise.then(() => {
+      throw new Error('login failed');
+    }),
+    onRevenueCatSyncFailed: (_error, id) => failures.push(id),
+    warn: (message) => warnings.push(message),
+  });
+  await flushMicrotasks();
+
+  harness.emit('SIGNED_IN', createSession('user-a'));
+  await flushMicrotasks();
+  harness.emit('SIGNED_OUT', null);
+  await flushMicrotasks();
+  revenueCat.resolve();
+  await flushMicrotasks();
+
+  assert.deepEqual(failures, []);
+  assert.deepEqual(warnings, []);
+});
+
 test('registerAuthIdentitySync returns a noop when Supabase is unavailable', () => {
   const unsubscribe = registerAuthIdentitySync({
     clearRevenueCatIdentity: async () => undefined,

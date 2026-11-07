@@ -92,6 +92,7 @@ import { MainTabs } from './MainTabs';
 import { usePlanPrefetch } from '../../features/plan/usePlanPrefetch';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
 import { stackTransitions } from './stackTransitions';
+import { bootPaywallLatch } from './bootPaywallLatch';
 import TourCelebration from '../../features/tour/TourCelebration';
 import { useTourCelebrationStore } from '../../features/tour/tourCelebrationStore';
 import { useFirstWinOfDayStore } from '../../features/selfCare/firstWinOfDayStore';
@@ -597,16 +598,6 @@ function MainTabsRoute({ showBootPaywall, tourEnabled: appReady }: AppStackProps
   );
 }
 
-/**
- * Once per process launch, and deliberately not component state.
- *
- * The gate unmounts whenever the entitlement query refetches, which
- * `useSubscriptionBootstrap` makes happen on every foreground. A guard held in
- * a ref died with that unmount, so coming back to the app re-presented the
- * paywall — on top of whatever screen the user was on, mid-session included.
- */
-let hasPresentedBootPaywall = false;
-
 // Decides how non-Pro users meet the paywall on boot: hard mode renders a
 // blocking full-screen gate; soft mode (or any failure resolving the mode)
 // falls back to the dismissible ProPaywall modal.
@@ -695,8 +686,8 @@ function BootPaywallPresenter({ isBlocking = false }: { isBlocking?: boolean }) 
   const entitlementQuery = useUserEntitlementQuery(userId);
 
   useEffect(() => {
-    if (hasPresentedBootPaywall) return;
-    if (userId == null || entitlementQuery.isPending || entitlementQuery.isError) return;
+    if (userId == null || bootPaywallLatch.hasPresented(userId)) return;
+    if (entitlementQuery.isPending || entitlementQuery.isError) return;
     if (entitlementQuery.isFetching && entitlementQuery.data == null) return;
     if (entitlementQuery.data?.isPro === true) return;
 
@@ -704,7 +695,7 @@ function BootPaywallPresenter({ isBlocking = false }: { isBlocking?: boolean }) 
     // so anything stacked above it — a session, a result, another modal — means
     // this one is dropped rather than queued: deferring it only moves the
     // interruption to a moment the user did not ask for either.
-    hasPresentedBootPaywall = true;
+    bootPaywallLatch.markPresented(userId);
     if (navigation.getState().routes.length > 1) return;
 
     navigation.navigate('ProPaywall', {

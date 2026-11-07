@@ -50,6 +50,7 @@ import { DEFAULT_ITEM_MINUTES, type CleanupItem, type CleanupPlan } from './doma
 import { PHOTO_CLEANUP_PREVIEW_PLAN } from './domain/cleanupPlanPreview';
 import CleanupPlanOverview from './CleanupPlanOverview';
 import { CLEANUP_ROOMS } from './domain/roomCleanupPlans';
+import { prepareCleanupPhoto } from './domain/prepareCleanupPhoto';
 import CleanupItemSheet, { type CleanupItemEdit } from './CleanupItemSheet';
 import { addItem, moveItem, removeItem, replaceItem } from './domain/cleanupPlanEdits';
 import { cleanupPlanItemIcon } from './domain/cleanupItemIcon';
@@ -63,6 +64,7 @@ import { useRoutineRunCoins } from './useRoutineRunCoins';
 type Stage = 'capture' | 'checkingAccess' | 'loading' | 'ready' | 'guide' | 'complete';
 
 const FREE_RETRY_MESSAGE = 'That one didn’t count. Try again with more of the room in view.';
+const PHOTO_NOT_READABLE_MESSAGE = 'We couldn’t open that photo. Try another one.';
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Please try again.';
@@ -190,20 +192,24 @@ export default function PhotoCleanupScreen({ navigation, route }: PhotoCleanupSc
     }
   }, [access.reason, markFreeCleanupUsed, navigation, openPhotoCleanupPaywall, userId]);
 
-  const prepareAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
-    const result = await ImageManipulator.manipulateAsync(
-      asset.uri,
-      [{ resize: { width: 1280 } }],
-      {
-        base64: true,
-        compress: 0.7,
-        format: ImageManipulator.SaveFormat.JPEG,
+  const prepareAsset = useCallback((asset: ImagePicker.ImagePickerAsset) =>
+    prepareCleanupPhoto(asset.uri, {
+      resize: (uri) => ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 1280 } }],
+        {
+          base64: true,
+          compress: 0.7,
+          format: ImageManipulator.SaveFormat.JPEG,
+        },
+      ),
+      onResized: setPhotoUri,
+      generatePlan,
+      onFailed: () => {
+        setStage('capture');
+        setError(PHOTO_NOT_READABLE_MESSAGE);
       },
-    );
-    if (result.base64 == null) throw new Error('Could not prepare that photo.');
-    setPhotoUri(result.uri);
-    await generatePlan(result.base64);
-  }, [generatePlan]);
+    }), [generatePlan]);
 
   const handleSelectedAsset = useCallback((asset: ImagePicker.ImagePickerAsset) => {
     // Let the user choose their real photo before checking Pro. The image stays

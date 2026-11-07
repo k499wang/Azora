@@ -8,7 +8,10 @@ import {
   getSessionDebugSnapshot,
   logIdentitySyncDebug,
 } from '../debug/identitySyncLogger.js';
-import { validateCurrentSession as validateSessionWithClient } from './sessionValidatorCore';
+import {
+  validateCurrentSession as validateSessionWithClient,
+  type SessionValidity,
+} from './sessionValidatorCore';
 
 export interface SignedInUser {
   id: string;
@@ -42,7 +45,7 @@ export async function getCurrentUser(): Promise<SignedInUser | null> {
 
 export async function validateCurrentSession(
   client?: Pick<SupabaseClientLike, 'auth'>,
-): Promise<boolean> {
+): Promise<SessionValidity> {
   return validateSessionWithClient(client ?? requireSupabaseClient());
 }
 
@@ -56,6 +59,12 @@ export async function signOut(): Promise<void> {
   }
 
   logIdentitySyncDebug('supabase.sign_out_completed');
+}
+
+/** Ends this device's session only, for when the account itself is already gone. */
+export async function signOutLocal(): Promise<void> {
+  const { error } = await requireSupabaseClient().auth.signOut({ scope: 'local' });
+  if (error != null) throw error;
 }
 
 export function subscribeToAuthChanges(

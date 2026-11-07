@@ -70,10 +70,12 @@ test('the preview records nothing, and a second question ends the first as a no'
 test('the sheet names Google Gemini and the data, and swiping away is a no', () => {
   const sheet = readFileSync(new URL('./AiDataConsentScreen.tsx', import.meta.url), 'utf8');
   const policy = readFileSync(new URL('./aiPolicy.ts', import.meta.url), 'utf8');
-  assert.match(policy, /What you type or say to Azo, your to-do list, and any photo you choose/);
-  assert.match(policy, /Google Gemini, a third-party AI service/);
+  assert.match(policy, /the messages in your current conversation, the titles and schedule details of your to-dos/);
+  assert.match(policy, /we send Google Gemini the photo you took or chose/);
+  assert.match(policy, /Google Gemini, an AI service provided by Google\. Google is a third party/);
   assert.match(policy, /We save your messages to Azo/);
-  assert.match(policy, /encrypted in transit and at rest/);
+  assert.match(policy, /encrypted in transit/);
+  assert.match(policy, /encrypted at rest/);
   assert.match(policy, /not end-to-end encryption/);
   assert.match(sheet, /useEffect\(\(\) => \(\) => settleAiDataConsent\(answer\.current\), \[\]\)/);
   assert.match(sheet, /useRef\(false\)/);

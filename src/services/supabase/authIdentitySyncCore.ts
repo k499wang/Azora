@@ -73,6 +73,10 @@ export function registerAuthIdentitySync(
 
   let disposed = false;
   let lastIdentityKey: string | null = null;
+  // Each identity change supersedes the one before it. Without this, a slow
+  // profile save for a user who has left re-identifies them after the sign-out,
+  // or over the account that came next.
+  let identityGeneration = 0;
 
   const syncSessionIdentity = async (
     event: SupabaseAuthChangeEvent,
@@ -107,6 +111,9 @@ export function registerAuthIdentitySync(
     }
 
     lastIdentityKey = nextIdentityKey;
+    identityGeneration += 1;
+    const generation = identityGeneration;
+    const isSuperseded = () => generation !== identityGeneration;
     logIdentitySyncDebug('supabase.identity_sync_started', {
       supabase_auth_event: event,
       next_identity_key: nextIdentityKey,
@@ -125,6 +132,7 @@ export function registerAuthIdentitySync(
       dependencies.onUserSignedOut();
       dependencies.clearAppsFlyerIdentity?.();
       await dependencies.clearRevenueCatIdentity();
+      if (isSuperseded()) return;
       dependencies.onRevenueCatSignedOut?.();
       logIdentitySyncDebug('supabase.identity_sync_sign_out_completed', {
         posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
@@ -137,7 +145,13 @@ export function registerAuthIdentitySync(
     logIdentitySyncDebug('supabase.profile_ensure_started', {
       supabase_user_id: session.user.id,
     });
-    await dependencies.ensureProfile(session.user.id);
+    try {
+      await dependencies.ensureProfile(session.user.id);
+    } catch (error) {
+      if (isSuperseded()) return;
+      throw error;
+    }
+    if (isSuperseded()) return;
     logIdentitySyncDebug('supabase.profile_ensure_completed', {
       supabase_user_id: session.user.id,
     });
@@ -175,8 +189,10 @@ export function registerAuthIdentitySync(
           id: session.user.id,
           email: session.user.email ?? null,
         });
+        if (isSuperseded()) return;
         dependencies.onRevenueCatSyncSucceeded?.(session.user.id);
       } catch (error) {
+        if (isSuperseded()) return;
         dependencies.onRevenueCatSyncFailed?.(error, session.user.id);
         throw error;
       }

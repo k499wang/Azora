@@ -9,13 +9,12 @@ import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { AI_POLICY_SECTIONS, AI_POLICY_SUMMARY, AI_POLICY_UPDATED } from './aiPolicy';
+import { AI_POLICY_SECTIONS, AI_POLICY_UPDATED } from './aiPolicy';
 import { settleAiDataConsent } from './ensureAiDataConsent';
 
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const HERO_TILE = 72;
 const HERO_ART = 48;
-const ROW_ART = 36;
 
 /** Azora's AI policy: a native sheet, and the only way into anything sent to Google Gemini. */
 export default function AiDataConsentScreen({ navigation }: AiDataConsentScreenProps) {
@@ -38,22 +37,6 @@ export default function AiDataConsentScreen({ navigation }: AiDataConsentScreenP
           </View>
           <Text accessibilityRole="header" style={styles.title}>Azora’s AI Policy</Text>
           <Text style={styles.updated}>{AI_POLICY_UPDATED}</Text>
-          <Text style={styles.intro}>
-            Azo’s answers and photo cleaning plans are made with Google Gemini. Your information is private to your account and encrypted. Please review how it’s used, then choose whether to allow it.
-          </Text>
-        </View>
-        <View style={styles.summary}>
-          {AI_POLICY_SUMMARY.map((row) => (
-            <View key={row.title} style={styles.row}>
-              <View style={card.taskIcon}>
-                <TaskIllustration name={row.art} size={ROW_ART} />
-              </View>
-              <View style={styles.rowCopy}>
-                <Text style={styles.rowTitle}>{row.title}</Text>
-                <Text style={styles.rowDetail}>{row.detail}</Text>
-              </View>
-            </View>
-          ))}
         </View>
         <View style={styles.policy}>
           {AI_POLICY_SECTIONS.map((section) => (
@@ -99,12 +82,6 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.title.title1, color: colors.text.primary, textAlign: 'center' },
   updated: { ...typography.caption.caption1, color: colors.text.tertiary, textAlign: 'center' },
-  intro: { ...typography.body.medium, color: colors.text.secondary, textAlign: 'center' },
-  summary: { gap: spacing.lg, paddingHorizontal: spacing.xs },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  rowCopy: { flex: 1, gap: spacing.xs },
-  rowTitle: { ...typography.body.large, fontFamily: fonts.semibold, color: colors.text.primary },
-  rowDetail: { ...typography.body.small, color: colors.text.secondary },
   policy: { gap: spacing.lg, paddingHorizontal: spacing.xs },
   section: { gap: spacing.sm },
   sectionTitle: { ...typography.body.large, fontFamily: fonts.semibold, color: colors.text.primary },

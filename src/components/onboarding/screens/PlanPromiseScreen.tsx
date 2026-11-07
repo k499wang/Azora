@@ -1,5 +1,6 @@
-import { Fragment, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, type ReactNode } from 'react';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { Rise } from '../../common/Reveal';
 import { Text } from '../../common/Text';
 import { JOURNEY_MARKS } from '../../paywall/PaywallPlanJourney';
 import type { OnboardingMode } from '../../../lib/onboardingMode';
@@ -9,6 +10,7 @@ import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
+import { entranceTiming } from '../entranceTiming';
 import OnboardingOptionIcon from '../OnboardingOptionIcon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
@@ -27,6 +29,24 @@ interface PlanPromiseScreenProps {
 const PREVIEW_DAYS = 3;
 const BADGE_SIZE = 40;
 const BADGE_GLYPH_SIZE = 26;
+const PLAN_CARD_DELAY = entranceTiming.cardDelay + entranceTiming.cardStagger;
+
+interface EntranceProps {
+  animated: boolean;
+  delay: number;
+  style?: ViewStyle;
+  children: ReactNode;
+}
+
+function Entrance({ animated, delay, style, children }: EntranceProps) {
+  if (!animated) return <View style={style}>{children}</View>;
+
+  return (
+    <Rise delay={delay} durationMs={entranceTiming.visual} style={style}>
+      {children}
+    </Rise>
+  );
+}
 
 /** A glimpse of what the answers are about to become, before the questions start. */
 export default function PlanPromiseScreen({
@@ -70,40 +90,49 @@ export default function PlanPromiseScreen({
       footer={<OnboardingPrimaryButton label="Next" onPress={onContinue} />}
     >
       <View style={styles.stage}>
-        <View style={[styles.card, styles.feedbackCard]}>
-          <Text style={styles.cardLabel}>Your Feedback</Text>
-          <View style={styles.day}>
-            <View style={[styles.badge, !cleaning && { backgroundColor: colors.playful.teal.soft }]}>
-              <OnboardingOptionIcon name="book" size={glyphSize} color={colors.playful.teal.ink} />
-            </View>
-            <View style={styles.dayCopy}>
-              <Text style={styles.dayTitle}>Your first lesson</Text>
-              <Text style={styles.lessonLine}>{days[0]?.line}</Text>
+        <Entrance animated={cleaning} delay={entranceTiming.cardDelay} style={styles.feedbackSlot}>
+          <View style={[styles.card, styles.feedbackCard]}>
+            <Text style={styles.cardLabel}>Your Feedback</Text>
+            <View style={styles.day}>
+              <View style={[styles.badge, !cleaning && { backgroundColor: colors.playful.teal.soft }]}>
+                <OnboardingOptionIcon name="book" size={glyphSize} color={colors.playful.teal.ink} />
+              </View>
+              <View style={styles.dayCopy}>
+                <Text style={styles.dayTitle}>Your first lesson</Text>
+                <Text style={styles.lessonLine}>{days[0]?.line}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        </Entrance>
 
-        <View style={[styles.card, styles.planCard]}>
-          <Text style={styles.cardLabel}>{cleaning ? 'Your Cleaning Plan' : 'Your Plan'}</Text>
-          {days.map((day, index) => {
-            const { icon, hue } = JOURNEY_MARKS[index % JOURNEY_MARKS.length];
-            return (
-              <Fragment key={day.day}>
-                {index > 0 ? <View style={styles.connector} /> : null}
-                <View style={styles.day}>
-                  <View style={[styles.badge, !cleaning && { backgroundColor: hue.soft }]}>
-                    <OnboardingOptionIcon name={icon} size={glyphSize} color={hue.ink} />
+        <Entrance animated={cleaning} delay={PLAN_CARD_DELAY} style={styles.planSlot}>
+          <View style={[styles.card, styles.planCard]}>
+            <Text style={styles.cardLabel}>{cleaning ? 'Your Cleaning Plan' : 'Your Plan'}</Text>
+            {days.map((day, index) => {
+              const { icon, hue } = JOURNEY_MARKS[index % JOURNEY_MARKS.length];
+              return (
+                <Entrance
+                  key={day.day}
+                  animated={cleaning}
+                  delay={PLAN_CARD_DELAY + entranceTiming.cardStagger * (index + 1)}
+                  style={styles.dayStep}
+                >
+                  {index > 0 ? <View style={styles.connector} /> : null}
+                  <View style={styles.day}>
+                    <View style={[styles.badge, !cleaning && { backgroundColor: hue.soft }]}>
+                      <OnboardingOptionIcon name={icon} size={glyphSize} color={hue.ink} />
+                    </View>
+                    <View style={styles.dayCopy}>
+                      <Text style={styles.dayTitle}>{`Day ${day.day}: ${day.title}`}</Text>
+                      <View style={[styles.placeholder, styles.placeholderLong]} />
+                      <View style={[styles.placeholder, styles.placeholderShort]} />
+                    </View>
                   </View>
-                  <View style={styles.dayCopy}>
-                    <Text style={styles.dayTitle}>{`Day ${day.day}: ${day.title}`}</Text>
-                    <View style={[styles.placeholder, styles.placeholderLong]} />
-                    <View style={[styles.placeholder, styles.placeholderShort]} />
-                  </View>
-                </View>
-              </Fragment>
-            );
-          })}
-        </View>
+                </Entrance>
+              );
+            })}
+          </View>
+        </Entrance>
       </View>
     </OnboardingScreenLayout>
   );
@@ -121,14 +150,18 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  feedbackCard: {
+  feedbackSlot: {
     width: '90%',
     alignSelf: 'flex-start',
+  },
+  feedbackCard: {
     transform: [{ rotate: '-3deg' }],
   },
-  planCard: {
+  planSlot: {
     width: '90%',
     alignSelf: 'flex-end',
+  },
+  planCard: {
     transform: [{ rotate: '2deg' }],
   },
   cardLabel: {
@@ -138,6 +171,9 @@ const styles = StyleSheet.create({
   lessonLine: {
     ...typography.body.medium,
     color: colors.text.secondary,
+  },
+  dayStep: {
+    gap: spacing.sm,
   },
   day: {
     flexDirection: 'row',

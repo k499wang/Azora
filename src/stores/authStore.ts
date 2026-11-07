@@ -5,12 +5,14 @@ import {
   signInWithGoogle as signInWithGoogleSession,
   signOut as signOutSession,
   signOutGoogle,
+  signOutLocal,
   subscribeToAuthChanges,
   validateCurrentSession,
 } from '../services/supabase';
 import type { SupabaseSession, SupabaseUser } from '../services/supabase';
 import { deleteAccount as deleteAccountService } from '../services/profile/deleteAccountService';
 import { loadInitialSession } from './authBootstrap';
+import { finishAccountDeletion, resolveBootSession } from './authTransitions';
 
 export type AuthStatus = 'booting' | 'signed_out' | 'signed_in';
 
@@ -49,28 +51,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ status: 'booting' });
 
     const session = await loadInitialSession(getCurrentSession);
-
-    if (session != null) {
-      const isValid = await Promise.race([
-        validateCurrentSession(),
-        new Promise<boolean>((resolve) => {
-          setTimeout(() => {
-            console.warn('[auth] Session validation timed out');
-            resolve(false);
-          }, 5000);
-        }),
-      ]);
-
-      if (!isValid) {
-        console.warn('[auth] Session validation failed, signing out');
-        await signOutSession();
-        applySession(null);
-      } else {
-        applySession(session);
-      }
-    } else {
-      applySession(session);
-    }
+    applySession(await resolveBootSession(session, {
+      validate: validateCurrentSession,
+      signOut: signOutSession,
+      warn: console.warn,
+    }));
 
     authSubscriptionUnsubscribe?.();
     try {
@@ -98,9 +83,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     console.log('[account-delete] store action started');
     try {
       await deleteAccountService();
-      console.log('[account-delete] edge deletion complete, signing out Google identity');
-      await signOutGoogle();
-      applySession(null);
+      console.log('[account-delete] edge deletion complete, signing out');
+      await finishAccountDeletion({
+        signOutGoogle,
+        signOutLocal,
+        applySignedOut: () => applySession(null),
+        warn: console.warn,
+      });
       console.log('[account-delete] store action succeeded', {
         elapsedMs: Date.now() - startedAt,
       });
