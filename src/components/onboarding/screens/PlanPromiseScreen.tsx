@@ -47,6 +47,7 @@ export default function PlanPromiseScreen({
   );
 
   const cleaning = mode === 'cleaning_mode';
+  const glyphSize = cleaning ? BADGE_SIZE : BADGE_GLYPH_SIZE;
 
   return (
     <OnboardingScreenLayout
@@ -72,8 +73,8 @@ export default function PlanPromiseScreen({
         <View style={[styles.card, styles.feedbackCard]}>
           <Text style={styles.cardLabel}>Your Feedback</Text>
           <View style={styles.day}>
-            <View style={[styles.badge, { backgroundColor: colors.playful.teal.soft }]}>
-              <OnboardingOptionIcon name="book" size={BADGE_GLYPH_SIZE} color={colors.playful.teal.ink} />
+            <View style={[styles.badge, !cleaning && { backgroundColor: colors.playful.teal.soft }]}>
+              <OnboardingOptionIcon name="book" size={glyphSize} color={colors.playful.teal.ink} />
             </View>
             <View style={styles.dayCopy}>
               <Text style={styles.dayTitle}>Your first lesson</Text>
@@ -90,8 +91,8 @@ export default function PlanPromiseScreen({
               <Fragment key={day.day}>
                 {index > 0 ? <View style={styles.connector} /> : null}
                 <View style={styles.day}>
-                  <View style={[styles.badge, { backgroundColor: hue.soft }]}>
-                    <OnboardingOptionIcon name={icon} size={BADGE_GLYPH_SIZE} color={hue.ink} />
+                  <View style={[styles.badge, !cleaning && { backgroundColor: hue.soft }]}>
+                    <OnboardingOptionIcon name={icon} size={glyphSize} color={hue.ink} />
                   </View>
                   <View style={styles.dayCopy}>
                     <Text style={styles.dayTitle}>{`Day ${day.day}: ${day.title}`}</Text>

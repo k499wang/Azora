@@ -532,8 +532,22 @@ function MainTabsRoute({ showBootPaywall, tourEnabled: appReady }: AppStackProps
   // The home card comes before the tour, which starts once the card is gone.
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const homeCardRequest = useHomeCardPaywallStore((state) => state.request);
-  const homeCard = homeCardRequest?.userId === userId ? homeCardRequest : null;
-  const tourEnabled = appReady && (homeCard == null || homeCard.preview != null);
+  const homeCardHydrated = useHomeCardPaywallStore((state) => state.hydrated);
+  const homeCardEntitlement = useUserEntitlementQuery(userId);
+  const homeCardIsPro = homeCardEntitlement.data?.isPro === true;
+  useEffect(() => {
+    void useHomeCardPaywallStore.getState().hydrate();
+  }, []);
+  const ownHomeCard = homeCardRequest?.userId === userId ? homeCardRequest : null;
+  const homeCard = homeCardIsPro && ownHomeCard?.preview == null ? null : ownHomeCard;
+  // Bought but killed before the card closed: nothing is left to sell on relaunch.
+  useEffect(() => {
+    if (homeCardIsPro && ownHomeCard != null && ownHomeCard.preview == null) {
+      useHomeCardPaywallStore.getState().clear();
+    }
+  }, [homeCardIsPro, ownHomeCard]);
+  const tourEnabled = appReady && homeCardHydrated && (homeCard == null || homeCard.preview != null);
+  const homeCardReady = !homeCardEntitlement.isPending || homeCard?.preview != null;
   // A pending exit offer takes precedence over the boot paywall, and still does
   // after it has played, so the just-onboarded user never sees both.
   const exitOfferPending = useExitOfferStore((state) => state.pending);
@@ -574,7 +588,7 @@ function MainTabsRoute({ showBootPaywall, tourEnabled: appReady }: AppStackProps
         <ExitOfferPresenter />
       ) : null}
       <MainTabs tourEnabled={tourEnabled} />
-      {appReady && homeCard != null ? <HomeCardPaywall request={homeCard} /> : null}
+      {appReady && homeCardReady && homeCard != null ? <HomeCardPaywall request={homeCard} /> : null}
       {/* After MainTabs so the boot paywall can present over the app. */}
       {!hadExitOffer && showBootPaywall && canPresent ? (
         <BootPaywallGate />

@@ -62,7 +62,7 @@ test('home card finishes onboarding, holds the tour, and clears only on a real p
   assert.match(flow, /paywall\.offering\?\.paywallLayout === 'home_card' && !isPro/);
   assert.match(flow, /void finish\('home_card_paywall'\)/);
   assert.match(flow, /!holdForHomeCard && \(/);
-  assert.match(root, /const tourEnabled = appReady && \(homeCard == null \|\| homeCard\.preview != null\);/);
+  assert.match(root, /const tourEnabled = appReady && homeCardHydrated && \(homeCard == null \|\| homeCard\.preview != null\);/);
   assert.match(root, /homeCardRequest\?\.userId === userId/);
   assert.match(homeCard, /result\.status === 'purchased' && result\.isPro\) clear\(\)/);
   assert.match(homeCard, /result\.status === 'restored' && result\.isPro\) clear\(\)/);

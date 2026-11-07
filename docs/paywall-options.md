@@ -69,7 +69,7 @@ Only use this on `onboarding_complete`. On in-app placements it falls back to `d
 { "paywall_layout": "home_card", "paywall_mode": "soft", "trial_package": "annual" }
 ```
 
-On `soft`, an X appears after 5 seconds, and closing the card queues the special offer. On `hard` there is no X. The card does not come back after a relaunch: non-Pro users get the tour, then the normal boot paywall.
+On `soft`, an X appears after 5 seconds, and closing the card queues the special offer. On `hard` there is no X. The card comes back on relaunch until it is bought, restored or closed, and the tour waits for it. The card reads its mode from the `onboarding_complete` offering, so if that offering later changes to another layout, a saved card still shows.
 
 ### Long page (`long`)
 

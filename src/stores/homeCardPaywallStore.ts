@@ -1,23 +1,6 @@
-import { create } from 'zustand';
-import type { PaywallPackageOption } from '../services/paywall';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createHomeCardPaywallStore } from './homeCardPaywallStoreCore';
 
-export interface HomeCardPaywallRequest {
-  userId: string;
-  name: string | null;
-  goalPhrase: string | null;
-  /** The dev preview: this sample package, no purchase, and no hold on the tour. */
-  preview?: { pkg: PaywallPackageOption };
-}
+export type { HomeCardPaywallRequest } from './homeCardPaywallStoreCore';
 
-interface HomeCardPaywallState {
-  request: HomeCardPaywallRequest | null;
-  show: (request: HomeCardPaywallRequest) => void;
-  clear: () => void;
-}
-
-/** Held in memory: after a relaunch, a non-Pro user meets the normal boot paywall. */
-export const useHomeCardPaywallStore = create<HomeCardPaywallState>((set) => ({
-  request: null,
-  show: (request) => set({ request }),
-  clear: () => set({ request: null }),
-}));
+export const useHomeCardPaywallStore = createHomeCardPaywallStore(AsyncStorage);
