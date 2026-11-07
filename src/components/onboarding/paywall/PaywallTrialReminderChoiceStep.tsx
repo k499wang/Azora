@@ -7,14 +7,20 @@ import { TrialReminderBell } from './TrialReminderBell';
 import { availableTrialReminderDays, formatTrialDate, trialTimelineDates } from '../../../lib/paywall/trialReminder';
 import type { PaywallTrialReminderState } from '../../../hooks/usePaywallTrialReminder';
 
-export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled = false }: {
+export function PaywallTrialReminderChoiceStep({ trialDays, choiceTrialDays = trialDays, longestPlanTitle, reminder, disabled = false, paidTrial = false }: {
   trialDays: number;
+  /** The longest trial on offer, which sets the choices; `trialDays` dates them. */
+  choiceTrialDays?: number;
+  longestPlanTitle?: string;
   reminder: PaywallTrialReminderState;
   disabled?: boolean;
+  /** A paid trial always offers the choice, even with one possible day. */
+  paidTrial?: boolean;
 }) {
-  const choices = availableTrialReminderDays(trialDays);
-  // With one possible day there is nothing to ask; Continue sets it up.
-  const onlyDays = choices.length === 1 ? choices[0] : null;
+  const choices = availableTrialReminderDays(choiceTrialDays);
+  const fitsSelectedPlan = availableTrialReminderDays(trialDays);
+  // A free trial with one possible day has nothing to ask; Continue sets it up.
+  const onlyDays = !paidTrial && choices.length === 1 ? choices[0] : null;
   const title = onlyDays == null
     ? 'When should we remind you before your trial ends?'
     : reminder.denied
@@ -30,7 +36,9 @@ export function PaywallTrialReminderChoiceStep({ trialDays, reminder, disabled =
         {choices.map((days) => {
           const selected = reminder.selectedDaysBeforeEnd === days;
           const choiceDisabled = disabled || reminder.unavailable;
-          const date = formatTrialDate(trialTimelineDates(new Date(), trialDays, days).reminder);
+          const date = fitsSelectedPlan.includes(days)
+            ? formatTrialDate(trialTimelineDates(new Date(), trialDays, days).reminder)
+            : `${longestPlanTitle} plan only`;
           return (
             <PaywallChoiceCard
               key={days}

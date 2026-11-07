@@ -11,47 +11,59 @@ interface PaywallFooterLinksProps {
   isRestoring: boolean;
   restoreDisabled: boolean;
   onRestore: () => void;
+  /** Softer links with a short restore label, for a compact card. */
+  quiet?: boolean;
 }
 
 export function PaywallFooterLinks({
   isRestoring,
   restoreDisabled,
   onRestore,
+  quiet = false,
 }: PaywallFooterLinksProps) {
+  const textStyle = [styles.text, quiet && styles.quietText];
+  const terms = (
+    <Pressable
+      accessibilityRole="link"
+      onPress={() => {
+        void Linking.openURL(TERMS_URL);
+      }}
+      style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+    >
+      <Text style={textStyle}>Terms</Text>
+    </Pressable>
+  );
+  const restore = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={quiet ? 'Restore purchases' : undefined}
+      disabled={restoreDisabled}
+      onPress={onRestore}
+      style={({ pressed }) => [
+        styles.item,
+        pressed && styles.pressed,
+        restoreDisabled && styles.disabled,
+      ]}
+    >
+      <Text numberOfLines={1} style={textStyle}>
+        {isRestoring ? 'Restoring...' : quiet ? 'Restore' : 'Restore Purchase'}
+      </Text>
+    </Pressable>
+  );
+  const privacy = (
+    <Pressable
+      accessibilityRole="link"
+      onPress={() => {
+        void Linking.openURL(PRIVACY_URL);
+      }}
+      style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+    >
+      <Text style={textStyle}>Privacy</Text>
+    </Pressable>
+  );
   return (
     <View style={styles.row}>
-      <Pressable
-        accessibilityRole="link"
-        onPress={() => {
-          void Linking.openURL(TERMS_URL);
-        }}
-        style={({ pressed }) => [styles.item, pressed && styles.pressed]}
-      >
-        <Text style={styles.text}>Terms</Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        disabled={restoreDisabled}
-        onPress={onRestore}
-        style={({ pressed }) => [
-          styles.item,
-          pressed && styles.pressed,
-          restoreDisabled && styles.disabled,
-        ]}
-      >
-        <Text numberOfLines={1} style={styles.text}>
-          {isRestoring ? 'Restoring...' : 'Restore Purchase'}
-        </Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="link"
-        onPress={() => {
-          void Linking.openURL(PRIVACY_URL);
-        }}
-        style={({ pressed }) => [styles.item, pressed && styles.pressed]}
-      >
-        <Text style={styles.text}>Privacy</Text>
-      </Pressable>
+      {quiet ? <>{privacy}{terms}{restore}</> : <>{terms}{restore}{privacy}</>}
     </View>
   );
 }
@@ -73,6 +85,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  quietText: {
+    fontFamily: fonts.regular,
+    color: colors.text.tertiary,
   },
   pressed: {
     opacity: 0.65,

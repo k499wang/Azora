@@ -16,6 +16,7 @@ import type {
   PaywallMode,
   PaywallOffering,
   PaywallPackageId,
+  PaywallPackageOption,
   PaywallStepKey,
   PaywallStepView,
 } from '../../../services/paywall';
@@ -57,6 +58,7 @@ const DECLINE_DELAY_MS = 5000;
 const TRIAL_STEPS: PaywallStepKey[] = ['benefits', 'reminder', 'plan'];
 const OUTLINE_TRIAL_STEPS: PaywallStepKey[] = ['outline', 'reminder', 'plan'];
 const OUTLINE_STEPS: PaywallStepKey[] = ['outline', 'plan'];
+const BENEFITS_STEPS: PaywallStepKey[] = ['benefits', 'plan'];
 const STEP_SLIDE_DISTANCE = 40;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
@@ -165,11 +167,27 @@ function TrialDeck({
   // Step state
   const [step, setStep] = useState(0);
   const leadsWithOutline = offering?.paywallLayout === 'deck_plan';
-  const steps: PaywallStepKey[] = leadsWithOutline && initialStep !== 'plan'
-    ? (hasFreeTrial ? OUTLINE_TRIAL_STEPS : OUTLINE_STEPS)
-    : hasFreeTrial && initialStep !== 'plan' && !isPlanLayout
+  // Every onboarding paywall introduces itself; the reminder needs a trial, free or paid.
+  const paidTrialPackage = [annualPackage, monthlyPackage].find((pkg) => pkg?.introOffer != null);
+  const hasReminderStep = hasFreeTrial || paidTrialPackage != null;
+  const trialLength = (pkg: PaywallPackageOption | undefined) => pkg?.trialLabel != null
+    ? pkg.trialDays ?? trialDaysFromLabel(pkg.trialLabel)
+    : pkg?.introOffer?.days ?? 0;
+  // With a paid trial on offer, the choices cover the longest trial; a choice that
+  // doesn't fit the selected plan is labelled and adjusted at purchase.
+  const longestTrialPackage = trialLength(monthlyPackage) > trialLength(annualPackage) ? monthlyPackage : annualPackage;
+  const reminderTrialDays = paidTrialPackage == null
+    ? freeTrialDays
+    : trialLength(selectedPackage) || trialLength(longestTrialPackage);
+  const reminderChoiceDays = paidTrialPackage == null ? freeTrialDays : trialLength(longestTrialPackage);
+  const showsIntroduction = initialStep !== 'plan' && !isPlanLayout;
+  const steps: PaywallStepKey[] = leadsWithOutline && showsIntroduction
+    ? (hasReminderStep ? OUTLINE_TRIAL_STEPS : OUTLINE_STEPS)
+    : hasReminderStep && showsIntroduction
       ? TRIAL_STEPS
-      : ['plan'];
+      : offering != null && showsIntroduction
+        ? BENEFITS_STEPS
+        : ['plan'];
   const stepCount = steps.length;
   const activeStepIndex = Math.min(step, stepCount - 1);
   const activeStep = steps[activeStepIndex];
@@ -426,8 +444,8 @@ function TrialDeck({
     return startUiTimer(DECLINE_DELAY_MS, () => setDeclineVisible(true));
   }, [isFinal, paywallMode]);
 
-  const reminderChoices = availableTrialReminderDays(freeTrialDays);
-  const loneReminderDays = reminderChoices.length === 1 ? reminderChoices[0] : null;
+  const reminderChoices = availableTrialReminderDays(reminderChoiceDays);
+  const loneReminderDays = paidTrialPackage == null && reminderChoices.length === 1 ? reminderChoices[0] : null;
   const handleNext = useCallback(() => {
     // That screen promises this reminder rather than asking, so Continue sets it up.
     if (activeStep === 'reminder' && loneReminderDays != null && trialReminder.selectedDaysBeforeEnd !== loneReminderDays) {
@@ -590,7 +608,7 @@ function TrialDeck({
                     stakesBenefit={stakesBenefit}
                   />
                 ) : null}
-                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={freeTrialDays} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
+                {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={reminderTrialDays} choiceTrialDays={reminderChoiceDays} longestPlanTitle={longestTrialPackage?.title} paidTrial={paidTrialPackage != null} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
                 {activeStep === 'outline' || (activeStep === 'plan' && isPlanLayout) ? (
                   <PaywallPlanOutline preset={planPreset} intent={planIntent ?? 'other'} />
                 ) : null}
@@ -677,7 +695,7 @@ function TrialDeck({
                   loading={isPurchasing || isCompleting}
                   disabled={isBusy || selectedPackage == null}
                 />
-                {isOnlyOption && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} largePrice /> : null}
+                {isOnlyOption && selectedPackage != null ? <PlanPriceTerms pkg={selectedPackage} /> : null}
                 <PaywallFooterLinks
                   isRestoring={isRestoring}
                   restoreDisabled={isBusy}

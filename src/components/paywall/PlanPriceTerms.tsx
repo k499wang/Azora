@@ -8,11 +8,10 @@ import { Text } from '../common/Text';
 
 interface Props {
   pkg: PaywallPackageOption;
-  largePrice?: boolean;
 }
 
 /** Trial and recurring price summary for the selected plan. */
-export function PlanPriceTerms({ pkg, largePrice = false }: Props) {
+export function PlanPriceTerms({ pkg }: Props) {
   const perMonth = pkg.billingPeriod === 'year' ? computePerMonth(pkg) : null;
   const savingsPercent = pkg.billingPeriod === 'year'
       ? computeDiscountPercent({ ...pkg, priceCents: 12000 }, pkg)
@@ -41,10 +40,7 @@ export function PlanPriceTerms({ pkg, largePrice = false }: Props) {
           {' '}
         </>
       ) : null}
-      <Text style={[
-        pkg.billingPeriod === 'year' && styles.yearlyPrice,
-        (largePrice || (pkg.trialLabel == null && pkg.introOffer != null)) && styles.largePrice,
-      ]}>{pkg.priceString}</Text>
+      <Text style={styles.price}>{pkg.priceString}</Text>
       {` per ${pkg.billingPeriod}`}
       {perMonth != null ? ` (${perMonth}/mo)` : ''}
       {savingsPercent != null && savingsPercent > 0 ? (
@@ -68,10 +64,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  yearlyPrice: {
-    fontSize: 17,
-  },
-  largePrice: {
+  price: {
     fontSize: 17,
   },
   comparison: {

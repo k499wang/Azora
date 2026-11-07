@@ -15,6 +15,12 @@ export function defaultPackageId(packages: readonly PaywallPackageOption[]): Pay
   return defaultPackage(packages)?.id ?? null;
 }
 
+/** Side-by-side order: the plan selected by default sits on the left. */
+export function defaultPackageFirst(packages: readonly PaywallPackageOption[]): PaywallPackageOption[] {
+  const first = defaultPackage(packages);
+  return first == null ? [] : [first, ...packages.filter((pkg) => pkg !== first)];
+}
+
 /** The one package a single-choice paywall sells from this offering. */
 export function singlePackage(
   offering: Pick<PaywallOffering, 'onlyPackageId' | 'packages'> | null | undefined,

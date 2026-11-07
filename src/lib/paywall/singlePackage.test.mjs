@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultPackageId, singlePackage } from './singlePackage.ts';
+import { defaultPackageFirst, defaultPackageId, singlePackage } from './singlePackage.ts';
 
 const annual = { id: 'annual', isRecommended: true };
 const weekly = { id: 'monthly', isRecommended: false };
@@ -26,4 +26,13 @@ test('a weekly free trial is selected by default unless another plan is also fre
   assert.equal(defaultPackageId([]), null);
   assert.equal(singlePackage({ onlyPackageId: null, packages: [monthlyPaid, weeklyFree] }), weeklyFree);
   assert.equal(singlePackage({ onlyPackageId: 'annual', packages: [monthlyPaid, weeklyFree] }), monthlyPaid);
+});
+
+test('the default plan sits on the left in side-by-side order', () => {
+  const monthlyPaid = { id: 'annual', isRecommended: true, billingPeriod: 'month', trialLabel: null };
+  const weeklyFree = { id: 'monthly', isRecommended: false, billingPeriod: 'week', trialLabel: '3-day free trial' };
+  const weeklyPaid = { ...weeklyFree, trialLabel: null };
+  assert.deepEqual(defaultPackageFirst([monthlyPaid, weeklyFree]), [weeklyFree, monthlyPaid]);
+  assert.deepEqual(defaultPackageFirst([monthlyPaid, weeklyPaid]), [monthlyPaid, weeklyPaid]);
+  assert.deepEqual(defaultPackageFirst([]), []);
 });

@@ -7,7 +7,9 @@ import {
   buildTrialEndingContent,
   type DailyReminderDefinition,
   type ScheduledNotificationKind,
+  type TrialRecapCounts,
 } from './notificationCatalog';
+import type { OnboardingIntent } from '../../components/onboarding/types';
 import type { NotificationPreferences } from './types';
 import { TRIAL_REMINDER_DAYS_BEFORE_END, type TrialReminderDaysBeforeEnd } from '../../lib/paywall/trialReminder';
 
@@ -30,6 +32,9 @@ export interface BuildNotificationScheduleInput {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  willRenew?: boolean | null;
+  trialRecap?: TrialRecapCounts | null;
+  trialGoal?: OnboardingIntent | null;
   // Only a confirmed non-Pro answer books nudges; unknown means wait.
   isPro?: boolean | null;
   paywallSeenAt?: string | null;
@@ -48,6 +53,9 @@ export function buildDesiredNotificationSchedule(
     preferences,
     dailyPlanSchedule,
     trialEndsAt,
+    willRenew,
+    trialRecap,
+    trialGoal,
     isPro,
     paywallSeenAt = null,
     now = new Date(),
@@ -65,14 +73,16 @@ export function buildDesiredNotificationSchedule(
     desired.push(...buildDailyEntries(definition, dailyPlanSchedule.actions.session, now));
   }
 
-  if (preferences.trialEndingReminder.enabled) {
+  // A cancelled trial will not renew, so "renews" would be false. Unknown keeps
+  // the reminder because the paywall promised it.
+  if (preferences.trialEndingReminder.enabled && willRenew !== false) {
     const trialReminderDate = getTrialEndingReminderDate(
       trialEndsAt,
       now,
       preferences.trialEndingReminder.daysBeforeEnd,
     );
     if (trialReminderDate != null && trialEndsAt != null) {
-      const content = buildTrialEndingContent(new Date(trialEndsAt));
+      const content = buildTrialEndingContent(new Date(trialEndsAt), trialRecap, trialGoal);
       desired.push({
         stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:trial:ending`,
         kind: 'trial_ending',

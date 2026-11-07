@@ -11,6 +11,7 @@ import SettingsGroup from '../components/settings/SettingsGroup';
 import SettingsRow from '../components/settings/SettingsRow';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import { useAuthStore } from '../stores/authStore';
+import { sendTrialReminderPreview } from '../services/notifications/trialReminderPreview';
 import { useDevPlanControls } from '../hooks/useDevPlanControls';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
@@ -393,6 +394,12 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Preview AI consent prompt (dev)"
                   onPress={() => { void askAiDataConsent(navigation); }}
+                />
+                <SettingsRow
+                  label="Send trial reminder in 5s (dev)"
+                  onPress={() => {
+                    if (user?.id != null) void sendTrialReminderPreview(user.id);
+                  }}
                 />
                 <SettingsRow
                   label="Show future-you letter again (dev)"

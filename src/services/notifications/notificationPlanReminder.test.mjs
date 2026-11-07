@@ -166,6 +166,7 @@ test('bootstrap schedules one generic reminder while metadata loads or fails and
     useUserEntitlementQuery: () => ({ data: null }),
     useProgramEnrollmentQuery: () => enrollmentQuery,
     useSavedOnboardingProfileQuery: () => ({ data: undefined, isPending: true }),
+    useTrialRecapQuery: () => ({ data: undefined, isLoading: false, refetch: async () => {} }),
     buildIntentTitleLookup: () => ({}), resolvePlanIntent: () => 'other',
     dailyReminderDefinitionsFor,
     reconcileScheduledNotifications: async (input) => { calls.push(input); },
@@ -316,6 +317,82 @@ test('failed reminder, time and permission updates resolve with a retry alert an
   assert.equal(permissionRequests, 1);
 });
 
+test('bootstrap sends the trial recap, skips it after a cancel and refreshes it when the app changes state', () => {
+  const trialEndsAt = '2026-05-23T09:00:00.000Z';
+  const recap = { planSteps: 4, todos: 12, checkIns: 2 };
+  const trialPreferences = { ...preferences, trialEndingReminder: { enabled: true, daysBeforeEnd: 3 } };
+  let currentPreferences = trialPreferences;
+  let entitlement = { isPro: true, trialEndsAt, willRenew: true };
+  let recapQuery = { data: undefined, isLoading: true };
+  const requestedTrialEnds = [];
+  const calls = [];
+  const listeners = [];
+  let refetches = 0;
+  const { useNotificationBootstrap } = compile(new URL('../../hooks/useNotificationBootstrap.ts', import.meta.url), {
+    useEffect: (effect) => effect(), useMemo: (fn) => fn(),
+    useTodayLocalDate: () => '2026-05-16',
+    useAuthStore: (selector) => selector({ status: 'signed_in', user: { id: 'user' } }),
+    usePaywallSeenStore: (selector) => selector({ lastSeenAt: null }),
+    useNotificationPreferencesQuery: () => ({ data: currentPreferences }),
+    useDailyPlanScheduleQuery: () => ({ data: schedule }),
+    useUserEntitlementQuery: () => ({ isSuccess: true, data: entitlement }),
+    useProgramEnrollmentQuery: () => ({ data: null }),
+    useSavedOnboardingProfileQuery: () => ({ data: undefined }),
+    useTrialRecapQuery: (_, end) => {
+      requestedTrialEnds.push(end);
+      return { ...recapQuery, refetch: async () => { refetches += 1; } };
+    },
+    buildIntentTitleLookup: () => ({}), resolvePlanIntent: () => 'cleaning',
+    dailyReminderDefinitionsFor,
+    reconcileScheduledNotifications: async (input) => { calls.push(input); },
+    AppState: {
+      currentState: 'active',
+      addEventListener: (_, listener) => { listeners.push(listener); return { remove() {} }; },
+    },
+  });
+
+  useNotificationBootstrap();
+  assert.equal(calls.length, 0, 'waits for the counts so the body is not replaced straight away');
+  assert.equal(requestedTrialEnds.at(-1), trialEndsAt);
+
+  recapQuery = { data: recap, isLoading: false };
+  useNotificationBootstrap();
+  const reminderBody = () => buildDesiredNotificationSchedule({ ...calls.at(-1), now }, calls.at(-1).dailyReminderDefinitions)
+    .find((entry) => entry.kind === 'trial_ending')?.body;
+  assert.equal(reminderBody(), 'Plus 4 plan steps and 2 check-ins. Your trial renews May 23. Review or cancel anytime.');
+  assert.equal(
+    buildDesiredNotificationSchedule({ ...calls.at(-1), now }, calls.at(-1).dailyReminderDefinitions)
+      .find((entry) => entry.kind === 'trial_ending')?.title,
+    'Your plan for a tidy home: 12 to-dos done',
+  );
+
+  const listener = listeners.at(-1);
+  refetches = 0;
+  listener('inactive');
+  assert.equal(refetches, 0, 'inactive is not leaving the app yet');
+  listener('background');
+  assert.equal(refetches, 1, 'leaving the app captures the session that just ended');
+  listener('active');
+  assert.equal(refetches, 2, 'returning picks up activity from other devices');
+
+  recapQuery = { data: undefined, isLoading: false };
+  useNotificationBootstrap();
+  assert.match(reminderBody(), /reminder we promised/, 'failed counts fall back to the plain reminder');
+
+  entitlement = { isPro: true, trialEndsAt, willRenew: false };
+  useNotificationBootstrap();
+  assert.equal(requestedTrialEnds.at(-1), null, 'a cancelled trial fetches no counts');
+  assert.equal(reminderBody(), undefined, 'a cancelled trial gets no reminder');
+  refetches = 0;
+  listeners.at(-1)('background');
+  assert.equal(refetches, 0);
+
+  entitlement = { isPro: true, trialEndsAt, willRenew: true };
+  currentPreferences = { ...trialPreferences, trialEndingReminder: { enabled: false, daysBeforeEnd: 3 } };
+  useNotificationBootstrap();
+  assert.equal(requestedTrialEnds.at(-1), null, 'reminder switched off fetches no counts');
+});
+
 test('bootstrap books paywall nudges only for a loaded non-Pro entitlement and drops them once Pro', () => {
   let entitlementQuery = { isSuccess: false, data: undefined };
   const calls = [];
@@ -329,6 +406,7 @@ test('bootstrap books paywall nudges only for a loaded non-Pro entitlement and d
     useUserEntitlementQuery: () => entitlementQuery,
     useProgramEnrollmentQuery: () => ({ data: null }),
     useSavedOnboardingProfileQuery: () => ({ data: undefined }),
+    useTrialRecapQuery: () => ({ data: undefined, isLoading: false, refetch: async () => {} }),
     buildIntentTitleLookup: () => ({}), resolvePlanIntent: () => 'other',
     dailyReminderDefinitionsFor,
     reconcileScheduledNotifications: async (input) => { calls.push(input); },

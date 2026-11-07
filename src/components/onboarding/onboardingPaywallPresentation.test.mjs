@@ -36,8 +36,8 @@ test('standalone upgrades leave the entrance to the native slide', () => {
 
 test('trial introductions require eligibility and standalone upgrades skip them', () => {
   assert.match(paywallScreen, /const TRIAL_STEPS: PaywallStepKey\[\] = \['benefits', 'reminder', 'plan'\];/);
-  assert.match(paywallScreen, /hasFreeTrial && initialStep !== 'plan'/);
-  assert.match(paywallScreen, /\? TRIAL_STEPS\s*:\s*\['plan'\]/);
+  assert.match(paywallScreen, /showsIntroduction = initialStep !== 'plan' && !isPlanLayout/);
+  assert.match(paywallScreen, /hasReminderStep && showsIntroduction\s*\? TRIAL_STEPS/);
   assert.match(paywallScreen, /<PaywallTrialStep\s+hasAnnualTrial=\{selectedPackageHasTrial\}/);
   assert.match(paywallScreen, /hasFreeTrial \|\| paidTrial != null \? \([\s\S]{0,160}<PaywallTrialReminderControl/);
   assert.match(paywallScreen, /selectedPackageHasTrial\s*\? `Redeem \$\{selectedTrialDays\}-day trial`/);

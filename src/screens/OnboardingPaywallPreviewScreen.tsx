@@ -96,6 +96,10 @@ export const PREVIEW_PLAN_SETS: Record<PreviewPlans, PaywallPackageOption[]> = {
     { ...PREVIEW_MONTHLY, id: 'annual' },
     { ...PREVIEW_PAID_WEEKLY, introOffer: null, trialLabel: '3-day free trial', trialDays: 3 },
   ],
+  monthlyPaidTrialWeekly7DayFreeTrial: [
+    { ...PREVIEW_MONTHLY, id: 'annual' },
+    { ...PREVIEW_PAID_WEEKLY, introOffer: null, trialLabel: '7-day free trial', trialDays: 7 },
+  ],
   weeklyPaidTrial: [PREVIEW_PAID_WEEKLY],
   monthlyPaidTrial: [PREVIEW_MONTHLY],
   annualPaidTrial: [PREVIEW_PAID_ANNUAL_PACKAGES[0]],

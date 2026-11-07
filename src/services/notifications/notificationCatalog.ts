@@ -166,10 +166,56 @@ export function buildDailyPlanReminderContent(
   };
 }
 
-export function buildTrialEndingContent(trialEndsAt: Date): NotificationContentDefinition {
+export interface TrialRecapCounts {
+  planSteps: number;
+  todos: number;
+  checkIns: number;
+}
+
+const TRIAL_GOAL_NAMES: Record<Exclude<OnboardingIntent, 'other'>, string> = {
+  scrolling: 'less scrolling',
+  burnout: 'less burnout',
+  procrastination: 'less putting things off',
+  stress_relief: 'less stress',
+  calm_fast: 'less overthinking',
+  sleep: 'better sleep',
+  focus: 'better focus',
+  energy: 'more energy',
+  self_acceptance: 'being kinder to yourself',
+  emotional_balance: 'more patience',
+  self_care: 'more time for yourself',
+  spiritual: 'a deeper practice',
+  yoga: 'your yoga',
+  heart_health: 'understanding your heart',
+  cleaning: 'a tidy home',
+  daily_habit: 'a steady routine',
+};
+
+function trialRecapParts({ planSteps, todos, checkIns }: TrialRecapCounts): string[] {
+  return [
+    { count: planSteps, noun: 'plan step' },
+    { count: todos, noun: 'to-do' },
+    { count: checkIns, noun: 'check-in' },
+  ]
+    .filter(({ count }) => count > 0)
+    .sort((a, b) => b.count - a.count)
+    .map(({ count, noun }) => `${count} ${noun}${count === 1 ? '' : 's'}`);
+}
+
+export function buildTrialEndingContent(
+  trialEndsAt: Date,
+  recap?: TrialRecapCounts | null,
+  goal?: OnboardingIntent | null,
+): NotificationContentDefinition {
+  const [largest, ...others] = recap == null ? [] : trialRecapParts(recap);
+  const date = formatTrialDate(trialEndsAt);
+  const plan = goal == null || goal === 'other' ? 'Your plan' : `Your plan for ${TRIAL_GOAL_NAMES[goal]}`;
+  const plus = others.length > 0 ? `Plus ${others.join(' and ')}. ` : '';
   return {
-    title: `Your Azora trial renews ${formatTrialDate(trialEndsAt)}`,
-    body: 'Here’s the reminder we promised. Review or cancel anytime before then.',
+    title: largest != null ? `${plan}: ${largest} done` : `Your Azora trial renews ${date}`,
+    body: largest != null
+      ? `${plus}Your trial renews ${date}. Review or cancel anytime.`
+      : 'Here’s the reminder we promised. Review or cancel anytime before then.',
     data: {
       notification_kind: 'trial_ending',
       destination: 'Insights',

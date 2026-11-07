@@ -267,6 +267,53 @@ test('editing trial reminder timing replaces one stable notification and repeate
   assert.deepEqual(Object.keys(state.saved()), ['azora:trial:ending']);
 });
 
+test('new usage counts replace the scheduled trial reminder body without changing its time', async () => {
+  const state = setup();
+  const trialInput = {
+    ...input,
+    preferences: {
+      dailyPlanReminders: { session: { enabled: false }, handPicked: { enabled: false }, windDown: { enabled: false } },
+      trialEndingReminder: { enabled: true, daysBeforeEnd: 3 },
+    },
+    trialEndsAt: new Date(2026, 4, 23, 17).toISOString(),
+    trialRecap: { planSteps: 1, todos: 0, checkIns: 0 },
+  };
+  await state.reconcileScheduledNotifications(trialInput);
+  assert.equal(state.scheduled[0].title, 'Your plan: 1 plan step done');
+  assert.equal(state.scheduled[0].body, 'Your trial renews May 23. Review or cancel anytime.');
+  await state.reconcileScheduledNotifications(trialInput);
+  assert.equal(state.scheduled.length, 1);
+  await state.reconcileScheduledNotifications({
+    ...trialInput,
+    trialRecap: { planSteps: 2, todos: 3, checkIns: 0 },
+  });
+  assert.equal(state.scheduled.length, 2);
+  assert.equal(state.cancelled.length, 1);
+  assert.equal(state.pending.size, 1);
+  assert.equal(state.scheduled[1].title, 'Your plan: 3 to-dos done');
+  assert.equal(state.scheduled[1].body, 'Plus 2 plan steps. Your trial renews May 23. Review or cancel anytime.');
+  assert.equal(state.scheduled[1].date.getTime(), state.scheduled[0].date.getTime());
+});
+
+test('cancelling a trial removes the reminder that is already scheduled', async () => {
+  const state = setup();
+  const trialInput = {
+    ...input,
+    preferences: {
+      dailyPlanReminders: { session: { enabled: false }, handPicked: { enabled: false }, windDown: { enabled: false } },
+      trialEndingReminder: { enabled: true, daysBeforeEnd: 2 },
+    },
+    trialEndsAt: new Date(2026, 4, 23, 17).toISOString(),
+  };
+  await state.reconcileScheduledNotifications({ ...trialInput, willRenew: null });
+  assert.equal(state.pending.size, 1);
+  await state.reconcileScheduledNotifications({ ...trialInput, willRenew: true });
+  assert.equal(state.pending.size, 1);
+  await state.reconcileScheduledNotifications({ ...trialInput, willRenew: false });
+  assert.equal(state.pending.size, 0);
+  assert.deepEqual(Object.keys(state.saved()), []);
+});
+
 test('a timezone change replaces the trial reminder to keep the chosen local morning', async () => {
   const originalTZ = process.env.TZ;
   try {

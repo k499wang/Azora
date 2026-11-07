@@ -334,7 +334,16 @@ test('losing trial eligibility on a later step leaves a working plan checkout', 
 test('paid-trial-only offerings check out the short plan without a plan card', () => {
   const purchases = [];
   const monthly = { ...annual, id: 'monthly', title: 'Monthly', billingPeriod: 'month', trialLabel: null, introOffer: { days: 3, priceString: '$0.99' } };
-  const deck = deckHarness({ offering: { ...offering, onlyPackageId: 'monthly', packages: [annual, monthly] }, onPurchase: id => purchases.push(id) });
+  const saved = [];
+  const reminderState = { enabled: false, daysBeforeEnd: 2, chooseDaysBeforeEnd: async days => { saved.push(days); return true; } };
+  const deck = deckHarness({ reminderState, offering: { ...offering, onlyPackageId: 'monthly', packages: [annual, monthly] }, onPurchase: id => purchases.push(id) });
+  deck.layout();
+  assert.ok(deck.component('PaywallBenefitsStep'));
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.trialDays, 3);
+  assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.paidTrial, true);
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.deepEqual(saved, []);
   assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
   assert.equal(deck.component('Button').props.label, 'Redeem 3-day trial');
   assert.equal(deck.component('PaywallTrialStep').props.onlyOption, true);
@@ -349,6 +358,10 @@ test('annual paid-trial-only offerings show the paid intro and buy annual', () =
   const paidAnnual = { ...annual, trialLabel: null, trialDays: null, introOffer: { days: 7, priceString: '$4.99' } };
   const monthly = { ...annual, id: 'monthly', title: 'Weekly', billingPeriod: 'week', trialLabel: null, introOffer: { days: 3, priceString: '$2.99' } };
   const deck = deckHarness({ offering: { ...offering, onlyPackageId: 'annual', packages: [paidAnnual, monthly] }, selectedPackageId: 'monthly', onPurchase: id => purchases.push(id) });
+  deck.layout();
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.trialDays, 7);
+  deck.pressNext(); deck.transition(); deck.transition();
   assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
   const { paidTrial } = deck.component('PaywallTrialStep').props;
   assert.equal(`${paidTrial.days} ${paidTrial.introPrice} ${paidTrial.renewalPrice}`, '7 $4.99 $59.99/year');
@@ -527,14 +540,16 @@ test('background completion waits for foreground and unmount blocks late callbac
   assert.equal(deck.reports.length, 1);
 });
 
-test('direct plan and no-trial decks report plan 1 of 1, and preview reports nothing', () => {
+test('direct plans report 1 of 1, a lone no-trial plan keeps its first screen, and preview reports nothing', () => {
   const direct = deckHarness({ initialStep: 'plan' });
   direct.layout();
   assert.deepEqual(direct.reports, [{ step: 'plan', index: 1, count: 1 }]);
   direct.unmount();
   const compact = deckHarness({ offering: noTrial });
   compact.layout();
-  assert.deepEqual(compact.reports, [{ step: 'plan', index: 1, count: 1 }]);
+  assert.deepEqual(compact.reports, [{ step: 'benefits', index: 1, count: 2 }]);
+  compact.pressNext(); compact.transition(); compact.transition();
+  assert.deepEqual(compact.reports.at(-1), { step: 'plan', index: 2, count: 2 });
   compact.unmount();
   const preview = deckHarness({ preview: true });
   preview.layout(); preview.pressNext(); preview.transition(); preview.transition();
@@ -547,12 +562,12 @@ test('retry and eligibility changes report the current rendered step', () => {
   retry.layout();
   assert.deepEqual(retry.reports, []);
   retry.render({ offering: noTrial });
-  assert.deepEqual(retry.reports, [{ step: 'plan', index: 1, count: 1 }]);
+  assert.deepEqual(retry.reports, [{ step: 'benefits', index: 1, count: 2 }]);
   retry.unmount();
   const eligibility = deckHarness();
   eligibility.visible(false); eligibility.layout();
   eligibility.render({ offering: noTrial }); eligibility.visible(true);
-  assert.deepEqual(eligibility.reports, [{ step: 'plan', index: 1, count: 1 }]);
+  assert.deepEqual(eligibility.reports, [{ step: 'benefits', index: 1, count: 2 }]);
   eligibility.unmount();
 });
 
@@ -928,4 +943,41 @@ test('a trial with one possible reminder saves it on Continue instead of asking'
   longer.pressNext(); longer.transition(); longer.transition();
   assert.deepEqual(week, []);
   longer.unmount();
+});
+
+test('onboarding always opens two-plan paid trials on the three steps', () => {
+  const paidAnnual = { ...annual, trialLabel: null, trialDays: null, introOffer: { days: 30, priceString: '$4.99' } };
+  const paidWeekly = { ...annual, id: 'monthly', title: 'Weekly', billingPeriod: 'week', trialLabel: null, trialDays: null, introOffer: { days: 7, priceString: '$0.99' }, isRecommended: false };
+  const deck = deckHarness({ offering: { ...offering, packages: [paidAnnual, paidWeekly] } });
+  deck.layout();
+  assert.deepEqual(deck.reports, [{ step: 'benefits', index: 1, count: 3 }]);
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.trialDays, 30);
+  assert.equal(deck.component('PaywallTrialReminderChoiceStep').props.paidTrial, true);
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.ok(deck.component('PaywallChoosePlanStep'));
+  deck.unmount();
+
+  const upgrade = deckHarness({ initialStep: 'plan', offering: { ...offering, packages: [paidAnnual, paidWeekly] } });
+  upgrade.layout();
+  assert.deepEqual(upgrade.reports, [{ step: 'plan', index: 1, count: 1 }]);
+  upgrade.unmount();
+});
+
+test('monthly paid + weekly free trial keeps the choice screen and saves nothing on Continue', () => {
+  const saved = [];
+  const reminderState = { enabled: false, daysBeforeEnd: 2, chooseDaysBeforeEnd: async days => { saved.push(days); return true; } };
+  const monthlyPaid = { ...annual, id: 'annual', title: 'Monthly', billingPeriod: 'month', trialLabel: null, trialDays: null, introOffer: { days: 30, priceString: '$5.99' } };
+  const weeklyFree = { ...annual, id: 'monthly', title: 'Weekly', billingPeriod: 'week', trialLabel: '3-day free trial', trialDays: 3, introOffer: null, isRecommended: false };
+  const deck = deckHarness({ reminderState, selectedPackageId: 'monthly', offering: { ...offering, packages: [monthlyPaid, weeklyFree] } });
+  deck.layout();
+  deck.pressNext(); deck.transition(); deck.transition();
+  const choice = deck.component('PaywallTrialReminderChoiceStep').props;
+  assert.equal(choice.paidTrial, true);
+  assert.equal(choice.trialDays, 3);
+  assert.equal(choice.choiceTrialDays, 30);
+  assert.equal(choice.longestPlanTitle, 'Monthly');
+  deck.pressNext(); deck.transition(); deck.transition();
+  assert.deepEqual(saved, []);
+  deck.unmount();
 });

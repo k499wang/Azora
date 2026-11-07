@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { defaultPackageFirst } from '../../../lib/paywall/singlePackage';
 import type {
   PaywallPackageId,
   PaywallPackageOption,
@@ -42,9 +43,9 @@ export function PaywallChoosePlanStep({
   planPicker,
   followsReminder,
 }: PaywallChoosePlanStepProps) {
-  const packages = [annualPackage, monthlyPackage].filter(
+  const packages = defaultPackageFirst([annualPackage, monthlyPackage].filter(
     (pkg): pkg is PaywallPackageOption => pkg != null,
-  );
+  ));
 
   return (
     <View style={styles.choosePlanContainer}>

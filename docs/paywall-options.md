@@ -34,7 +34,10 @@ All keys are optional. Any missing or unknown value uses the default.
 
 ### Steps (`deck`)
 
-Benefits, then reminder choice, then the plan step. Without a free trial, it goes straight to the plan step.
+Benefits, then reminder choice, then the plan step.
+
+- Any plan with a free or paid trial, one plan or two: all three steps.
+- No trial on any plan: benefits, then the plan step, since there is no trial to remind about.
 
 ```json
 { "paywall_layout": "deck", "paywall_mode": "hard", "plan_picker": "side_by_side" }
@@ -42,7 +45,7 @@ Benefits, then reminder choice, then the plan step. Without a free trial, it goe
 
 ### Steps, opens on the plan (`deck_plan`)
 
-The 7-day plan screen replaces benefits, then reminder choice, then the plan step. Without a free trial, it goes from the plan screen to the plan step.
+The 7-day plan screen replaces benefits, then reminder choice, then the plan step. The reminder choice appears whenever a plan has a free or paid trial.
 
 ```json
 { "paywall_layout": "deck_plan", "paywall_mode": "hard", "plan_picker": "side_by_side" }
@@ -106,13 +109,13 @@ These rules apply on every placement except `exit_discount`, which sells only wh
 1. **Slots:** there are two. The first is annual. If the offering has monthly and weekly but no annual, monthly takes the first slot and weekly the second. The app's `annual` and `monthly` IDs refer to these slots, not always the billing period.
 2. **Short plans without an intro offer get swapped:** if the offering's short plan has no intro offer, and no monthly + weekly pair applies, the app sells the short plan from the `paid_trial_monthly` offering instead, if that offering exists.
 3. **Annual on its own still gets a second plan:** an annual-only offering also gets that `paid_trial_monthly` plan. Add `"trial_package": "annual"` to sell annual alone.
-4. **Which plan is selected:** a weekly free trial is selected if no other plan has a free trial. Otherwise it's the first slot.
+4. **Which plan is selected:** a weekly free trial is selected if no other plan has a free trial. Otherwise it's the first slot. In side-by-side, the selected plan sits on the left.
 5. **Single-plan paywalls** (`plan`, `home_card`) sell the `trial_package` plan, otherwise the plan that would be selected by default.
 6. **Eligibility:** someone who isn't eligible for an intro offer sees that plan without its trial.
 
 ## Behavior worth knowing
 
-- **In-app upgrades:** these open directly on the plan step of the steps paywalls, skipping the benefits, plan screen and reminder steps.
-- **Reminder step:** trials longer than 3 days ask whether to remind 2 or 3 days before. A 3-day trial says "We'll remind you 2 days before your trial ends", with no choice. Continue turns the reminder on and asks for notification permission. Trials of 2 days or less can't have a reminder.
+- **In-app upgrades:** these open directly on the plan step of the steps paywalls, skipping the benefits, plan screen and reminder steps. The three steps are for the onboarding paywall.
+- **Reminder step:** trials longer than 3 days ask whether to remind 2 or 3 days before. A 3-day free trial says "We'll remind you 2 days before your trial ends", with no choice, and Continue turns the reminder on and asks for notification permission. If any plan on the paywall has a paid trial, the screen always asks, and its options follow the longest trial. An option that doesn't fit the selected plan is labelled, e.g. "Monthly plan only", and becomes the closest valid reminder at purchase. Trials of 2 days or less can't have a reminder.
 - **Button text:** the button says "Redeem N-day trial", never a price. The billed price stays visible for Apple's 3.1.2(c) rule.
 - **Known copy issue:** on combinations with a free and a paid trial, the steps still say "Design Your Free Trial Experience" and "No Payment Due Now" if someone selects the paid plan.

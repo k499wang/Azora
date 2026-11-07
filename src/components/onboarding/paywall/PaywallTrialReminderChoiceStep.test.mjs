@@ -82,4 +82,26 @@ test('one possible reminder is promised with no choices, and turns honest when n
   assert.equal(nodes(promised, 'Text')[0].props.children, 'We’ll remind you 2 days before your trial ends');
   const denied = PaywallTrialReminderChoiceStep({ trialDays: 3, reminder: { ...reminder, denied: true } });
   assert.equal(nodes(denied, 'Text')[0].props.children, 'Turn on notifications and we’ll remind you 2 days before your trial ends');
+  const paid = PaywallTrialReminderChoiceStep({ trialDays: 3, reminder, paidTrial: true });
+  assert.equal(nodes(paid, 'Choice').length, 1);
+  assert.equal(nodes(paid, 'Text')[0].props.children, 'When should we remind you before your trial ends?');
+});
+
+test('a choice that only fits the longer trial is offered and labelled', () => {
+  const { PaywallTrialReminderChoiceStep } = load('./PaywallTrialReminderChoiceStep.tsx', {
+    ...dependencies,
+    '../../common/Text': { Text: 'Text' },
+    './paywallStepStyles': { paywallStepStyles: {} },
+    '../../../native/tapHaptics': { triggerTapHaptic() {} },
+    '../../paywall/PaywallChoiceCard': { PaywallChoiceCard: 'Choice' },
+    './TrialReminderBell': { TrialReminderBell: 'Bell' },
+    '../../../lib/paywall/trialReminder': {
+      availableTrialReminderDays: days => [2, 3].filter(offset => offset < days),
+      formatTrialDate: () => 'Nov 8',
+      trialTimelineDates: () => ({ reminder: new Date() }),
+    },
+  });
+  const reminder = { enabled: false, daysBeforeEnd: 2, selectedDaysBeforeEnd: null, busy: false, unavailable: false };
+  const cards = nodes(PaywallTrialReminderChoiceStep({ trialDays: 3, choiceTrialDays: 30, longestPlanTitle: 'Monthly', reminder, paidTrial: true }), 'Choice');
+  assert.deepEqual(cards.map(card => `${card.props.title}: ${card.props.detail}`), ['2 days before: Nov 8', '3 days before: Monthly plan only']);
 });

@@ -16,9 +16,10 @@ import {
 } from './notificationScheduleRecords';
 import { trackNotificationScheduled } from '../analytics/tracking';
 import { createSerializedAsync } from '../../lib/serializedAsync';
+import type { OnboardingIntent } from '../../components/onboarding/types';
 import type { NotificationPreferences } from './types';
 import type { DailyPlanSchedule } from '../dailyPlan/types';
-import type { DailyReminderDefinition } from './notificationCatalog';
+import type { DailyReminderDefinition, TrialRecapCounts } from './notificationCatalog';
 
 const LEGACY_SCHEDULED_IDS_KEY = 'notifications:scheduled_ids_v1';
 const SCHEDULED_RECORDS_KEY = 'notifications:scheduled_records_v2';
@@ -29,6 +30,9 @@ export function reconcileScheduledNotifications(input: {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  willRenew: boolean | null;
+  trialRecap: TrialRecapCounts | null;
+  trialGoal: OnboardingIntent | null;
   isPro: boolean | null;
   paywallSeenAt: string | null;
   dailyReminderDefinitions?: readonly DailyReminderDefinition[];
@@ -40,6 +44,9 @@ async function performReconcile(input: {
   preferences: NotificationPreferences;
   dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
+  willRenew: boolean | null;
+  trialRecap: TrialRecapCounts | null;
+  trialGoal: OnboardingIntent | null;
   isPro: boolean | null;
   paywallSeenAt: string | null;
   dailyReminderDefinitions?: readonly DailyReminderDefinition[];

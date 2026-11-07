@@ -42,6 +42,7 @@ export type PreviewPlans =
   | 'annualFreeTrialWeekly'
   | 'annualFreeTrialWeeklyPaidTrial'
   | 'monthlyPaidTrialWeeklyFreeTrial'
+  | 'monthlyPaidTrialWeekly7DayFreeTrial'
   | 'weeklyPaidTrial'
   | 'monthlyPaidTrial'
   | 'annualPaidTrial'

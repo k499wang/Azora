@@ -8,6 +8,7 @@ import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitle
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useProgramEnrollmentQuery } from '../queries/program/useProgramEnrollmentQuery';
 import { useSavedOnboardingProfileQuery } from '../queries/profile/useSavedOnboardingProfileQuery';
+import { useTrialRecapQuery } from '../queries/notifications/useTrialRecapQuery';
 import { ONBOARDING_INTENT_LOOKUP_OPTIONS } from '../components/onboarding/data/intentOptions';
 import { buildIntentTitleLookup, resolvePlanIntent } from '../lib/planProgress';
 import {
@@ -33,6 +34,15 @@ export function useNotificationBootstrap() {
     authStatus === 'signed_in',
   );
 
+  const trialEndsAt = entitlementQuery.data?.trialEndsAt ?? null;
+  const willRenew = entitlementQuery.data?.willRenew ?? null;
+  const reminderTrialEndsAt =
+    preferencesQuery.data?.trialEndingReminder.enabled === true && willRenew !== false ? trialEndsAt : null;
+  const trialRecapQuery = useTrialRecapQuery(userId, reminderTrialEndsAt);
+  const trialRecap = trialRecapQuery.data ?? null;
+  const isTrialRecapLoading = trialRecapQuery.isLoading;
+  const refetchTrialRecap = trialRecapQuery.refetch;
+
   const enrollment = enrollmentQuery.data ?? null;
   // A loaded empty entitlement is a user who never paid; a pending or failed
   // lookup stays unknown so nudges are never booked for someone already Pro.
@@ -40,10 +50,10 @@ export function useNotificationBootstrap() {
 
   // Metadata only personalizes copy; the main reminder can use generic wording
   // while enrollment or profile is unavailable.
-  const onboardingGoal = savedProfileQuery.data?.onboardingGoal;
+  const planIntent = resolvePlanIntent(savedProfileQuery.data?.onboardingGoal, INTENT_TITLES);
   const dailyReminderDefinitions = useMemo(
-    () => dailyReminderDefinitionsFor(resolvePlanIntent(onboardingGoal, INTENT_TITLES), enrollment?.planId),
-    [onboardingGoal, enrollment?.planId],
+    () => dailyReminderDefinitionsFor(planIntent, enrollment?.planId),
+    [planIntent, enrollment?.planId],
   );
 
   useEffect(() => {
@@ -58,6 +68,7 @@ export function useNotificationBootstrap() {
     if (authStatus !== 'signed_in' || userId == null) return;
     if (preferencesQuery.data == null) return;
     if (dailyPlanScheduleQuery.data == null) return;
+    if (isTrialRecapLoading) return;
 
     let isDisposed = false;
 
@@ -72,7 +83,10 @@ export function useNotificationBootstrap() {
         await reconcileScheduledNotifications({
           preferences: preferencesQuery.data,
           dailyPlanSchedule: dailyPlanScheduleQuery.data,
-          trialEndsAt: entitlementQuery.data?.trialEndsAt ?? null,
+          trialEndsAt,
+          willRenew,
+          trialRecap,
+          trialGoal: planIntent,
           isPro,
           paywallSeenAt,
           dailyReminderDefinitions,
@@ -92,6 +106,11 @@ export function useNotificationBootstrap() {
       if (cameToForeground) {
         void reconcile();
       }
+      // A session just ended or another device may have added to the counts. New
+      // counts rerun this effect, which reschedules with the new body.
+      if (reminderTrialEndsAt != null && (cameToForeground || next === 'background')) {
+        void refetchTrialRecap();
+      }
     });
 
     return () => {
@@ -103,10 +122,16 @@ export function useNotificationBootstrap() {
     dailyPlanScheduleQuery.data,
     dailyReminderDefinitions,
     isPro,
-    entitlementQuery.data?.trialEndsAt,
+    isTrialRecapLoading,
     paywallSeenAt,
+    planIntent,
     preferencesQuery.data,
+    refetchTrialRecap,
+    reminderTrialEndsAt,
     todayLocalDate,
+    trialEndsAt,
+    trialRecap,
+    willRenew,
     userId,
   ]);
 }

@@ -13,7 +13,7 @@ import { useHomeCardPaywallStore, type HomeCardPaywallRequest } from '../../stor
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { fonts, scaleType, typography } from '../../theme/typography';
 import CloseButton from '../common/CloseButton';
 import LockedScrim from '../common/LockedScrim';
 import { Text } from '../common/Text';
@@ -24,6 +24,7 @@ import { PlanPriceTerms } from './PlanPriceTerms';
 const APP_ICON = require('../../../assets/app/icon.png');
 
 const APP_ICON_SIZE = 52;
+const BODY_LINE_HEIGHT = scaleType(21);
 const CARD_MAX_WIDTH = 480;
 const SCRIM_INTENSITY = 60;
 const FADE_MS = 240;
@@ -99,14 +100,14 @@ function HomeCard({
           loading={isPurchasing}
           disabled={isBusy || pkg == null}
         />
-        {pkg != null ? <PlanPriceTerms pkg={pkg} largePrice /> : null}
+        {pkg != null ? <PlanPriceTerms pkg={pkg} /> : null}
         {pkg == null && isLoading ? <ActivityIndicator color={colors.primary.blue500} /> : null}
         {errorMessage != null ? (
           <Pressable accessibilityRole="button" disabled={isBusy} onPress={onRetry}>
             <Text accessibilityRole="alert" style={styles.error}>{errorMessage} Tap to retry.</Text>
           </Pressable>
         ) : null}
-        <PaywallFooterLinks isRestoring={isRestoring} restoreDisabled={isBusy} onRestore={onRestore} />
+        <PaywallFooterLinks quiet isRestoring={isRestoring} restoreDisabled={isBusy} onRestore={onRestore} />
       </View>
     </Animated.View>
   );
@@ -223,11 +224,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   body: {
-    ...typography.body.large,
+    ...typography.body.medium,
+    lineHeight: BODY_LINE_HEIGHT,
     color: colors.text.primary,
   },
   muted: {
-    ...typography.body.large,
+    ...typography.body.medium,
+    lineHeight: BODY_LINE_HEIGHT,
     color: colors.text.secondary,
   },
   error: {
