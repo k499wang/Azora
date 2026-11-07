@@ -466,6 +466,26 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                   onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'deck' })}
                 />
                 <SettingsRow
+                  label="Preview plan paywall, free trial (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'plan' })}
+                />
+                <SettingsRow
+                  label="Preview plan paywall, cleaning (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'plan', cleaning: true })}
+                />
+                <SettingsRow
+                  label="Preview plan paywall, first-week callouts (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'plan_first_week' })}
+                />
+                <SettingsRow
+                  label="Preview plan paywall, first-week callouts, cleaning (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'plan_first_week', cleaning: true })}
+                />
+                <SettingsRow
+                  label="Preview plan paywall, paid trial (dev)"
+                  onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'plan', onlyPackageId: 'monthly' })}
+                />
+                <SettingsRow
                   label="Preview onboarding paywall, long (dev)"
                   onPress={() => navigation.navigate('OnboardingPaywallPreview', { layout: 'long' })}
                 />

@@ -52,6 +52,7 @@ const RADIO_SIZE = 26;
 const RADIO_CHECK = 16;
 const ANSWER_MIN_HEIGHT = 60;
 const REVEAL_ICON_SIZE = 20;
+const FLIP_PERSPECTIVE = 1400;
 const LIP = 4;
 const LIP_PRESSED = 2;
 const SHAKE_OFFSET = 8;
@@ -268,6 +269,57 @@ function TodayAction({ text, response, onRespond }: TodayActionProps) {
   );
 }
 
+interface RevealCardProps {
+  label: string;
+  detail: string;
+  isOpen: boolean;
+  onOpen: () => void;
+}
+
+/**
+ * The back sits in the layout from the start, so the card is already its final
+ * height. Flipping changes nothing below it and gives the feed nothing to follow.
+ */
+function RevealCard({ label, detail, isOpen, onOpen }: RevealCardProps) {
+  const flip = useSharedValue(0);
+  useEffect(() => {
+    if (isOpen) flip.value = withTiming(1, { duration: duration.slower, easing: easing.settle });
+  }, [flip, isOpen]);
+  const frontStyle = useAnimatedStyle(() => ({
+    opacity: flip.value < 0.5 ? 1 : 0,
+    transform: [{ perspective: FLIP_PERSPECTIVE }, { rotateY: `${flip.value * 180}deg` }],
+  }));
+  const backStyle = useAnimatedStyle(() => ({
+    opacity: flip.value < 0.5 ? 0 : 1,
+    transform: [{ perspective: FLIP_PERSPECTIVE }, { rotateY: `${(flip.value - 1) * 180}deg` }],
+  }));
+  return (
+    <Pressable
+      onPress={isOpen ? undefined : onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={isOpen ? `${label}. ${detail}` : label}
+      accessibilityState={{ expanded: isOpen }}
+    >
+      {({ pressed }) => (
+        <>
+          <Animated.View style={[styles.lipRow, styles.lipRowDown, styles.lipRowOpen, backStyle]}>
+            <View style={styles.revealHead}>
+              <Text style={[styles.lipRowLabel, styles.lipRowLabelOpen]}>{label}</Text>
+            </View>
+            <Prose text={detail} style={styles.revealDetail} />
+          </Animated.View>
+          <Animated.View style={[StyleSheet.absoluteFill, styles.lipRow, pressed && styles.lipRowDown, frontStyle]}>
+            <View style={styles.revealHead}>
+              <Text style={styles.lipRowLabel}>{label}</Text>
+              <Icon bold name="plus" size={REVEAL_ICON_SIZE} color={colors.primary.blue500} />
+            </View>
+          </Animated.View>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
 interface RevealActivityProps {
   block: Extract<LessonBlock, { kind: 'reveal' }>;
   onComplete?: () => void;
@@ -279,42 +331,24 @@ function RevealActivity({ block, onComplete }: RevealActivityProps) {
     <View style={styles.activity}>
       <Question eyebrow="Tap to uncover" prompt={block.prompt} hint={`${open.length} of ${block.items.length} opened`} />
       <View style={styles.rows}>
-        {block.items.map((item, index) => {
-          const isOpen = open.includes(index);
-          return (
-            <Pressable
-              key={item.label}
-              onPress={() => {
-                if (isOpen) return;
-                const next = [...open, index];
-                setOpen(next);
-                if (next.length === block.items.length) {
-                  triggerSoftHaptic();
-                  onComplete?.();
-                } else {
-                  triggerTapHaptic();
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-              accessibilityState={{ expanded: isOpen }}
-            >
-              {({ pressed }) => (
-                <View style={[styles.lipRow, (pressed || isOpen) && styles.lipRowDown, isOpen && styles.lipRowOpen]}>
-                  <View style={styles.revealHead}>
-                    <Text style={[styles.lipRowLabel, isOpen && styles.lipRowLabelOpen]}>{item.label}</Text>
-                    {isOpen ? null : <Icon bold name="plus" size={REVEAL_ICON_SIZE} color={colors.primary.blue500} />}
-                  </View>
-                  {isOpen ? (
-                    <FeedEntrance>
-                      <Prose text={item.detail} style={styles.revealDetail} />
-                    </FeedEntrance>
-                  ) : null}
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
+        {block.items.map((item, index) => (
+          <RevealCard
+            key={item.label}
+            label={item.label}
+            detail={item.detail}
+            isOpen={open.includes(index)}
+            onOpen={() => {
+              const next = [...open, index];
+              setOpen(next);
+              if (next.length === block.items.length) {
+                triggerSoftHaptic();
+                onComplete?.();
+              } else {
+                triggerTapHaptic();
+              }
+            }}
+          />
+        ))}
       </View>
     </View>
   );

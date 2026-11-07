@@ -2,7 +2,7 @@ import { Text } from '../../common/Text';
 import { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import PlanNotepad, { PlanNotepadRow, useNotepadRowAnimations } from '../PlanNotepad';
-import PlanJourney, { type PlanJourneyStop } from '../PlanJourney';
+import PlanDayCard from '../PlanDayCard';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -95,11 +95,8 @@ export default function PlanDaysScreen({
   // The practical action belongs to the lesson, rather than a separate Reset.
   const rowAnims = useNotepadRowAnimations(exerciseRows.length + 3 + (PLAN_TODO_STEP_ENABLED ? 1 : 0));
 
-  const journey = useMemo<PlanJourneyStop[]>(
-    () => personalizedPlanJourney(preset, intent, name, goalPhrase).stops.map((stop, index) => ({
-      ...stop,
-      ...JOURNEY_MARKS[index % JOURNEY_MARKS.length],
-    })),
+  const journey = useMemo(
+    () => personalizedPlanJourney(preset, intent, name, goalPhrase).stops,
     [preset, intent, name, goalPhrase],
   );
   // The day the plan lands, the way the paywall will repeat it.
@@ -117,7 +114,11 @@ export default function PlanDaysScreen({
       <View style={styles.page}>
         <Text style={styles.finishLine}>{finishLine}</Text>
 
-        <PlanJourney stops={journey} />
+        <View style={styles.journey}>
+          {journey.map((stop, index) => (
+            <PlanDayCard key={stop.day} title={`Day ${stop.day}`} line={stop.line} index={index} />
+          ))}
+        </View>
 
         <View style={styles.section}>
           <AzoAside text="Here’s everything you need to do today" variant="heading" />
@@ -204,16 +205,6 @@ function ExerciseRow({ row, anim }: { row: ProgramPlanPreviewRow; anim: Animated
   );
 }
 
-/** A picture per stop, in order along the journey. */
-const JOURNEY_MARKS: readonly Pick<PlanJourneyStop, 'icon' | 'accent'>[] = [
-  { icon: 'walk', accent: colors.playful.teal.base },
-  { icon: 'breath-leaf', accent: colors.playful.sky.base },
-  { icon: 'streak', accent: colors.playful.coral.base },
-  { icon: 'calendar-check-outline', accent: colors.playful.violet.base },
-  { icon: 'target', accent: colors.playful.amber.base },
-  { icon: 'star', accent: colors.playful.teal.base },
-];
-
 // Matched to the to-do list on Home, so a to-do picked here and the same to-do
 // tomorrow are visibly one object rather than two designs of it.
 const GOAL_ICON_SIZE = 34;
@@ -235,6 +226,9 @@ const ACTION_ICONS: Record<
 const styles = StyleSheet.create({
   page: {
     gap: spacing.xl,
+  },
+  journey: {
+    gap: spacing.md,
   },
   finishLine: {
     ...typography.body.small,

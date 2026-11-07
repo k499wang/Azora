@@ -16,6 +16,7 @@ import ChalkboardScreen from '../components/onboarding/screens/ChalkboardScreen'
 import GoalProofScreen from '../components/onboarding/screens/GoalProofScreen';
 import HabitCurveScreen from '../components/onboarding/screens/HabitCurveScreen';
 import GreatDaysScreen from '../components/onboarding/screens/GreatDaysScreen';
+import PlanPromiseScreen from '../components/onboarding/screens/PlanPromiseScreen';
 import PersonalizeIntroScreen from '../components/onboarding/screens/PersonalizeIntroScreen';
 import PlanApproachScreen from '../components/onboarding/screens/PlanApproachScreen';
 import PlanDaysScreen from '../components/onboarding/screens/PlanDaysScreen';
@@ -69,6 +70,12 @@ const PREVIEWS: readonly PreviewEntry[] = [
     ),
   },
   { id: 'personalizeIntro', title: 'Personalized plan intro', render: (props) => <PersonalizeIntroScreen {...props} /> },
+  {
+    id: 'planPromise', title: 'Let us build you a plan',
+    render: ({ onSkip: _, ...props }) => (
+      <PlanPromiseScreen {...props} preset={enrolledOrGoalPreset('home', 'cleaning')} intent="cleaning" />
+    ),
+  },
   {
     id: 'planApproach', title: 'Goal-focused plan approach',
     render: ({ onSkip: _, ...props }) => (

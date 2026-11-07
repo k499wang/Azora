@@ -7,7 +7,7 @@ import { typography } from '../../theme/typography';
 import { PaywallSection } from './longForm/PaywallSection';
 
 /** A picture and hue per stop, in order along the journey. */
-const JOURNEY_MARKS = [
+export const JOURNEY_MARKS = [
   { icon: 'walk', hue: colors.playful.teal },
   { icon: 'breath-leaf', hue: colors.playful.sky },
   { icon: 'streak', hue: colors.playful.coral },

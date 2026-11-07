@@ -18,7 +18,7 @@ const longPage = read('components', 'paywall', 'NoTrialLongPaywall.tsx');
 test('the layout is read from the offering metadata and defaults to the deck', () => {
   assert.match(
     service,
-    /value === 'long' \|\| value === 'long_then_trial' \? value : 'deck'/,
+    /value === 'long' \|\| value === 'long_then_trial' \|\| value === 'plan' \|\| value === 'plan_first_week' \? value : 'deck'/,
   );
 });
 

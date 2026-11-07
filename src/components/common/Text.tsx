@@ -29,6 +29,9 @@ export function AnimatedText({ style, ...props }: Animated.AnimatedProps<TextPro
   );
 }
 
+// A lineHeight pushes a single-line iOS input's text off its vertical centre.
+const singleLineStyle = { lineHeight: undefined };
+
 export const TextInput = forwardRef<RNTextInput, TextInputProps>(
   function TextInput({ style, ...props }, ref) {
     return (
@@ -36,7 +39,7 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(
         ref={ref}
         allowFontScaling={false}
         {...props}
-        style={[{ fontFamily: fonts.regular }, style]}
+        style={[{ fontFamily: fonts.regular }, style, !props.multiline && singleLineStyle]}
       />
     );
   }

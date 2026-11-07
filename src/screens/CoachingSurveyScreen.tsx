@@ -463,7 +463,6 @@ const styles = StyleSheet.create({
   inputSingleLine: {
     height: spacing['4xl'],
     paddingVertical: 0,
-    lineHeight: undefined,
   },
   inputMultiline: {
     minHeight: 156,

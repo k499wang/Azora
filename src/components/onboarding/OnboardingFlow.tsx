@@ -118,6 +118,7 @@ import DoctorReferralScreen, {
   type DoctorReferral,
 } from './screens/DoctorReferralScreen';
 import CommunityProofScreen from './screens/CommunityProofScreen';
+import PlanPromiseScreen from './screens/PlanPromiseScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import AzoMessageScreen from './screens/AzoMessageScreen';
 import AzoChatScreen from './screens/AzoChatScreen';
@@ -2879,6 +2880,19 @@ function OnboardingFlowSteps({
     stepIndex: visualStepIndex,
     stepCount: visualStepCount,
   });
+
+  if (step === 'planPromise') {
+    return (
+      <PlanPromiseScreen
+        preset={onboardingPreset}
+        intent={plan.intent}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goNext('continue')}
+        onBack={goBack}
+      />
+    );
+  }
 
   if (step === 'diagnosis') {
     return (

@@ -20,8 +20,9 @@ test('shared text primitives apply the active regular face while preserving call
   assert.match(text, /style=\{\[\{ fontFamily: fonts\.regular \}, style\]\}/);
   assert.equal(
     text.match(/style=\{\[\{ fontFamily: fonts\.regular \}, style\]\}/g)?.length,
-    3,
+    2,
   );
+  assert.match(text, /style=\{\[\{ fontFamily: fonts\.regular \}, style, !props\.multiline && singleLineStyle\]\}/);
 });
 
 test('rendered text does not hard-code weights unsupported by the default face', () => {

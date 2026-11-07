@@ -181,6 +181,7 @@ function deckHarness(patch = {}, imageCache = {}, routerOnly = false) {
     ['../paywall/PaywallFreeTrialHeroStep', 'PaywallFreeTrialHeroStep'],
     ['../paywall/PaywallTrialReminderChoiceStep', 'PaywallTrialReminderChoiceStep'],
     ['../paywall/PaywallBenefitsStep', 'PaywallBenefitsStep'],
+    ['../paywall/PaywallPlanOutline', 'PaywallPlanOutline'],
     ['../../paywall/PaywallFooterLinks', 'PaywallFooterLinks'],
     ['../../paywall/PlanPriceTerms', 'PlanPriceTerms'],
     ['../../paywall/PaywallCheckLine', 'PaywallCheckLine'],
@@ -823,4 +824,17 @@ test('the completion handoff fallback immediately exposes retry without a second
   hold.component('Button').props.onPress();
   assert.deepEqual(retryCalls, ['retry']);
   hold.unmount();
+});
+
+test('plan layout opens on the outline and buys its one package with no picker', () => {
+  const purchases = [];
+  const deck = deckHarness({ offering: { ...offering, paywallLayout: 'plan' }, onPurchase: id => purchases.push(id) });
+  deck.layout();
+  assert.deepEqual(deck.reports, [{ step: 'plan', index: 1, count: 1 }]);
+  assert.ok(deck.component('PaywallPlanOutline'));
+  assert.equal(deck.component('PaywallChoosePlanStep'), undefined);
+  assert.equal(deck.component('PaywallTrialStep'), undefined);
+  deck.pressNext();
+  assert.deepEqual(purchases, ['annual']);
+  deck.unmount();
 });

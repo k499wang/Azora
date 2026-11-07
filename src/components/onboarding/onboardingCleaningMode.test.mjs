@@ -12,13 +12,14 @@ const cleaningSteps = (adhdStatus = null) =>
 
 test('cleaning mode asks how to help with cleaning right after the greeting, never the goal picker', () => {
   const steps = cleaningSteps();
-  assert.deepEqual(steps.slice(0, 6), [
+  assert.deepEqual(steps.slice(0, 7), [
     'azoChatInvite',
     'azoChat',
     'greeting',
     'cleaningHelp',
     'personalizeIntro',
     'communityProof',
+    'planPromise',
   ]);
   assert.equal(steps.includes('usageStyle'), false);
   assert.equal(steps.includes('intent'), false);

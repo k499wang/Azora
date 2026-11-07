@@ -240,6 +240,7 @@ function cleaningOnboardingSections(adhdStatus: AdhdStatus | null): OnboardingSe
         'cleaningHelp',
         'personalizeIntro',
         'communityProof',
+        'planPromise',
       ],
     },
     {
@@ -347,6 +348,7 @@ function modeOnboardingSections(
         'usageStyle',
         'personalizeIntro',
         'communityProof',
+        'planPromise',
       ],
     },
     {

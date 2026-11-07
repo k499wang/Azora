@@ -32,6 +32,7 @@ import { computeAnnualSavings } from '../../../lib/paywall/planPrice';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallTrialReminderChoiceStep } from '../paywall/PaywallTrialReminderChoiceStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
+import { PaywallPlanOutline } from '../paywall/PaywallPlanOutline';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import { PlanPriceTerms } from '../../paywall/PlanPriceTerms';
 import { PaywallCheckLine } from '../../paywall/PaywallCheckLine';
@@ -105,6 +106,8 @@ function TrialDeck({
   preview = false,
   offering,
   planIntent,
+  planPreset,
+  goalPhrase,
   stakesBenefit,
   paywallMode,
   selectedPackageId: chosenPackageId,
@@ -131,7 +134,9 @@ function TrialDeck({
   const insets = useSafeAreaInsets();
   const trialReminder = usePaywallTrialReminder(preview);
 
-  const onlyPackageId = offering?.onlyPackageId ?? null;
+  const isPlanLayout = offering?.paywallLayout === 'plan' || offering?.paywallLayout === 'plan_first_week';
+  const onlyPackageId = offering?.onlyPackageId
+    ?? (isPlanLayout ? offering?.packages.find((pkg) => pkg.isRecommended)?.id ?? offering?.packages[0]?.id ?? null : null);
   const selectedPackageId: PaywallPackageId = onlyPackageId ?? chosenPackageId;
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
@@ -157,7 +162,7 @@ function TrialDeck({
 
   // Step state
   const [step, setStep] = useState(0);
-  const steps: PaywallStepKey[] = hasFreeTrial && initialStep !== 'plan'
+  const steps: PaywallStepKey[] = hasFreeTrial && initialStep !== 'plan' && !isPlanLayout
     ? TRIAL_STEPS
     : ['plan'];
   const stepCount = steps.length;
@@ -575,7 +580,15 @@ function TrialDeck({
                   />
                 ) : null}
                 {activeStep === 'reminder' ? <PaywallTrialReminderChoiceStep trialDays={freeTrialDays} reminder={trialReminder} disabled={isPaywallBusy} /> : null}
-                {activeStep === 'plan' ? (
+                {activeStep === 'plan' && isPlanLayout ? (
+                  <PaywallPlanOutline
+                    preset={planPreset}
+                    intent={planIntent ?? 'other'}
+                    goalPhrase={goalPhrase}
+                    dreams={offering?.paywallLayout === 'plan_first_week' ? 'firstWeek' : 'milestones'}
+                  />
+                ) : null}
+                {activeStep === 'plan' && !isPlanLayout ? (
                   <View style={styles.finalStepContent}>
                     <PaywallTrialStep
                       hasAnnualTrial={selectedPackageHasTrial}

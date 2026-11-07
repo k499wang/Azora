@@ -82,6 +82,7 @@ export type OnboardingStep =
   | 'habitsFocusScience2'
   | 'habitsFocusScience3'
   | 'communityProof'
+  | 'planPromise'
   | 'dailyTime'
   | 'wakeTime'
   | 'sleepTime'

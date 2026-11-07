@@ -110,6 +110,7 @@ test('each goal asks its own follow-ups and relevant context before showing the 
         'usageStyle',
         'personalizeIntro',
         'communityProof',
+        'planPromise',
         ...(intent === 'sleep' ? sleepIntentModule : INTENT_DEPTH_STEPS.slice(0, questions.length)),
         'goalProof',
         ...habitModuleFor(intent),
@@ -128,9 +129,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 84, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 79);
-  assert.equal(stepsFor('sleep').length, 79);
-  assert.equal(stepsFor('other').length, 79);
+  assert.equal(stepsFor('cleaning').length, 80);
+  assert.equal(stepsFor('sleep').length, 80);
+  assert.equal(stepsFor('other').length, 80);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -138,7 +139,7 @@ test('sleep primary integrates its questions once while preserving other paths a
     for (const intent of ['sleep', 'focus', null]) {
       const steps = stepsFor(intent, selectedCount);
       const module = intent === 'sleep' ? sleepIntentModule : sleepAssessment;
-      const beforeSleep = intent === 'sleep' ? 'communityProof' : 'halfway';
+      const beforeSleep = intent === 'sleep' ? 'planPromise' : 'halfway';
       const afterSleep = intent === 'sleep' ? 'goalProof' : 'age';
       const moduleIndex = steps.indexOf(module[0]);
       assert.deepEqual(steps.slice(moduleIndex, moduleIndex + module.length), module);
@@ -154,7 +155,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 80 : 79);
+      assert.equal(steps.length, selectedCount >= 2 ? 81 : 80);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -173,7 +174,7 @@ test('cleaning reaches the plan without the retired screens or repeated proof sc
     assert.equal(flow.includes(`if (step === '${removed}'`), false);
   }
   assert.equal(steps[steps.indexOf('intentDepth7') + 1], 'goalProof');
-  assert.equal(steps.indexOf('recommendedExercise'), 70);
+  assert.equal(steps.indexOf('recommendedExercise'), 71);
 });
 
 test('ten complete cycles per goal have coherent forward, skip, and back navigation', () => {
@@ -219,7 +220,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
   for (const steps of [cleaning, focus, sleep]) {
     const indices = Object.fromEntries(steps.map((step, index) => [step, index + 1]));
     assert.equal(indices.paywall, steps.length);
-    assert.equal(adjacentOnboardingStep(steps, 'intentDepth1', 'back'), 'communityProof');
+    assert.equal(adjacentOnboardingStep(steps, 'intentDepth1', 'back'), 'planPromise');
     assert.equal(adjacentOnboardingStep(steps, 'diagnosis', 'back'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'recommendedExercise', 'back'), 'planOutcome');
   }
@@ -231,7 +232,7 @@ test('changing the primary goal rebuilds questions, context, and indices from on
 });
 
 test('retained render handlers follow the active sequence rather than hard-coded branch targets', () => {
-  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'goalProof', 'habitsToBreak', 'cbtFamiliarity', 'cbtIntro', 'routineBrain', ...originalHabitModule, ...sleepAssessment, ...assessment, ...personalContext, ...planAndCompletion]) {
+  for (const step of [...intro.filter((step) => step !== 'intent'), 'communityProof', 'planPromise', 'goalProof', 'habitsToBreak', 'cbtFamiliarity', 'cbtIntro', 'routineBrain', ...originalHabitModule, ...sleepAssessment, ...assessment, ...personalContext, ...planAndCompletion]) {
     if (['paywall', 'pact', 'notifications', 'planDays'].includes(step)) continue;
     const block = stepBlock(step);
     assert.doesNotMatch(block, /goToStep\(/, `${step} must use sequence navigation`);
@@ -834,7 +835,11 @@ test('the encouraging intro follows goal selection and Back retains the answer u
   goNext('continue');
   assert.equal(current, 'communityProof');
   goNext('continue');
+  assert.equal(current, 'planPromise');
+  goNext('continue');
   assert.equal(current, 'intentDepth1');
+  current = adjacentOnboardingStep(order(), current, 'back');
+  assert.equal(current, 'planPromise');
   current = adjacentOnboardingStep(order(), current, 'back');
   assert.equal(current, 'communityProof');
   current = adjacentOnboardingStep(order(), current, 'back');
@@ -892,7 +897,8 @@ test('the restored social proof and personal context steps sit in the flow for e
   for (const intent of intents) {
     const steps = stepsFor(intent);
     assert.equal(adjacentOnboardingStep(steps, 'personalizeIntro', 'forward'), 'communityProof');
-    assert.equal(adjacentOnboardingStep(steps, 'communityProof', 'forward'), 'intentDepth1');
+    assert.equal(adjacentOnboardingStep(steps, 'communityProof', 'forward'), 'planPromise');
+    assert.equal(adjacentOnboardingStep(steps, 'planPromise', 'forward'), 'intentDepth1');
     assert.equal(adjacentOnboardingStep(steps, 'halfway', 'forward'), intent === 'sleep' ? 'age' : 'sleep');
     assert.equal(adjacentOnboardingStep(steps, 'sleepInsight', 'forward'), intent === 'sleep' ? 'goalProof' : 'age');
     assert.equal(adjacentOnboardingStep(steps, 'gender', 'forward'), 'stress');
