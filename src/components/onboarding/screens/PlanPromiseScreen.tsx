@@ -8,7 +8,7 @@ import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
-import OnboardingOptionIcon, { type OnboardingOptionIconName } from '../OnboardingOptionIcon';
+import OnboardingOptionIcon from '../OnboardingOptionIcon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import type { OnboardingIntent } from '../types';
@@ -25,14 +25,6 @@ interface PlanPromiseScreenProps {
 const PREVIEW_DAYS = 3;
 const BADGE_SIZE = 40;
 const BADGE_GLYPH_SIZE = 26;
-const MOOD_SIZE = 26;
-const MOOD_GLYPH_SIZE = 18;
-
-const FEEDBACK_MOODS: readonly { icon: OnboardingOptionIconName; hue: { soft: string; ink: string } }[] = [
-  { icon: 'emoticon-happy-outline', hue: colors.playful.coral },
-  { icon: 'sparkle', hue: colors.playful.sky },
-  { icon: 'star', hue: colors.playful.teal },
-];
 
 /** A glimpse of what the answers are about to become, before the questions start. */
 export default function PlanPromiseScreen({
@@ -66,20 +58,16 @@ export default function PlanPromiseScreen({
     >
       <View style={styles.stage}>
         <View style={[styles.card, styles.feedbackCard]}>
-          <View style={styles.feedbackHeader}>
-            <Text style={styles.cardLabel}>Your Feedback</Text>
-            <View style={styles.moods}>
-              {FEEDBACK_MOODS.map(({ icon, hue }) => (
-                <View key={icon} style={[styles.mood, { backgroundColor: hue.soft }]}>
-                  <OnboardingOptionIcon name={icon} size={MOOD_GLYPH_SIZE} color={hue.ink} />
-                </View>
-              ))}
+          <Text style={styles.cardLabel}>Your Feedback</Text>
+          <View style={styles.day}>
+            <View style={[styles.badge, { backgroundColor: colors.playful.teal.soft }]}>
+              <OnboardingOptionIcon name="book" size={BADGE_GLYPH_SIZE} color={colors.playful.teal.ink} />
+            </View>
+            <View style={styles.dayCopy}>
+              <Text style={styles.dayTitle}>Your first lesson</Text>
+              <Text style={styles.lessonLine}>{days[0]?.line}</Text>
             </View>
           </View>
-          <Bar fill="82%" track={colors.playful.amber.soft} color={colors.playful.amber.base} tall />
-          <Text style={styles.compareLabel}>You vs Others</Text>
-          <Bar fill="28%" track={colors.playful.teal.soft} color={colors.playful.teal.base} />
-          <Bar fill="74%" track={colors.playful.teal.soft} color={colors.playful.teal.base} />
         </View>
 
         <View style={[styles.card, styles.planCard]}>
@@ -108,19 +96,6 @@ export default function PlanPromiseScreen({
   );
 }
 
-function Bar({ fill, track, color, tall = false }: {
-  fill: `${number}%`;
-  track: string;
-  color: string;
-  tall?: boolean;
-}) {
-  return (
-    <View style={[styles.bar, tall && styles.barTall, { backgroundColor: track }]}>
-      <View style={[styles.barFill, { width: fill, backgroundColor: color }]} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
@@ -143,41 +118,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     transform: [{ rotate: '2deg' }],
   },
-  feedbackHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   cardLabel: {
-    ...typography.body.small,
+    ...typography.body.large,
     color: colors.text.secondary,
   },
-  moods: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  mood: {
-    width: MOOD_SIZE,
-    height: MOOD_SIZE,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compareLabel: {
-    ...typography.body.small,
+  lessonLine: {
+    ...typography.body.medium,
     color: colors.text.secondary,
-  },
-  bar: {
-    height: spacing.md,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  barTall: {
-    height: spacing['2xl'],
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: radius.full,
   },
   day: {
     flexDirection: 'row',
@@ -203,7 +150,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   dayTitle: {
-    ...typography.body.small,
+    ...typography.body.large,
     color: colors.text.primary,
   },
   placeholder: {
