@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { AppState, StyleSheet, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { FullMotion } from '../../hooks/useReducedMotionSetting';
@@ -129,7 +129,6 @@ import {
 } from './data/statements';
 import { CLEANING_AZO_CONVERSATION } from './data/azoConversation';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
-import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
@@ -274,6 +273,12 @@ async function syncPostAttAttribution(): Promise<void> {
   } catch {
     // Attribution is best-effort and must never block onboarding.
   }
+}
+
+async function requestAttAndSyncAttribution(): Promise<void> {
+  await requestAttPermissionOnce();
+  await initAppsFlyer();
+  await syncPostAttAttribution();
 }
 
 interface OnboardingFlowProps {
@@ -792,24 +797,34 @@ function OnboardingFlowSteps({
 
   useEffect(() => {
     // IDFV is always available; IDFA only after ATT is granted. The ATT prompt
-    // itself is shown from the dedicated priming step so it gets a pre-prompt.
+    // itself opens over the personality profile.
     // Re-collecting later (after the prompt resolves) is a harmless no-op.
     void collectRevenueCatDeviceIdentifiers();
   }, []);
 
   useEffect(() => {
-    // Resumed onboarding starts at the paywall, past the attPriming step, so a
-    // reinstalled user (ATT reset by iOS) or a pre-attPriming-version user
+    // Resumed onboarding starts at the paywall, past the personality profile, so
+    // a reinstalled user (ATT reset by iOS) or a user from an older version
     // would reach the paywall with ATT undetermined — the SDK would remain in
     // manual-start mode and their trial/registration events would be dropped.
-    // Prompt here instead, mirroring attPriming's post-prompt sequence.
+    // Prompt here instead.
     if (initialSavedProfile == null || userId == null) return;
     if (resumedAttributionSyncedUserRef.current === userId) return;
     resumedAttributionSyncedUserRef.current = userId;
-    void requestAttPermissionOnce()
-      .then(() => initAppsFlyer())
-      .then(() => syncPostAttAttribution());
+    void requestAttAndSyncAttribution();
   }, [initialSavedProfile, userId]);
+
+  useEffect(() => {
+    // iOS ignores the request unless the app is active, so ask again on return.
+    // The prompt no-ops once answered, so this cannot reopen it.
+    if (step !== 'diagnosis') return;
+    const requestIfActive = () => {
+      if (AppState.currentState === 'active') void requestAttAndSyncAttribution();
+    };
+    requestIfActive();
+    const subscription = AppState.addEventListener('change', requestIfActive);
+    return () => subscription.remove();
+  }, [step]);
 
   useEffect(() => {
     const eventInput = getStepEventInput(step);
@@ -2982,29 +2997,6 @@ function OnboardingFlowSteps({
           setHabitPickIds([]);
           goNext('skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'attPriming') {
-    return (
-      <AttPrimingScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => {
-          // Show Apple's ATT dialog right after the pre-prompt, then advance once
-          // the user has responded. requestAttPermissionOnce never rejects and
-          // no-ops if already resolved, so navigation always proceeds. The
-          // attribution sync runs in the background — it can wait on the SDK
-          // start and must not hold the funnel.
-          void requestAttPermissionOnce()
-            .then(() => initAppsFlyer())
-            .then(() => {
-              void syncPostAttAttribution();
-              goNext('continue');
-            });
-        }}
-        onBack={goBack}
       />
     );
   }

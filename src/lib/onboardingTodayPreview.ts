@@ -10,7 +10,7 @@ import { echoOption } from './onboardingEcho';
 
 export interface OnboardingTodayPreview {
   reason: string;
-  lesson: { id: string; title: string; introduction: string; step: string; minutes: number };
+  lesson: { id: string; title: string; step: string; minutes: number };
   routine: string;
   scopeNote: string | null;
   firstResetDay: number | null;
@@ -90,7 +90,7 @@ export function buildOnboardingTodayPreview({
   return {
     reason,
     lesson: {
-      id: lesson.id, title: lesson.title, introduction: lesson.introduction,
+      id: lesson.id, title: lesson.title,
       step: lesson.step, minutes: lessonEstimatedMinutes(lesson.blocks),
     },
     routine: preset.id === 'phone' && phoneLessonTrackForIntent(intent) === 'bedtime'

@@ -4,10 +4,10 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { AZO_CHAT_PACE_FLAG } from '../../lib/onboardingMode';
 import { duration } from '../../theme/motion';
 import type { AzoConversationState } from './data/azoConversation';
-import { azoChatPaceFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
+import { azoChatTimingFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
 
 export function useAzoChatDelivery(conversation: AzoConversationState, onContinue: () => void) {
-  const [pace] = useState(() => azoChatPaceFrom(posthog.getFeatureFlagPayload(AZO_CHAT_PACE_FLAG)));
+  const [timing] = useState(() => azoChatTimingFrom(posthog.getFeatureFlagPayload(AZO_CHAT_PACE_FLAG)));
   const [delivery, setDelivery] = useState(() => getAzoDeliveryState(conversation));
   const [active, setActive] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -47,7 +47,7 @@ export function useAzoChatDelivery(conversation: AzoConversationState, onContinu
       schedule: (callback) => {
         const delay = finishing
           ? duration.beat
-          : getAzoMessageReadDelay(conversation.messages[latest.current.visibleCount - 1], pace);
+          : getAzoMessageReadDelay(conversation.messages[latest.current.visibleCount - 1], timing);
         const timer = setTimeout(callback, delay);
         return () => clearTimeout(timer);
       },

@@ -39,7 +39,7 @@ const planAndCompletion = [
   'diagnosis', 'planPersonalization', 'planOutcome', 'recommendedExercise', 'planDays',
   'habitPicks', 'habitCurve',
   'acquisitionSource', 'doctorReferral',
-  'attPriming', 'notifications', 'pact', 'paywall',
+  'notifications', 'pact', 'paywall',
 ];
 // Asked of every goal once its own context is in, before the plan's settings.
 const personalContext = [
@@ -128,9 +128,9 @@ test('each goal asks its own follow-ups and relevant context before showing the 
       assert.ok(steps.length <= 84, 'even the longest goal stays bounded');
     }
   }
-  assert.equal(stepsFor('cleaning').length, 80);
-  assert.equal(stepsFor('sleep').length, 80);
-  assert.equal(stepsFor('other').length, 80);
+  assert.equal(stepsFor('cleaning').length, 79);
+  assert.equal(stepsFor('sleep').length, 79);
+  assert.equal(stepsFor('other').length, 79);
 });
 
 test('sleep primary integrates its questions once while preserving other paths and shared habits', () => {
@@ -154,7 +154,7 @@ test('sleep primary integrates its questions once while preserving other paths a
       assert.equal(adjacentOnboardingStep(steps, 'homeAtmosphere', 'forward'), 'habitsToBreak');
       assert.equal(adjacentOnboardingStep(steps, 'habitsToBreak', 'forward'), 'cbtFamiliarity');
       assert.equal(steps.includes('intentPriority'), selectedCount >= 2);
-      assert.equal(steps.length, selectedCount >= 2 ? 81 : 80);
+      assert.equal(steps.length, selectedCount >= 2 ? 80 : 79);
     }
     const withoutSleep = (steps) => steps.filter((step) => !sleepIntentModule.includes(step));
     assert.deepEqual(withoutSleep(stepsFor('sleep', selectedCount)), withoutSleep(stepsFor('focus', selectedCount)),
@@ -917,7 +917,7 @@ test('the restored social proof and personal context steps sit in the flow for e
     assert.equal(adjacentOnboardingStep(steps, 'sleepTime', 'forward'), intent === 'sleep' ? 'wakeTime' : 'planBoost');
     assert.equal(adjacentOnboardingStep(steps, 'planBoost', 'forward'), 'planIntro');
     assert.equal(adjacentOnboardingStep(steps, 'acquisitionSource', 'forward'), 'doctorReferral');
-    assert.equal(adjacentOnboardingStep(steps, 'doctorReferral', 'forward'), 'attPriming');
+    assert.equal(adjacentOnboardingStep(steps, 'doctorReferral', 'forward'), 'notifications');
     for (const step of [...sleepAssessment, ...assessment, ...personalContext, 'doctorReferral', 'communityProof', 'planBoost', 'planIntro', 'planLoading', 'habitCurve']) {
       assert.equal(steps.filter((entry) => entry === step).length, 1, `${intent} ${step}`);
     }
@@ -1047,4 +1047,17 @@ test('skip_azo_chat drops the invite, chat, and greeting from both flows', () =>
     assert.deepEqual(withChat.slice(0, 3), ['azoChatInvite', 'azoChat', 'greeting']);
     assert.deepEqual(withoutChat, withChat.slice(3));
   }
+});
+
+test('every flow reaches the personality profile, which asks for tracking while the app is active', () => {
+  for (const mode of ['standard', 'cleaning_mode']) {
+    const steps = onboardingStepOrder(null, 0, 0, null, mode, false);
+    assert.equal(steps.filter((step) => step === 'diagnosis').length, 1, mode);
+    assert.ok(steps.indexOf('diagnosis') < steps.indexOf('paywall'), mode);
+    assert.equal(steps.includes('attPriming'), false, mode);
+  }
+  const request = flow.slice(flow.indexOf("if (step !== 'diagnosis') return;"));
+  assert.match(request.slice(0, 400), /AppState\.currentState === 'active'[^\n]*requestAttAndSyncAttribution/);
+  assert.match(request.slice(0, 400), /AppState\.addEventListener\('change', requestIfActive\)/);
+  assert.match(request.slice(0, 400), /subscription\.remove\(\)/);
 });

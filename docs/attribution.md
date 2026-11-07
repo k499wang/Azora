@@ -41,7 +41,7 @@ EAS cloud builds never see the gitignored `.env`).
   `undetermined`, so Meta receives a valid Advertiser Tracking Enabled state.
 - iOS init still passes `timeToWaitForATTUserAuthorization: 60` as a native SDK
   safety net. In the normal flow, JS starts the SDK only after ATT resolves.
-- The ATT prompt fires when leaving the dedicated onboarding **attPriming** step
+- The ATT prompt fires when the onboarding **diagnosis** step (personality profile) opens
   (`OnboardingFlow.tsx`), after value is demonstrated — not on cold launch.
 - Users already past onboarding go through `AttFallbackPresenter`, which mirrors
   the post-prompt init/start sequence before regular app events are sent.

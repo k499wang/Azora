@@ -29,7 +29,7 @@ test('onboarding never asks for a rating (App Review guideline 5.6.3)', () => {
 test('the permission steps never chase a system dialog with the review sheet', () => {
   // Asking for five stars right after ATT or a notification prompt trains the
   // dismiss reflex, and the skip path asks a user who just declined.
-  for (const step of ['attPriming', 'notifications']) {
+  for (const step of ['diagnosis', 'notifications']) {
     assert.doesNotMatch(
       stepBlock(step),
       /requestStoreReview|maybeRequestOnboardingReview/,

@@ -37,12 +37,11 @@ test('preview uses the exact first lesson subscribers receive, including refined
     const lesson = lessonForActivityId(days[0].lessonActivityId);
     const actual = preview(intent, {}, signals);
     assert.deepEqual(actual.lesson, {
-      id: lesson.id, title: lesson.title, introduction: lesson.introduction,
+      id: lesson.id, title: lesson.title,
       step: lesson.step, minutes: lessonEstimatedMinutes(lesson.blocks),
     }, intent);
     assert.equal(actual.firstResetDay, days.find((day) => day.activities.length > 0)?.day ?? null);
     assert.ok(actual.lesson.minutes >= 2);
-    assert.ok(actual.lesson.introduction.length > 0);
   }
 });
 

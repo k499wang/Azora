@@ -22,7 +22,6 @@ export type OnboardingStep =
   | 'routineBrain'
   | 'greeting'
   | 'acquisitionSource'
-  | 'attPriming'
   | 'stress'
   | 'overwhelmResponse'
   | 'supportSystem'

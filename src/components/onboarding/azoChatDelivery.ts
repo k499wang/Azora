@@ -9,10 +9,39 @@ export function azoChatPaceFrom(payload: unknown): number {
   return typeof payload === 'number' && Number.isFinite(payload) && payload > 0 ? payload : 1;
 }
 
+export interface AzoChatTiming {
+  pace: number;
+  baseDelayMs: number;
+  wordDelayMs: number;
+}
+
+const DEFAULT_AZO_CHAT_TIMING: AzoChatTiming = {
+  pace: 1,
+  baseDelayMs: READING_BASE_DELAY_MS,
+  wordDelayMs: READING_WORD_DELAY_MS,
+};
+
+function delayFrom(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+/** Reads the `azo_chat_pace` payload: a multiplier, or `{ baseDelayMs, wordDelayMs }`. Anything missing or invalid keeps its default. */
+export function azoChatTimingFrom(payload: unknown): AzoChatTiming {
+  const fields = typeof payload === 'object' && payload != null ? payload as Record<string, unknown> : {};
+  return {
+    pace: azoChatPaceFrom(payload),
+    baseDelayMs: delayFrom(fields.baseDelayMs, READING_BASE_DELAY_MS),
+    wordDelayMs: delayFrom(fields.wordDelayMs, READING_WORD_DELAY_MS),
+  };
+}
+
 /** Give the visible message, Azo's or the user's reply, time to be read before delivering the next one. */
-export function getAzoMessageReadDelay(message?: AzoConversationMessage, pace = 1): number {
+export function getAzoMessageReadDelay(
+  message?: AzoConversationMessage,
+  { pace, baseDelayMs, wordDelayMs }: AzoChatTiming = DEFAULT_AZO_CHAT_TIMING,
+): number {
   const wordCount = (message?.text ?? '').replace(/\*\*/g, '').trim().split(/\s+/).filter(Boolean).length;
-  return Math.round(pace * Math.min(MAX_READING_DELAY_MS, READING_BASE_DELAY_MS + wordCount * READING_WORD_DELAY_MS));
+  return Math.round(pace * Math.min(MAX_READING_DELAY_MS, baseDelayMs + wordCount * wordDelayMs));
 }
 
 export interface AzoDeliveryState {

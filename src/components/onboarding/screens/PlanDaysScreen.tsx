@@ -130,7 +130,6 @@ export default function PlanDaysScreen({
             <PlanNotepadRow
               anim={rowAnims[exerciseRows.length]}
               title={lessonTipTitle}
-              meta={preview.lesson.introduction}
               leading={
                 <OnboardingOptionIcon
                   name="book"

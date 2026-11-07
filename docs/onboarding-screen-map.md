@@ -167,7 +167,6 @@ remain available in Onboarding Lab.
 |---|---|
 | `acquisitionSource` | Record the optional acquisition survey after the plan is visible |
 | `doctorReferral` | Whether a doctor recommended Azora, grouped with the other "how you got here" fact |
-| `attPriming` | Explain and request tracking permission with existing attribution synchronization |
 | `notifications` | Offer reminders for the actual plan schedule |
 | `pact` | Save the profile, chosen tasks, schedule, and resolved enrollment |
 | `paywall` | Present purchase/restore/free continuation according to the offering |

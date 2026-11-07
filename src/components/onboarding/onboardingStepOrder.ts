@@ -209,7 +209,6 @@ const PLAN_STEPS: readonly OnboardingStep[] = [
   'acquisitionSource',
   // Both are "how you got here" facts, grouped once the plan is visible.
   'doctorReferral',
-  'attPriming',
   'notifications',
   'pact',
   'paywall',

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { azoChatPaceFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
+import { azoChatPaceFrom, azoChatTimingFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery } from './azoChatDelivery';
 import { AZO_CONVERSATION, chooseAzoReply, getAzoConversation } from './data/azoConversation';
 import { runWhileVisible } from '../../lib/ui/runWhileVisible';
 
@@ -33,6 +33,19 @@ test('the first message after a reply waits the same reading time as any other',
   assert.equal(getAzoMessageReadDelay(), 1500);
 });
 
+test('the chat pace flag can set the base and per-word delays remotely', () => {
+  const message = (text) => ({ id: 'test', kind: 'azo', text });
+  const hi = message('hi');
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom({ baseDelayMs: 800, wordDelayMs: 100 })), 900);
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom({ baseDelayMs: 800 })), 1075);
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom({ wordDelayMs: 100 })), 1600);
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom({ baseDelayMs: 0, wordDelayMs: 0 })), 0);
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom({ baseDelayMs: -1, wordDelayMs: '100' })), 1775);
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom(0.5)), 888);
+  assert.equal(getAzoMessageReadDelay(hi, azoChatTimingFrom(undefined)), 1775);
+  assert.equal(getAzoMessageReadDelay(message('word '.repeat(100)), azoChatTimingFrom({ wordDelayMs: 500 })), 10000);
+});
+
 test('the chat pace flag scales reading delays and defaults to 1x', () => {
   assert.equal(azoChatPaceFrom(0.7), 0.7);
   assert.equal(azoChatPaceFrom(1.3), 1.3);
@@ -40,7 +53,7 @@ test('the chat pace flag scales reading delays and defaults to 1x', () => {
   assert.equal(azoChatPaceFrom('0.7'), 1);
   assert.equal(azoChatPaceFrom(0), 1);
   assert.equal(azoChatPaceFrom(-1), 1);
-  assert.equal(getAzoMessageReadDelay({ id: 'reply', kind: 'reply', text: 'Of course.' }, 0.7), 1435);
+  assert.equal(getAzoMessageReadDelay({ id: 'reply', kind: 'reply', text: 'Of course.' }, azoChatTimingFrom(0.7)), 1435);
 });
 
 test('the delivery hook schedules each next message from the latest visible message length', () => {
@@ -72,7 +85,7 @@ test('the delivery hook schedules each next message from the latest visible mess
       if (name === '../../lib/onboardingMode') return { AZO_CHAT_PACE_FLAG: 'azo_chat_pace' };
       if (name === '../../hooks/useWhileVisible') return { useWhileVisible: (start) => start() };
       if (name === '../../theme/motion') return { duration: { beat: 300 } };
-      if (name === './azoChatDelivery') return { azoChatPaceFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery };
+      if (name === './azoChatDelivery') return { azoChatTimingFrom, getAzoDeliveryState, getAzoMessageReadDelay, startAzoChatDelivery };
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
